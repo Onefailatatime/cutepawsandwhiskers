@@ -1,12 +1,25 @@
 const { createClient } = require('@supabase/supabase-js');
+const nodemailer = require('nodemailer');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
 );
 
-const RESEND_KEY = process.env.RESEND_KEY;
 const SITE_URL = process.env.URL || 'https://cutepawsandwhiskers.com';
+
+// Zoho Mail SMTP transporter
+function getTransporter() {
+  return nodemailer.createTransport({
+    host: 'smtp.zoho.com',
+    port: 465,
+    secure: true,
+    auth: {
+      user: process.env.ZOHO_EMAIL,       // orders@cutepawsandwhiskers.com
+      pass: process.env.ZOHO_APP_PASSWORD, // App-specific password from Zoho
+    },
+  });
+}
 
 async function sendWelcomeEmail(entry) {
   const uploadLink = `${SITE_URL}/upload.html?token=${entry.upload_token}`;
@@ -26,7 +39,7 @@ async function sendWelcomeEmail(entry) {
         <p style="font-size: 16px; color: #374151;">Hi ${firstName}! 🎉</p>
 
         <p style="font-size: 16px; color: #374151; line-height: 1.6;">
-          Thank you for entering the <strong>Paws &amp; Whiskers 2026 Calendar Contest</strong>! We're so excited to feature your fur baby.
+          Thank you for entering the <strong>Paws &amp; Whiskers 2027 Calendar Contest</strong>! We're so excited to feature your fur baby.
         </p>
 
         <div style="background: #fff7ed; border: 2px solid #fed7aa; border-radius: 12px; padding: 24px; margin: 24px 0;">
@@ -59,7 +72,7 @@ async function sendWelcomeEmail(entry) {
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
 
         <p style="font-size: 13px; color: #9ca3af; text-align: center;">
-          Paws &amp; Whiskers 2026 Calendar Contest<br>
+          Paws &amp; Whiskers 2027 Calendar Contest<br>
           Presented by Hello Pat<br>
           <a href="mailto:orders@cutepawsandwhiskers.com" style="color: #f97316;">orders@cutepawsandwhiskers.com</a>
         </p>
@@ -67,24 +80,15 @@ async function sendWelcomeEmail(entry) {
     </div>
   `;
 
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      from: 'Paws & Whiskers <orders@cutepawsandwhiskers.com>',
-      to: entry.email,
-      reply_to: 'orders@cutepawsandwhiskers.com',
-      subject: `🐾 Welcome ${firstName}! Upload your pet's photo to complete your entry`,
-      html,
-    }),
+  const transporter = getTransporter();
+
+  await transporter.sendMail({
+    from: '"Paws & Whiskers" <orders@cutepawsandwhiskers.com>',
+    to: entry.email,
+    replyTo: 'orders@cutepawsandwhiskers.com',
+    subject: `🐾 Welcome ${firstName}! Upload your pet's photo to complete your entry`,
+    html,
   });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Resend error: ${err}`);
-  }
-
-  return await res.json();
 }
 
 exports.handler = async function (event) {
@@ -100,7 +104,6 @@ exports.handler = async function (event) {
       const session = stripeEvent.data.object;
       const entryId = session.client_reference_id;
       const paymentId = session.payment_intent || session.id;
-      const customerEmail = session.customer_details?.email || session.customer_email;
 
       if (!entryId) {
         console.log('No client_reference_id, skipping');

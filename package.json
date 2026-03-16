@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/Onefailatatime/cutepawsandwhiskers#readme",
   "dependencies": {
-    "@supabase/supabase-js": "^2.99.2"
+    "@supabase/supabase-js": "^2.99.2",
+    "nodemailer": "^8.0.2"
   }
 }
