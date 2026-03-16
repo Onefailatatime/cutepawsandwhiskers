@@ -1,33 +1,21 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+const { createClient } = require('@supabase/supabase-js');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
+  process.env.SUPABASE_KEY
 );
 
-export async function handler(event) {
+exports.handler = async function (event) {
   if (event.httpMethod !== 'GET') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  // Simple auth check — pass ?key=YOUR_ADMIN_KEY
   const key = event.queryStringParameters?.key;
   if (key !== process.env.ADMIN_KEY) {
     return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
   }
 
   try {
-    // Total entries
-    const { count: totalEntries } = await supabase
-      .from('contest_entries')
-      .select('*', { count: 'exact', head: true })
-      .neq('status', 'refunded');
-
-    // Front-end revenue
-    const { data: feRev } = await supabase
-      .rpc('', {}).catch(() => null) || { data: null };
-
-    // Use the view for full stats
     const { data: entries, error } = await supabase
       .from('entry_revenue')
       .select('*')
@@ -61,4 +49,4 @@ export async function handler(event) {
     console.error('get-stats error:', err);
     return { statusCode: 500, body: JSON.stringify({ error: 'Server error' }) };
   }
-}
+};

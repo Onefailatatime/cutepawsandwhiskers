@@ -1,0 +1,23 @@
+{
+  "name": "site",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Onefailatatime/cutepawsandwhiskers.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Onefailatatime/cutepawsandwhiskers/issues"
+  },
+  "homepage": "https://github.com/Onefailatatime/cutepawsandwhiskers#readme",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.99.2"
+  }
+}
