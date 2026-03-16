@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload Your Pet's Photo – Paws & Whiskers 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter','system-ui','sans-serif'] } } } }</script>
+  <style>
+    .drop-zone { transition: all .2s ease; }
+    .drop-zone.dragover { border-color: #f97316; background: #fff7ed; transform: scale(1.01); }
+    .preview-img { max-height: 300px; object-fit: contain; }
+  </style>
+</head>
+<body class="bg-gradient-to-b from-orange-50 via-white to-orange-50 font-sans antialiased min-h-screen">
+
+  <div class="max-w-2xl mx-auto px-4 py-12">
+
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <p class="text-sm uppercase tracking-wider text-gray-500 mb-2">Paws & Whiskers 2026</p>
+      <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Upload Your Pet's Photo</h1>
+      <p class="text-lg text-gray-600">Let's get your fur baby in the calendar!</p>
+    </div>
+
+    <!-- Loading state -->
+    <div id="loading" class="text-center py-20">
+      <svg class="w-10 h-10 animate-spin mx-auto text-orange-500 mb-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+      <p class="text-gray-600">Loading your entry...</p>
+    </div>
+
+    <!-- Error state -->
+    <div id="error-state" class="hidden text-center py-20">
+      <div class="text-6xl mb-4">😿</div>
+      <h2 class="text-2xl font-bold text-gray-900 mb-2">Link Not Valid</h2>
+      <p class="text-gray-600 mb-6">This upload link is invalid or has expired. Please check the link in your welcome email.</p>
+      <p class="text-sm text-gray-500">Need help? Email <a href="mailto:orders@cutepawsandwhiskers.com" class="text-orange-600 underline">orders@cutepawsandwhiskers.com</a></p>
+    </div>
+
+    <!-- Already uploaded state -->
+    <div id="done-state" class="hidden text-center py-20">
+      <div class="text-6xl mb-4">🎉</div>
+      <h2 class="text-2xl font-bold text-gray-900 mb-2">You're All Set!</h2>
+      <p class="text-gray-600 mb-2">We already have your pet's photo on file.</p>
+      <p class="text-gray-600 mb-6">If you need to update anything, email us at <a href="mailto:orders@cutepawsandwhiskers.com" class="text-orange-600 underline">orders@cutepawsandwhiskers.com</a></p>
+    </div>
+
+    <!-- Upload form -->
+    <form id="upload-form" class="hidden space-y-6">
+
+      <!-- Current info confirmation -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 border-2 border-orange-100">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">📋 Confirm Your Info</h2>
+        <div class="grid grid-cols-2 gap-4 text-sm" id="info-display"></div>
+        <p class="text-xs text-gray-500 mt-4">Something wrong? Email <a href="mailto:orders@cutepawsandwhiskers.com" class="text-orange-600 underline">orders@cutepawsandwhiskers.com</a> and we'll fix it.</p>
+      </div>
+
+      <!-- Pet details -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 border-2 border-pink-100">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">🐾 Your Pet's Details</h2>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Pet's Name *</label>
+            <input type="text" name="pet_name" required placeholder="Buddy" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 outline-none focus:border-orange-400 text-gray-900">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Pet Type *</label>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="flex items-center gap-3 p-4 rounded-xl border-2 border-gray-200 cursor-pointer hover:border-orange-300 transition-colors has-[:checked]:border-orange-500 has-[:checked]:bg-orange-50">
+                <input type="radio" name="pet_type" value="dog" class="accent-orange-500 w-5 h-5">
+                <span class="text-2xl">🐕</span>
+                <span class="font-medium text-gray-900">Dog</span>
+              </label>
+              <label class="flex items-center gap-3 p-4 rounded-xl border-2 border-gray-200 cursor-pointer hover:border-pink-300 transition-colors has-[:checked]:border-pink-500 has-[:checked]:bg-pink-50">
+                <input type="radio" name="pet_type" value="cat" class="accent-pink-500 w-5 h-5">
+                <span class="text-2xl">🐈</span>
+                <span class="font-medium text-gray-900">Cat</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Pet's Special Date (optional)</label>
+            <input type="text" name="special_date_label" placeholder="Birthday: March 15, Gotcha Day: June 1, etc." class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 outline-none focus:border-orange-400 text-gray-900">
+            <p class="text-xs text-gray-500 mt-1">We may feature your pet on this date in the calendar!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Photo upload -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 border-2 border-purple-100">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">📸 Upload Your Pet's Best Photo</h2>
+        <p class="text-sm text-gray-600 mb-4">High-quality photos work best! Make sure your pet is clearly visible and well-lit. JPG, PNG, or HEIC accepted.</p>
+
+        <div id="drop-zone" class="drop-zone border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center cursor-pointer hover:border-orange-400 hover:bg-orange-50/50">
+          <div id="upload-prompt">
+            <svg class="w-12 h-12 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 16l4-4 4 4m5-4l4-4M3 21h18M12 3v12"/></svg>
+            <p class="text-gray-700 font-medium mb-1">Click to upload or drag & drop</p>
+            <p class="text-sm text-gray-500">JPG, PNG, or HEIC — max 10MB</p>
+          </div>
+          <div id="upload-preview" class="hidden">
+            <img id="preview-img" class="preview-img mx-auto rounded-xl mb-3" alt="Pet photo preview">
+            <p id="file-name" class="text-sm text-gray-600"></p>
+            <button type="button" id="remove-photo" class="text-sm text-red-500 underline mt-2">Remove &amp; choose another</button>
+          </div>
+          <input type="file" id="file-input" accept="image/jpeg,image/png,image/heic,image/heif" class="hidden">
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div id="upload-error" class="hidden bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-200"></div>
+
+      <!-- Submit -->
+      <button type="submit" id="upload-btn" class="w-full bg-gradient-to-r from-orange-500 to-pink-500 text-white px-8 py-5 rounded-full text-lg font-bold hover:from-orange-600 hover:to-pink-600 hover:scale-[1.02] transition-all shadow-xl">
+        Submit My Pet's Entry 🐾
+      </button>
+    </form>
+
+    <!-- Success state -->
+    <div id="success-state" class="hidden text-center py-12">
+      <div class="text-6xl mb-4">🎉</div>
+      <h2 class="text-3xl font-bold text-gray-900 mb-3">Your Pet Is In!</h2>
+      <p class="text-lg text-gray-600 mb-6">We've received your photo and details. Your fur baby is officially entered into the Paws & Whiskers 2026 Calendar Contest!</p>
+      <div class="bg-orange-50 rounded-2xl p-6 text-left max-w-md mx-auto">
+        <h3 class="font-bold text-gray-900 mb-2">What happens next?</h3>
+        <ul class="text-sm text-gray-700 space-y-2">
+          <li>✅ Our design team reviews all entries</li>
+          <li>🏆 Cover &amp; month winners will be announced by email</li>
+          <li>📦 Your printed calendar ships before December 2026</li>
+        </ul>
+      </div>
+      <p class="text-sm text-gray-500 mt-6">Questions? <a href="mailto:orders@cutepawsandwhiskers.com" class="text-orange-600 underline">orders@cutepawsandwhiskers.com</a></p>
+    </div>
+  </div>
+
+  <script>
+    const TOKEN = new URLSearchParams(window.location.search).get('token');
+    const API = '/api';
+    let entryData = null;
+    let selectedFile = null;
+
+    /* ---------- LOAD ENTRY ---------- */
+    async function loadEntry() {
+      if (!TOKEN) return showError();
+
+      try {
+        const res = await fetch(`${API}/get-entry?token=${TOKEN}`);
+        if (!res.ok) return showError();
+        entryData = await res.json();
+
+        if (entryData.photo_url && entryData.info_confirmed) {
+          document.getElementById('loading').classList.add('hidden');
+          document.getElementById('done-state').classList.remove('hidden');
+          return;
+        }
+
+        // Show form
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('upload-form').classList.remove('hidden');
+
+        // Display info
+        const info = document.getElementById('info-display');
+        info.innerHTML = `
+          <div><span class="text-gray-500">Name:</span></div><div class="font-medium">${entryData.full_name}</div>
+          <div><span class="text-gray-500">Email:</span></div><div class="font-medium">${entryData.email}</div>
+          <div><span class="text-gray-500">Phone:</span></div><div class="font-medium">${entryData.phone}</div>
+          <div class="col-span-2"><span class="text-gray-500">Address:</span> <span class="font-medium">${entryData.address_line1}${entryData.address_line2 ? ', ' + entryData.address_line2 : ''}, ${entryData.city}, ${entryData.state} ${entryData.zip}</span></div>
+        `;
+
+        // Pre-fill pet name if exists
+        if (entryData.pet_name && entryData.pet_name !== 'Pending') {
+          document.querySelector('[name="pet_name"]').value = entryData.pet_name;
+        }
+        if (entryData.pet_type) {
+          const radio = document.querySelector(`[name="pet_type"][value="${entryData.pet_type}"]`);
+          if (radio) radio.checked = true;
+        }
+      } catch (e) {
+        showError();
+      }
+    }
+
+    function showError() {
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('error-state').classList.remove('hidden');
+    }
+
+    /* ---------- FILE UPLOAD UI ---------- */
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const promptEl = document.getElementById('upload-prompt');
+    const previewEl = document.getElementById('upload-preview');
+    const previewImg = document.getElementById('preview-img');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
+
+    document.getElementById('remove-photo').addEventListener('click', (e) => {
+      e.stopPropagation();
+      selectedFile = null;
+      fileInput.value = '';
+      promptEl.classList.remove('hidden');
+      previewEl.classList.add('hidden');
+    });
+
+    function handleFile(file) {
+      if (file.size > 10 * 1024 * 1024) {
+        alert('Photo must be under 10MB. Please choose a smaller file.');
+        return;
+      }
+      selectedFile = file;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        previewImg.src = e.target.result;
+        document.getElementById('file-name').textContent = file.name;
+        promptEl.classList.add('hidden');
+        previewEl.classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    /* ---------- FORM SUBMIT ---------- */
+    document.getElementById('upload-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errEl = document.getElementById('upload-error');
+      errEl.classList.add('hidden');
+
+      const petName = document.querySelector('[name="pet_name"]').value.trim();
+      const petType = document.querySelector('[name="pet_type"]:checked')?.value;
+      const specialDate = document.querySelector('[name="special_date_label"]').value.trim();
+
+      if (!petName) { errEl.textContent = 'Please enter your pet\'s name.'; errEl.classList.remove('hidden'); return; }
+      if (!petType) { errEl.textContent = 'Please select cat or dog.'; errEl.classList.remove('hidden'); return; }
+      if (!selectedFile) { errEl.textContent = 'Please upload a photo of your pet.'; errEl.classList.remove('hidden'); return; }
+
+      const btn = document.getElementById('upload-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="inline-flex items-center gap-2"><svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Uploading...</span>';
+
+      try {
+        // Convert file to base64
+        const base64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.readAsDataURL(selectedFile);
+        });
+
+        const res = await fetch(`${API}/upload-photo`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token: TOKEN,
+            pet_name: petName,
+            pet_type: petType,
+            special_date_label: specialDate || null,
+            photo_base64: base64,
+            photo_name: selectedFile.name,
+            photo_type: selectedFile.type,
+          }),
+        });
+
+        const result = await res.json();
+        if (!res.ok || !result.success) throw new Error(result.error || 'Upload failed');
+
+        // Show success
+        document.getElementById('upload-form').classList.add('hidden');
+        document.getElementById('success-state').classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      } catch (err) {
+        errEl.textContent = err.message || 'Something went wrong. Please try again.';
+        errEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.innerHTML = 'Submit My Pet\'s Entry 🐾';
+      }
+    });
+
+    loadEntry();
+  </script>
+</body>
+</html>
