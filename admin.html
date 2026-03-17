@@ -29,9 +29,10 @@
         <h1 class="text-2xl font-bold text-gray-900 mt-2">Hello Pat CRM</h1>
         <p class="text-gray-500 text-sm">Paws & Whiskers Admin</p>
       </div>
-      <input id="admin-key-input" type="password" placeholder="Admin Key" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 outline-none focus:border-orange-400 mb-4" autofocus>
-      <button onclick="login()" class="w-full bg-gradient-to-r from-orange-500 to-pink-500 text-white py-3 rounded-xl font-bold hover:opacity-90">Enter CRM</button>
-      <p id="login-error" class="text-red-500 text-sm text-center mt-3 hidden">Invalid key</p>
+      <input id="login-email" type="email" placeholder="Email" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 outline-none focus:border-orange-400 mb-3" autofocus>
+      <input id="login-password" type="password" placeholder="Password" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 outline-none focus:border-orange-400 mb-4">
+      <button onclick="login()" id="login-btn" class="w-full bg-gradient-to-r from-orange-500 to-pink-500 text-white py-3 rounded-xl font-bold hover:opacity-90">Sign In</button>
+      <p id="login-error" class="text-red-500 text-sm text-center mt-3 hidden">Invalid email or password</p>
     </div>
   </div>
 
@@ -251,8 +252,9 @@
 
 <script>
 // ===================== STATE =====================
-let ADMIN_KEY = '';
+let SESSION_TOKEN = '';
 const API = '/api/admin-api';
+const LOGIN_API = '/api/admin-login';
 let currentEntries = [];
 let entriesOffset = 0;
 const PAGE_SIZE = 50;
@@ -260,44 +262,107 @@ const PAGE_SIZE = 50;
 // ===================== AUTH =====================
 function api(action, params = {}, method = 'GET', body = null) {
   const url = new URL(API, window.location.origin);
-  url.searchParams.set('key', ADMIN_KEY);
+  url.searchParams.set('token', SESSION_TOKEN);
   url.searchParams.set('action', action);
   for (const [k, v] of Object.entries(params)) {
     if (v !== '' && v !== null && v !== undefined) url.searchParams.set(k, v);
   }
-  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  const opts = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + SESSION_TOKEN,
+    },
+  };
   if (body) opts.body = JSON.stringify(body);
-  return fetch(url.toString(), opts).then(r => r.json());
-}
-
-function login() {
-  ADMIN_KEY = document.getElementById('admin-key-input').value.trim();
-  if (!ADMIN_KEY) return;
-  api('dashboard').then(data => {
-    if (data.error) {
-      document.getElementById('login-error').classList.remove('hidden');
-      return;
-    }
-    localStorage.setItem('hp_admin_key', ADMIN_KEY);
-    document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('crm-app').classList.remove('hidden');
-    renderDashboard(data);
+  return fetch(url.toString(), opts).then(r => {
+    if (r.status === 401) { logout(); throw new Error('Session expired'); }
+    return r.json();
   });
 }
 
+async function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const btn = document.getElementById('login-btn');
+  const errEl = document.getElementById('login-error');
+
+  if (!email || !password) {
+    errEl.textContent = 'Please enter email and password';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Signing in...';
+  errEl.classList.add('hidden');
+
+  try {
+    const res = await fetch(LOGIN_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'login', email, password }),
+    });
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      errEl.textContent = data.error || 'Invalid email or password';
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Sign In';
+      return;
+    }
+
+    // Save session
+    SESSION_TOKEN = data.token;
+    localStorage.setItem('hp_session', SESSION_TOKEN);
+    localStorage.setItem('hp_email', data.email);
+
+    // Show CRM
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('crm-app').classList.remove('hidden');
+    loadDashboard();
+
+  } catch (err) {
+    errEl.textContent = 'Connection error. Please try again.';
+    errEl.classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = 'Sign In';
+  }
+}
+
 function logout() {
-  localStorage.removeItem('hp_admin_key');
+  SESSION_TOKEN = '';
+  localStorage.removeItem('hp_session');
+  localStorage.removeItem('hp_email');
   location.reload();
 }
 
-// Auto-login
-(function() {
-  const saved = localStorage.getItem('hp_admin_key');
+// Auto-login from saved session
+(async function() {
+  const saved = localStorage.getItem('hp_session');
   if (saved) {
-    document.getElementById('admin-key-input').value = saved;
-    login();
+    try {
+      const res = await fetch(LOGIN_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'verify', token: saved }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        SESSION_TOKEN = saved;
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('crm-app').classList.remove('hidden');
+        loadDashboard();
+        return;
+      }
+    } catch {}
+    // Token expired/invalid
+    localStorage.removeItem('hp_session');
   }
-  document.getElementById('admin-key-input').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+  // Enter key listeners
+  document.getElementById('login-email').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('login-password').focus(); });
+  document.getElementById('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
 })();
 
 // ===================== TABS =====================

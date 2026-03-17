@@ -1,16 +1,15 @@
 const { createClient } = require('@supabase/supabase-js');
+const { verifyToken } = require('./admin-login');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
 );
 
-const ADMIN_KEY = process.env.ADMIN_KEY || 'hellopat2027stats';
-
 const HEADERS = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
 };
 
@@ -36,10 +35,12 @@ exports.handler = async function (event) {
     return { statusCode: 200, headers: HEADERS };
   }
 
-  // Auth check
-  const params = event.queryStringParameters || {};
-  if (params.key !== ADMIN_KEY) return unauthorized();
+  // Auth check — verify session token from Authorization header or query param
+  const authHeader = event.headers['authorization'] || '';
+  const token = authHeader.replace('Bearer ', '') || (event.queryStringParameters || {}).token;
+  if (!token || !verifyToken(token)) return unauthorized();
 
+  const params = event.queryStringParameters || {};
   const action = params.action;
 
   try {
