@@ -845,6 +845,57 @@ exports.handler = async function (event) {
         return ok({ success: true, sent: sentCount, total: members.length });
       }
 
+      // ===== BOARD TASKS =====
+      if (action === 'board-tasks') {
+        const board = params.board || 'devops';
+        const { data, error } = await supabase
+          .from('board_tasks')
+          .select('*')
+          .eq('board', board)
+          .order('sort_order', { ascending: true })
+          .order('created_at', { ascending: false });
+        if (error) return serverError(error);
+        return ok({ tasks: data || [] });
+      }
+
+      if (action === 'create-board-task') {
+        const task = {
+          board: body.board || 'devops',
+          column_id: body.column_id || 'backlog',
+          title: body.title,
+          description: body.description || null,
+          priority: body.priority || 'medium',
+          labels: body.labels || [],
+          assigned_to: body.assigned_to || null,
+          due_date: body.due_date || null,
+          color: body.color || null,
+          sort_order: body.sort_order || 0,
+        };
+        if (!task.title) return badRequest('Missing title');
+        const { data, error } = await supabase.from('board_tasks').insert(task).select().single();
+        if (error) return serverError(error);
+        return ok({ success: true, task: data });
+      }
+
+      if (action === 'update-board-task') {
+        if (!body.id) return badRequest('Missing id');
+        const updates = {};
+        ['column_id','title','description','priority','labels','assigned_to','due_date','color','sort_order'].forEach(k => {
+          if (body[k] !== undefined) updates[k] = body[k];
+        });
+        updates.updated_at = new Date().toISOString();
+        const { data, error } = await supabase.from('board_tasks').update(updates).eq('id', body.id).select().single();
+        if (error) return serverError(error);
+        return ok({ success: true, task: data });
+      }
+
+      if (action === 'delete-board-task') {
+        if (!body.id) return badRequest('Missing id');
+        const { error } = await supabase.from('board_tasks').delete().eq('id', body.id);
+        if (error) return serverError(error);
+        return ok({ success: true });
+      }
+
       // ===== DELETE ENTRY =====
       if (action === 'delete-entry') {
         if (!body.id) return badRequest('Missing id');

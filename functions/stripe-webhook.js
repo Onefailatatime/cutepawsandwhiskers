@@ -180,6 +180,11 @@ async function sendWelcomeEmail(entry) {
           <p style="font-size: 12px; color: #9a3412; margin: 16px 0 0; font-style: italic;">
             Or reply to this email with your photo attached — include your pet's name and if they're a dog or cat.
           </p>
+          <div style="background: #fffbeb; border: 1px dashed #f59e0b; border-radius: 8px; padding: 14px; margin-top: 14px;">
+            <p style="font-size: 14px; color: #92400e; margin: 0; line-height: 1.5;">
+              <strong>🐾 What's your pet's name?</strong> When you upload your photo (or reply to this email), please tell us your pet's name and whether they're a 🐶 dog or 🐱 cat — we want to make sure we spell it right on the calendar!
+            </p>
+          </div>
         </div>
 
         <!-- IMPORTANT RULES -->

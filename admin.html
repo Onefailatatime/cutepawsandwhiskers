@@ -45,6 +45,30 @@
     .kanban-card:active { cursor: grabbing; }
     .kanban-card.dragging { opacity: 0.5; transform: rotate(2deg); }
     .kanban-col-body.drag-over { background: #fef3c7; border-radius: 0 0 16px 16px; }
+    .kanban-card .priority-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .kanban-col-body .add-card-btn { border: 2px dashed #d1d5db; border-radius: 12px; padding: 10px; text-align: center; color: #9ca3af; font-size: 13px; cursor: pointer; transition: all .15s; }
+    .kanban-col-body .add-card-btn:hover { border-color: #f97316; color: #f97316; background: #fff7ed; }
+    .task-color-btn.active { ring: 2px; box-shadow: 0 0 0 3px rgba(249,115,22,0.4); }
+    /* Dark mode */
+    body.dark { background: #111827; color: #e5e7eb; }
+    body.dark header, body.dark nav { background: #1f2937 !important; border-color: #374151 !important; }
+    body.dark h1, body.dark h2, body.dark h3, body.dark .text-gray-900 { color: #f3f4f6 !important; }
+    body.dark .text-gray-500, body.dark .text-gray-600, body.dark .text-gray-400 { color: #9ca3af !important; }
+    body.dark .bg-white, body.dark .bg-gray-50 { background: #1f2937 !important; }
+    body.dark .bg-gray-100 { background: #374151 !important; }
+    body.dark .border-gray-200, body.dark .border-gray-100 { border-color: #374151 !important; }
+    body.dark .tab-btn:not(.active) { color: #9ca3af !important; }
+    body.dark .tab-btn:not(.active):hover { background: #374151 !important; }
+    body.dark input, body.dark textarea, body.dark select { background: #374151 !important; color: #e5e7eb !important; border-color: #4b5563 !important; }
+    body.dark .kanban-col { background: #1f2937 !important; }
+    body.dark .kanban-card { background: #374151 !important; }
+    body.dark .kanban-card .font-semibold, body.dark .kanban-card .font-medium { color: #f3f4f6 !important; }
+    body.dark .modal-bg > div { background: #1f2937 !important; }
+    body.dark tr:hover td { background: #374151 !important; }
+    body.dark td, body.dark th { border-color: #374151 !important; }
+    body.dark .divide-gray-50 > * + * { border-color: #374151 !important; }
+    body.dark #login-screen { background: #111827; }
+    body.dark #login-screen .bg-white { background: #1f2937 !important; }
   </style>
 </head>
 <body class="bg-gray-100 font-sans antialiased">
@@ -79,6 +103,9 @@
           </a>
           <button onclick="refreshCurrentTab()" class="text-gray-500 hover:text-orange-500 transition-colors" title="Refresh">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          </button>
+          <button onclick="toggleDarkMode()" id="dark-mode-btn" class="text-gray-500 hover:text-orange-500 transition-colors" title="Toggle dark mode">
+            <span id="dark-mode-icon">🌙</span>
           </button>
           <button onclick="logout()" class="text-sm text-gray-500 hover:text-red-500">Logout</button>
         </div>
@@ -307,14 +334,86 @@
 
       <!-- ===== KANBAN BOARD TAB ===== -->
       <div class="tab-content" id="tab-kanban">
+        <!-- Board sub-tabs -->
         <div class="flex items-center justify-between mb-4">
-          <div>
-            <h2 class="text-xl font-bold text-gray-900">📋 Pipeline Board</h2>
-            <p class="text-sm text-gray-500 mt-1">Drag & drop leads through your pipeline stages</p>
+          <div class="flex gap-2">
+            <button onclick="switchBoard('pipeline')" id="board-sub-pipeline" class="px-4 py-2 rounded-lg text-sm font-medium bg-orange-500 text-white">🐾 Pipeline</button>
+            <button onclick="switchBoard('devops')" id="board-sub-devops" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200">🛠️ Planning / DevOps</button>
+            <button onclick="switchBoard('marketing')" id="board-sub-marketing" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200">📣 Marketing</button>
           </div>
-          <button onclick="loadKanban()" class="text-sm text-orange-500 hover:underline">↻ Refresh</button>
+          <div class="flex gap-2">
+            <button id="board-add-task-btn" onclick="openTaskModal()" class="hidden bg-gradient-to-r from-orange-500 to-pink-500 text-white px-4 py-2 rounded-xl text-sm font-bold hover:opacity-90">+ Add Task</button>
+            <button onclick="loadCurrentBoard()" class="text-sm text-orange-500 hover:underline">↻ Refresh</button>
+          </div>
         </div>
-        <div id="kanban-board" class="flex gap-4 overflow-x-auto pb-4" style="min-height:500px;"></div>
+
+        <!-- Pipeline board -->
+        <div id="board-pipeline" class="flex gap-4 overflow-x-auto pb-4" style="min-height:500px;"></div>
+        <!-- DevOps board -->
+        <div id="board-devops" class="hidden flex gap-4 overflow-x-auto pb-4" style="min-height:500px;"></div>
+        <!-- Marketing board -->
+        <div id="board-marketing" class="hidden flex gap-4 overflow-x-auto pb-4" style="min-height:500px;"></div>
+      </div>
+
+      <!-- Task Card Modal -->
+      <div id="task-modal" class="modal-bg fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-12 pb-8 overflow-y-auto opacity-0 pointer-events-none">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="font-bold text-gray-900 text-lg" id="task-modal-title">New Task</h2>
+            <button onclick="closeTaskModal()" class="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+          </div>
+          <input type="hidden" id="task-id">
+          <input type="hidden" id="task-board">
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Title</label>
+            <input id="task-title" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="Task title..." spellcheck="true">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Description</label>
+            <textarea id="task-desc" rows="3" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none resize-none" placeholder="Details..." spellcheck="true"></textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">Column</label>
+              <select id="task-column" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none"></select>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">Priority</label>
+              <select id="task-priority" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none">
+                <option value="low">🟢 Low</option>
+                <option value="medium" selected>🟡 Medium</option>
+                <option value="high">🟠 High</option>
+                <option value="urgent">🔴 Urgent</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">Due Date</label>
+              <input id="task-due" type="date" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none">
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">Labels (comma separated)</label>
+              <input id="task-labels" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="bug, feature...">
+            </div>
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Card Color</label>
+            <div class="flex gap-2">
+              <button onclick="setTaskColor('')" class="w-8 h-8 rounded-lg border-2 border-gray-300 bg-white hover:scale-110 transition-transform task-color-btn" data-color=""></button>
+              <button onclick="setTaskColor('#fef3c7')" class="w-8 h-8 rounded-lg border-2 border-yellow-300 bg-yellow-100 hover:scale-110 transition-transform task-color-btn" data-color="#fef3c7"></button>
+              <button onclick="setTaskColor('#dbeafe')" class="w-8 h-8 rounded-lg border-2 border-blue-300 bg-blue-100 hover:scale-110 transition-transform task-color-btn" data-color="#dbeafe"></button>
+              <button onclick="setTaskColor('#dcfce7')" class="w-8 h-8 rounded-lg border-2 border-green-300 bg-green-100 hover:scale-110 transition-transform task-color-btn" data-color="#dcfce7"></button>
+              <button onclick="setTaskColor('#fce7f3')" class="w-8 h-8 rounded-lg border-2 border-pink-300 bg-pink-100 hover:scale-110 transition-transform task-color-btn" data-color="#fce7f3"></button>
+              <button onclick="setTaskColor('#ede9fe')" class="w-8 h-8 rounded-lg border-2 border-purple-300 bg-purple-100 hover:scale-110 transition-transform task-color-btn" data-color="#ede9fe"></button>
+              <button onclick="setTaskColor('#ffedd5')" class="w-8 h-8 rounded-lg border-2 border-orange-300 bg-orange-100 hover:scale-110 transition-transform task-color-btn" data-color="#ffedd5"></button>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <button onclick="saveTask()" class="flex-1 bg-gradient-to-r from-orange-500 to-pink-500 text-white py-3 rounded-xl font-bold hover:opacity-90">Save Task</button>
+            <button id="task-delete-btn" onclick="deleteTask()" class="hidden bg-red-50 text-red-600 px-5 py-3 rounded-xl font-bold hover:bg-red-100">Delete</button>
+          </div>
+        </div>
       </div>
 
       <!-- ===== PRODUCTS TAB ===== -->
@@ -2058,30 +2157,81 @@ function outcomeBadgeClass(o) { if (o.startsWith('bought_')) return 'bg-green-10
 function formatOutcome(o) { return o.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()); }
 function showToast(msg) { const t = document.createElement('div'); t.className = 'fixed bottom-4 right-4 bg-gray-900 text-white px-5 py-3 rounded-xl shadow-xl text-sm font-medium z-50 transition-opacity'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 2000); }
 
-// ===================== KANBAN BOARD =====================
-const KANBAN_COLUMNS = [
-  { id: 'new_lead', label: '🆕 New Lead', color: '#6366f1', borderColor: '#a5b4fc', bgColor: '#eef2ff', filter: e => !e.payment_confirmed },
-  { id: 'paid', label: '💳 Paid', color: '#f59e0b', borderColor: '#fcd34d', bgColor: '#fffbeb', filter: e => e.payment_confirmed && !e.photo_url && e.call_status !== 'called' },
-  { id: 'photo_received', label: '📸 Photo In', color: '#10b981', borderColor: '#6ee7b7', bgColor: '#ecfdf5', filter: e => e.payment_confirmed && e.photo_url && e.shipping_status === 'pending' },
-  { id: 'processing', label: '⚙️ Processing', color: '#3b82f6', borderColor: '#93c5fd', bgColor: '#eff6ff', filter: e => e.payment_confirmed && e.shipping_status === 'processing' },
-  { id: 'shipped', label: '📦 Shipped', color: '#8b5cf6', borderColor: '#c4b5fd', bgColor: '#f5f3ff', filter: e => e.payment_confirmed && e.shipping_status === 'shipped' },
-  { id: 'delivered', label: '✅ Delivered', color: '#059669', borderColor: '#6ee7b7', bgColor: '#ecfdf5', filter: e => e.payment_confirmed && e.shipping_status === 'delivered' },
+// ===================== KANBAN BOARDS =====================
+let activeBoard = 'pipeline';
+let kanbanEntries = [];
+let devopsTasks = [];
+let marketingTasks = [];
+let selectedTaskColor = '';
+
+const PIPELINE_COLUMNS = [
+  { id: 'new_lead', label: '🆕 New Lead', color: '#6366f1', bgColor: '#eef2ff', filter: e => !e.payment_confirmed },
+  { id: 'paid', label: '💳 Paid', color: '#f59e0b', bgColor: '#fffbeb', filter: e => e.payment_confirmed && !e.photo_url && e.call_status !== 'called' },
+  { id: 'photo_received', label: '📸 Photo In', color: '#10b981', bgColor: '#ecfdf5', filter: e => e.payment_confirmed && e.photo_url && e.shipping_status === 'pending' },
+  { id: 'processing', label: '⚙️ Processing', color: '#3b82f6', bgColor: '#eff6ff', filter: e => e.payment_confirmed && e.shipping_status === 'processing' },
+  { id: 'shipped', label: '📦 Shipped', color: '#8b5cf6', bgColor: '#f5f3ff', filter: e => e.payment_confirmed && e.shipping_status === 'shipped' },
+  { id: 'delivered', label: '✅ Delivered', color: '#059669', bgColor: '#ecfdf5', filter: e => e.payment_confirmed && e.shipping_status === 'delivered' },
 ];
 
-let kanbanEntries = [];
+const DEVOPS_COLUMNS = [
+  { id: 'backlog', label: '📝 Backlog', color: '#6b7280', bgColor: '#f9fafb' },
+  { id: 'todo', label: '📋 To Do', color: '#6366f1', bgColor: '#eef2ff' },
+  { id: 'in_progress', label: '🔨 In Progress', color: '#f59e0b', bgColor: '#fffbeb' },
+  { id: 'review', label: '🔍 Review', color: '#8b5cf6', bgColor: '#f5f3ff' },
+  { id: 'testing', label: '🧪 Testing', color: '#3b82f6', bgColor: '#eff6ff' },
+  { id: 'done', label: '✅ Done', color: '#059669', bgColor: '#ecfdf5' },
+];
 
-function loadKanban() {
+const MARKETING_COLUMNS = [
+  { id: 'ideas', label: '💡 Ideas', color: '#f59e0b', bgColor: '#fffbeb' },
+  { id: 'planning', label: '📐 Planning', color: '#6366f1', bgColor: '#eef2ff' },
+  { id: 'creating', label: '🎨 Creating', color: '#ec4899', bgColor: '#fdf2f8' },
+  { id: 'scheduled', label: '📅 Scheduled', color: '#3b82f6', bgColor: '#eff6ff' },
+  { id: 'live', label: '🚀 Live', color: '#10b981', bgColor: '#ecfdf5' },
+  { id: 'analyzing', label: '📊 Analyzing', color: '#8b5cf6', bgColor: '#f5f3ff' },
+];
+
+function getBoardColumns(board) {
+  if (board === 'pipeline') return PIPELINE_COLUMNS;
+  if (board === 'devops') return DEVOPS_COLUMNS;
+  if (board === 'marketing') return MARKETING_COLUMNS;
+  return [];
+}
+
+function switchBoard(board) {
+  activeBoard = board;
+  ['pipeline','devops','marketing'].forEach(b => {
+    document.getElementById('board-' + b).classList.toggle('hidden', b !== board);
+    const btn = document.getElementById('board-sub-' + b);
+    btn.className = b === board ? 'px-4 py-2 rounded-lg text-sm font-medium bg-orange-500 text-white' : 'px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200';
+  });
+  // Show add task button for devops & marketing (not pipeline — those are auto from entries)
+  document.getElementById('board-add-task-btn').classList.toggle('hidden', board === 'pipeline');
+  loadCurrentBoard();
+}
+
+function loadCurrentBoard() {
+  if (activeBoard === 'pipeline') loadPipelineBoard();
+  else if (activeBoard === 'devops') loadTaskBoard('devops');
+  else if (activeBoard === 'marketing') loadTaskBoard('marketing');
+}
+
+function loadKanban() { switchBoard(activeBoard); }
+
+// ===== PIPELINE BOARD (entries-based) =====
+function loadPipelineBoard() {
   api('entries', { limit: 500, offset: 0 }).then(data => {
     kanbanEntries = data.entries || [];
-    renderKanban();
+    renderPipelineBoard();
   });
 }
 
-function renderKanban() {
-  const board = document.getElementById('kanban-board');
-  // Distribute entries into columns (first matching column wins)
+function renderPipelineBoard() {
+  const board = document.getElementById('board-pipeline');
   const assigned = new Set();
-  const cols = KANBAN_COLUMNS.map(col => {
+  // Also load campaigns for the filter
+  const campaignTags = [...new Set(kanbanEntries.map(e => e.utm_campaign).filter(Boolean))];
+  const cols = PIPELINE_COLUMNS.map(col => {
     const items = kanbanEntries.filter(e => {
       if (assigned.has(e.id)) return false;
       if (col.filter(e)) { assigned.add(e.id); return true; }
@@ -2090,25 +2240,46 @@ function renderKanban() {
     return { ...col, items };
   });
 
-  board.innerHTML = cols.map(col => `
+  // Campaign filter bar
+  let filterHtml = '';
+  if (campaignTags.length) {
+    filterHtml = `<div class="flex gap-2 mb-3 flex-wrap items-center">
+      <span class="text-xs text-gray-500 font-medium">Filter by ad:</span>
+      <button onclick="filterPipeline('')" class="text-xs px-3 py-1 rounded-full ${!window._pipelineFilter ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}">All</button>
+      ${campaignTags.map(t => `<button onclick="filterPipeline('${t}')" class="text-xs px-3 py-1 rounded-full ${window._pipelineFilter === t ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}">${esc(t)}</button>`).join('')}
+    </div>`;
+  }
+
+  const filteredCols = cols.map(col => ({
+    ...col,
+    items: window._pipelineFilter ? col.items.filter(e => e.utm_campaign === window._pipelineFilter) : col.items
+  }));
+
+  board.innerHTML = filterHtml + '<div class="flex gap-4 overflow-x-auto pb-4" style="min-height:480px;">' + filteredCols.map(col => `
     <div class="kanban-col" data-col="${col.id}">
       <div class="kanban-col-header" style="border-color:${col.color};background:${col.bgColor};color:${col.color};">
         <span>${col.label}</span>
         <span class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:${col.color};color:white;">${col.items.length}</span>
       </div>
-      <div class="kanban-col-body" data-col="${col.id}"
-           ondragover="kanbanDragOver(event)" ondragleave="kanbanDragLeave(event)" ondrop="kanbanDrop(event, '${col.id}')">
-        ${col.items.map(e => kanbanCard(e, col)).join('')}
+      <div class="kanban-col-body" data-col="${col.id}" data-board="pipeline"
+           ondragover="kanbanDragOver(event)" ondragleave="kanbanDragLeave(event)" ondrop="pipelineDrop(event, '${col.id}')">
+        ${col.items.map(e => pipelineCard(e, col)).join('')}
         ${!col.items.length ? '<div class="text-center text-gray-300 text-sm py-8">No entries</div>' : ''}
       </div>
-    </div>`).join('');
+    </div>`).join('') + '</div>';
 }
 
-function kanbanCard(e, col) {
+window._pipelineFilter = '';
+function filterPipeline(campaign) {
+  window._pipelineFilter = campaign;
+  renderPipelineBoard();
+}
+
+function pipelineCard(e, col) {
   const revenue = parseFloat(e.total_price) || 0;
   return `
     <div class="kanban-card" draggable="true" data-id="${e.id}"
-         ondragstart="kanbanDragStart(event, '${e.id}')" ondragend="kanbanDragEnd(event)"
+         ondragstart="dragStart(event, '${e.id}', 'pipeline')" ondragend="dragEnd(event)"
          onclick="openEntry('${e.id}')" style="border-left-color:${col.color};">
       <div class="flex items-center gap-2 mb-2">
         ${e.photo_url ? `<img src="${e.photo_url}" class="w-8 h-8 rounded-full object-cover border border-gray-200">` : `<div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm">🐾</div>`}
@@ -2120,6 +2291,7 @@ function kanbanCard(e, col) {
       <div class="flex flex-wrap gap-1 mb-1.5">
         ${e.pet_name ? `<span class="text-xs bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full">🐾 ${esc(e.pet_name)}</span>` : ''}
         ${revenue > 0 ? `<span class="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full">$${revenue.toFixed(0)}</span>` : ''}
+        ${e.utm_campaign ? `<span class="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">📣 ${esc(e.utm_campaign)}</span>` : ''}
       </div>
       <div class="flex items-center gap-1 flex-wrap">
         ${e.payment_confirmed ? '<span class="text-xs text-green-600">💳</span>' : '<span class="text-xs text-gray-400">💳</span>'}
@@ -2130,66 +2302,232 @@ function kanbanCard(e, col) {
     </div>`;
 }
 
-let draggedEntryId = null;
+// ===== TASK BOARDS (devops & marketing) =====
+function loadTaskBoard(board) {
+  api('board-tasks', { board }).then(data => {
+    if (board === 'devops') devopsTasks = data.tasks || [];
+    else marketingTasks = data.tasks || [];
+    renderTaskBoard(board);
+  });
+}
 
-function kanbanDragStart(e, id) {
-  draggedEntryId = id;
+function renderTaskBoard(board) {
+  const el = document.getElementById('board-' + board);
+  const tasks = board === 'devops' ? devopsTasks : marketingTasks;
+  const columns = getBoardColumns(board);
+
+  el.innerHTML = '<div class="flex gap-4 overflow-x-auto pb-4" style="min-height:480px;">' + columns.map(col => {
+    const colTasks = tasks.filter(t => t.column_id === col.id);
+    return `
+    <div class="kanban-col">
+      <div class="kanban-col-header" style="border-color:${col.color};background:${col.bgColor};color:${col.color};">
+        <span>${col.label}</span>
+        <span class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:${col.color};color:white;">${colTasks.length}</span>
+      </div>
+      <div class="kanban-col-body" data-col="${col.id}" data-board="${board}"
+           ondragover="kanbanDragOver(event)" ondragleave="kanbanDragLeave(event)" ondrop="taskDrop(event, '${col.id}', '${board}')">
+        ${colTasks.map(t => taskCard(t, col, board)).join('')}
+        <div class="add-card-btn" onclick="openTaskModal(null, '${board}', '${col.id}')">+ Add task</div>
+      </div>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+const PRIORITY_COLORS = { low: '#22c55e', medium: '#eab308', high: '#f97316', urgent: '#ef4444' };
+const PRIORITY_ICONS = { low: '🟢', medium: '🟡', high: '🟠', urgent: '🔴' };
+
+function taskCard(t, col, board) {
+  const overdue = t.due_date && new Date(t.due_date) < new Date() && col.id !== 'done';
+  return `
+    <div class="kanban-card" draggable="true" data-id="${t.id}"
+         ondragstart="dragStart(event, '${t.id}', '${board}')" ondragend="dragEnd(event)"
+         onclick="event.stopPropagation(); openTaskModal('${t.id}', '${board}')"
+         style="border-left-color:${col.color};${t.color ? 'background:'+t.color+';' : ''}">
+      <div class="flex items-center gap-2 mb-1.5">
+        <span class="priority-dot" style="background:${PRIORITY_COLORS[t.priority] || PRIORITY_COLORS.medium};" title="${t.priority}"></span>
+        <div class="font-semibold text-gray-900 text-sm flex-1 truncate">${esc(t.title)}</div>
+      </div>
+      ${t.description ? `<div class="text-xs text-gray-500 mb-2 line-clamp-2" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${esc(t.description)}</div>` : ''}
+      <div class="flex flex-wrap gap-1 mb-1.5">
+        ${(t.labels || []).map(l => `<span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">${esc(l)}</span>`).join('')}
+      </div>
+      <div class="flex items-center gap-2 text-xs text-gray-400">
+        ${t.due_date ? `<span class="${overdue ? 'text-red-500 font-semibold' : ''}">${overdue ? '⚠️' : '📅'} ${new Date(t.due_date).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>` : ''}
+        <span class="ml-auto">${shortDate(t.created_at)}</span>
+      </div>
+    </div>`;
+}
+
+// ===== DRAG & DROP (shared) =====
+let draggedId = null;
+let draggedBoard = null;
+
+function dragStart(e, id, board) {
+  draggedId = id;
+  draggedBoard = board;
   e.target.classList.add('dragging');
   e.dataTransfer.effectAllowed = 'move';
 }
 
-function kanbanDragEnd(e) {
+function dragEnd(e) {
   e.target.classList.remove('dragging');
   document.querySelectorAll('.kanban-col-body').forEach(b => b.classList.remove('drag-over'));
 }
 
-function kanbanDragOver(e) {
-  e.preventDefault();
-  e.currentTarget.classList.add('drag-over');
-}
+function kanbanDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function kanbanDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
 
-function kanbanDragLeave(e) {
-  e.currentTarget.classList.remove('drag-over');
-}
-
-function kanbanDrop(e, colId) {
+function pipelineDrop(e, colId) {
   e.preventDefault();
   e.currentTarget.classList.remove('drag-over');
-  if (!draggedEntryId) return;
+  if (!draggedId || draggedBoard !== 'pipeline') return;
 
-  // Determine what update to make based on target column
-  const updates = {};
-  if (colId === 'new_lead') {
-    updates.payment_confirmed = false;
-  } else if (colId === 'paid') {
-    updates.payment_confirmed = true;
-    updates.shipping_status = 'pending';
-  } else if (colId === 'photo_received') {
-    updates.shipping_status = 'pending';
-  } else if (colId === 'processing') {
-    updates.shipping_status = 'processing';
-  } else if (colId === 'shipped') {
-    updates.shipping_status = 'shipped';
-  } else if (colId === 'delivered') {
-    updates.shipping_status = 'delivered';
-  }
-
-  // Only allow shipping status updates via drag (not payment changes to prevent accidents)
   if (colId === 'new_lead' || colId === 'paid') {
     showToast('Use the entry detail to change payment status');
-    return;
+    draggedId = null; return;
   }
 
-  api('update-entry', {}, 'POST', { id: draggedEntryId, ...updates }).then(d => {
+  const updates = {};
+  if (colId === 'photo_received') updates.shipping_status = 'pending';
+  else if (colId === 'processing') updates.shipping_status = 'processing';
+  else if (colId === 'shipped') updates.shipping_status = 'shipped';
+  else if (colId === 'delivered') updates.shipping_status = 'delivered';
+
+  api('update-entry', {}, 'POST', { id: draggedId, ...updates }).then(d => {
     if (d.success) {
-      showToast('Moved to ' + KANBAN_COLUMNS.find(c => c.id === colId)?.label);
-      // Update local data
-      const entry = kanbanEntries.find(en => en.id === draggedEntryId);
+      showToast('Moved to ' + PIPELINE_COLUMNS.find(c => c.id === colId)?.label);
+      const entry = kanbanEntries.find(en => en.id === draggedId);
       if (entry) Object.assign(entry, updates);
-      renderKanban();
+      renderPipelineBoard();
     }
   });
-  draggedEntryId = null;
+  draggedId = null;
+}
+
+function taskDrop(e, colId, board) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (!draggedId || draggedBoard !== board) return;
+
+  api('update-board-task', {}, 'POST', { id: draggedId, column_id: colId }).then(d => {
+    if (d.success) {
+      const cols = getBoardColumns(board);
+      showToast('Moved to ' + (cols.find(c => c.id === colId)?.label || colId));
+      const tasks = board === 'devops' ? devopsTasks : marketingTasks;
+      const task = tasks.find(t => t.id === draggedId);
+      if (task) task.column_id = colId;
+      renderTaskBoard(board);
+    }
+  });
+  draggedId = null;
+}
+
+// ===== TASK MODAL =====
+function openTaskModal(taskId, board, colId) {
+  const b = board || activeBoard;
+  const columns = getBoardColumns(b);
+  const colSelect = document.getElementById('task-column');
+  colSelect.innerHTML = columns.map(c => `<option value="${c.id}" ${c.id === (colId || 'backlog') ? 'selected' : ''}>${c.label}</option>`).join('');
+
+  document.getElementById('task-board').value = b;
+  selectedTaskColor = '';
+
+  if (taskId) {
+    const tasks = b === 'devops' ? devopsTasks : marketingTasks;
+    const t = tasks.find(x => x.id === taskId);
+    if (!t) return;
+    document.getElementById('task-modal-title').textContent = 'Edit Task';
+    document.getElementById('task-id').value = t.id;
+    document.getElementById('task-title').value = t.title || '';
+    document.getElementById('task-desc').value = t.description || '';
+    document.getElementById('task-column').value = t.column_id;
+    document.getElementById('task-priority').value = t.priority || 'medium';
+    document.getElementById('task-due').value = t.due_date || '';
+    document.getElementById('task-labels').value = (t.labels || []).join(', ');
+    selectedTaskColor = t.color || '';
+    document.getElementById('task-delete-btn').classList.remove('hidden');
+  } else {
+    document.getElementById('task-modal-title').textContent = 'New Task';
+    document.getElementById('task-id').value = '';
+    document.getElementById('task-title').value = '';
+    document.getElementById('task-desc').value = '';
+    document.getElementById('task-priority').value = 'medium';
+    document.getElementById('task-due').value = '';
+    document.getElementById('task-labels').value = '';
+    selectedTaskColor = '';
+    document.getElementById('task-delete-btn').classList.add('hidden');
+  }
+
+  // Highlight active color
+  document.querySelectorAll('.task-color-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.color === selectedTaskColor);
+  });
+
+  document.getElementById('task-modal').classList.add('open');
+}
+
+function closeTaskModal() { document.getElementById('task-modal').classList.remove('open'); }
+document.getElementById('task-modal').addEventListener('click', e => { if (e.target.id === 'task-modal') closeTaskModal(); });
+
+function setTaskColor(c) {
+  selectedTaskColor = c;
+  document.querySelectorAll('.task-color-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.color === c);
+  });
+}
+
+function saveTask() {
+  const id = document.getElementById('task-id').value;
+  const board = document.getElementById('task-board').value;
+  const title = document.getElementById('task-title').value.trim();
+  if (!title) { showToast('Title is required'); return; }
+
+  const labelsStr = document.getElementById('task-labels').value;
+  const labels = labelsStr ? labelsStr.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+  const payload = {
+    board,
+    column_id: document.getElementById('task-column').value,
+    title,
+    description: document.getElementById('task-desc').value.trim() || null,
+    priority: document.getElementById('task-priority').value,
+    due_date: document.getElementById('task-due').value || null,
+    labels,
+    color: selectedTaskColor || null,
+  };
+
+  if (id) payload.id = id;
+  const action = id ? 'update-board-task' : 'create-board-task';
+
+  api(action, {}, 'POST', payload).then(d => {
+    if (d.success) {
+      showToast(id ? 'Task updated!' : 'Task created!');
+      closeTaskModal();
+      loadTaskBoard(board);
+    }
+  });
+}
+
+function deleteTask() {
+  const id = document.getElementById('task-id').value;
+  if (!id) return;
+  if (!confirm('Delete this task?')) return;
+  const board = document.getElementById('task-board').value;
+  api('delete-board-task', {}, 'POST', { id }).then(d => {
+    if (d.success) { showToast('Task deleted'); closeTaskModal(); loadTaskBoard(board); }
+  });
+}
+
+// ===================== DARK MODE =====================
+function toggleDarkMode() {
+  const isDark = document.body.classList.toggle('dark');
+  localStorage.setItem('darkMode', isDark ? '1' : '0');
+  document.getElementById('dark-mode-icon').textContent = isDark ? '☀️' : '🌙';
+}
+// Restore preference on load
+if (localStorage.getItem('darkMode') === '1') {
+  document.body.classList.add('dark');
+  document.getElementById('dark-mode-icon').textContent = '☀️';
 }
 </script>
 </body>
