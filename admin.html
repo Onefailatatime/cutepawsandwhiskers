@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hello Pat CRM – Paws & Whiskers Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter','system-ui','sans-serif'] } } } }</script>
+  <style>
+    .tab-btn.active { background: linear-gradient(to right, #f97316, #ec4899); color: white; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .modal-bg { transition: opacity .2s; }
+    .modal-bg.open { opacity: 1; pointer-events: auto; }
+    tr:hover td { background: #fff7ed; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased">
+
+  <!-- LOGIN -->
+  <div id="login-screen" class="min-h-screen flex items-center justify-center">
+    <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm">
+      <div class="text-center mb-6">
+        <span class="text-4xl">🐾</span>
+        <h1 class="text-2xl font-bold text-gray-900 mt-2">Hello Pat CRM</h1>
+        <p class="text-gray-500 text-sm">Paws & Whiskers Admin</p>
+      </div>
+      <input id="admin-key-input" type="password" placeholder="Admin Key" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 outline-none focus:border-orange-400 mb-4" autofocus>
+      <button onclick="login()" class="w-full bg-gradient-to-r from-orange-500 to-pink-500 text-white py-3 rounded-xl font-bold hover:opacity-90">Enter CRM</button>
+      <p id="login-error" class="text-red-500 text-sm text-center mt-3 hidden">Invalid key</p>
+    </div>
+  </div>
+
+  <!-- CRM APP -->
+  <div id="crm-app" class="hidden min-h-screen">
+    <!-- Top nav -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+      <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">🐾</span>
+          <h1 class="text-lg font-bold text-gray-900">Hello Pat CRM</h1>
+        </div>
+        <div class="flex items-center gap-4">
+          <button onclick="refreshCurrentTab()" class="text-gray-500 hover:text-orange-500 transition-colors" title="Refresh">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          </button>
+          <button onclick="logout()" class="text-sm text-gray-500 hover:text-red-500">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Tab navigation -->
+    <nav class="bg-white border-b border-gray-200">
+      <div class="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto py-2">
+        <button class="tab-btn active px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all" data-tab="dashboard">Dashboard</button>
+        <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="entries">All Entries</button>
+        <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="calls">Upsell Calls</button>
+        <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="winners">Winners</button>
+      </div>
+    </nav>
+
+    <!-- Content -->
+    <main class="max-w-7xl mx-auto px-4 py-6">
+
+      <!-- ===== DASHBOARD TAB ===== -->
+      <div class="tab-content active" id="tab-dashboard">
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="kpi-cards"></div>
+
+        <div class="grid lg:grid-cols-2 gap-6">
+          <!-- Recent entries -->
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h2 class="font-bold text-gray-900">Recent Entries</h2>
+              <button onclick="switchTab('entries')" class="text-sm text-orange-500 hover:underline">View all →</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead><tr class="bg-gray-50 text-left text-gray-500 text-xs uppercase">
+                  <th class="px-4 py-3">Name</th><th class="px-4 py-3">Pet</th><th class="px-4 py-3">Status</th><th class="px-4 py-3">Date</th>
+                </tr></thead>
+                <tbody id="recent-entries-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Needs calls -->
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h2 class="font-bold text-gray-900">📞 Needs Upsell Call</h2>
+              <button onclick="switchTab('calls')" class="text-sm text-orange-500 hover:underline">Call queue →</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead><tr class="bg-gray-50 text-left text-gray-500 text-xs uppercase">
+                  <th class="px-4 py-3">Name</th><th class="px-4 py-3">Phone</th><th class="px-4 py-3">Entered</th><th class="px-4 py-3"></th>
+                </tr></thead>
+                <tbody id="need-calls-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== ENTRIES TAB ===== -->
+      <div class="tab-content" id="tab-entries">
+        <!-- Filters -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-4">
+          <div class="flex flex-wrap gap-3 items-end">
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">Search</label>
+              <input id="filter-search" type="text" placeholder="Name, email, phone..." class="px-3 py-2 rounded-lg border border-gray-200 text-sm w-48 outline-none focus:border-orange-400">
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">Payment</label>
+              <select id="filter-payment" class="px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none">
+                <option value="">All</option><option value="true">Paid</option><option value="false">Unpaid</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">Photo</label>
+              <select id="filter-photo" class="px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none">
+                <option value="">All</option><option value="true">Uploaded</option><option value="false">Missing</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">Call Status</label>
+              <select id="filter-call" class="px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none">
+                <option value="">All</option><option value="not_called">Not Called</option><option value="called">Called</option><option value="follow_up">Follow Up</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">Entry Status</label>
+              <select id="filter-entry-status" class="px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none">
+                <option value="">All</option><option value="pending_review">Pending</option><option value="accepted">Accepted</option><option value="rejected">Rejected</option>
+              </select>
+            </div>
+            <button onclick="loadEntries()" class="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-600">Filter</button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead><tr class="bg-gray-50 text-left text-gray-500 text-xs uppercase">
+                <th class="px-4 py-3">Name</th>
+                <th class="px-4 py-3">Email / Phone</th>
+                <th class="px-4 py-3">Pet</th>
+                <th class="px-4 py-3">Payment</th>
+                <th class="px-4 py-3">Photo</th>
+                <th class="px-4 py-3">Call</th>
+                <th class="px-4 py-3">Total</th>
+                <th class="px-4 py-3">Date</th>
+                <th class="px-4 py-3">Actions</th>
+              </tr></thead>
+              <tbody id="entries-table-body"></tbody>
+            </table>
+          </div>
+          <div class="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
+            <span id="entries-count" class="text-sm text-gray-500"></span>
+            <div class="flex gap-2">
+              <button id="entries-prev" onclick="entriesPage(-1)" class="px-3 py-1 rounded-lg border text-sm disabled:opacity-50" disabled>← Prev</button>
+              <button id="entries-next" onclick="entriesPage(1)" class="px-3 py-1 rounded-lg border text-sm disabled:opacity-50">Next →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== CALLS TAB ===== -->
+      <div class="tab-content" id="tab-calls">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-100">
+            <h2 class="font-bold text-gray-900">📞 Upsell Call Queue</h2>
+            <p class="text-sm text-gray-500 mt-1">Paid entries that haven't been called yet. Click "Log Call" to record the outcome.</p>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead><tr class="bg-gray-50 text-left text-gray-500 text-xs uppercase">
+                <th class="px-4 py-3">Name</th>
+                <th class="px-4 py-3">Phone</th>
+                <th class="px-4 py-3">Email</th>
+                <th class="px-4 py-3">Pet</th>
+                <th class="px-4 py-3">Entered</th>
+                <th class="px-4 py-3">Actions</th>
+              </tr></thead>
+              <tbody id="calls-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== WINNERS TAB ===== -->
+      <div class="tab-content" id="tab-winners">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-100">
+            <h2 class="font-bold text-gray-900">🏆 Contest Winners</h2>
+            <p class="text-sm text-gray-500 mt-1">13 winners: 1 Cover + 12 Monthly Stars. Assign winners from entry details.</p>
+          </div>
+          <div id="winners-grid" class="p-6 grid md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+          <div id="winners-empty" class="hidden p-12 text-center text-gray-400">
+            <div class="text-4xl mb-3">🏆</div>
+            <p>No winners assigned yet. Open an entry and assign a winner type.</p>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ===== ENTRY DETAIL MODAL ===== -->
+  <div id="entry-modal" class="modal-bg fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-8 pb-8 overflow-y-auto opacity-0 pointer-events-none">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-4" id="entry-modal-content">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white rounded-t-2xl z-10">
+        <h2 class="font-bold text-gray-900 text-lg" id="modal-title">Entry Details</h2>
+        <button onclick="closeEntryModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+      </div>
+      <div id="modal-body" class="p-6 space-y-6"></div>
+    </div>
+  </div>
+
+  <!-- ===== CALL LOG MODAL ===== -->
+  <div id="call-modal" class="modal-bg fixed inset-0 bg-black/50 z-50 flex items-center justify-center opacity-0 pointer-events-none">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+      <h2 class="font-bold text-gray-900 text-lg mb-4">📞 Log Call</h2>
+      <input type="hidden" id="call-entry-id">
+      <p id="call-contact-name" class="text-sm text-gray-600 mb-4"></p>
+      <label class="text-sm font-medium text-gray-700 block mb-1">Outcome</label>
+      <select id="call-outcome" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm mb-4 outline-none">
+        <option value="no_answer">No Answer</option>
+        <option value="left_voicemail">Left Voicemail</option>
+        <option value="callback">Callback Scheduled</option>
+        <option value="not_interested">Not Interested</option>
+        <option value="bought_featured_month">Bought Featured Month ($127)</option>
+        <option value="bought_special_day">Bought Special Day ($67)</option>
+        <option value="bought_postcard_pack">Bought Postcard Pack ($29)</option>
+        <option value="bought_multiple">Bought Multiple</option>
+        <option value="other">Other</option>
+      </select>
+      <label class="text-sm font-medium text-gray-700 block mb-1">Notes</label>
+      <textarea id="call-notes" rows="3" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm mb-4 outline-none resize-none" placeholder="Any notes from the call..."></textarea>
+      <div class="flex gap-3">
+        <button onclick="closeCallModal()" class="flex-1 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50">Cancel</button>
+        <button onclick="submitCall()" id="call-submit-btn" class="flex-1 py-2 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600">Save Call</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+// ===================== STATE =====================
+let ADMIN_KEY = '';
+const API = '/api/admin-api';
+let currentEntries = [];
+let entriesOffset = 0;
+const PAGE_SIZE = 50;
+
+// ===================== AUTH =====================
+function api(action, params = {}, method = 'GET', body = null) {
+  const url = new URL(API, window.location.origin);
+  url.searchParams.set('key', ADMIN_KEY);
+  url.searchParams.set('action', action);
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== '' && v !== null && v !== undefined) url.searchParams.set(k, v);
+  }
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  return fetch(url.toString(), opts).then(r => r.json());
+}
+
+function login() {
+  ADMIN_KEY = document.getElementById('admin-key-input').value.trim();
+  if (!ADMIN_KEY) return;
+  api('dashboard').then(data => {
+    if (data.error) {
+      document.getElementById('login-error').classList.remove('hidden');
+      return;
+    }
+    localStorage.setItem('hp_admin_key', ADMIN_KEY);
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('crm-app').classList.remove('hidden');
+    renderDashboard(data);
+  });
+}
+
+function logout() {
+  localStorage.removeItem('hp_admin_key');
+  location.reload();
+}
+
+// Auto-login
+(function() {
+  const saved = localStorage.getItem('hp_admin_key');
+  if (saved) {
+    document.getElementById('admin-key-input').value = saved;
+    login();
+  }
+  document.getElementById('admin-key-input').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+})();
+
+// ===================== TABS =====================
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  document.getElementById(`tab-${tab}`).classList.add('active');
+
+  if (tab === 'dashboard') loadDashboard();
+  if (tab === 'entries') loadEntries();
+  if (tab === 'calls') loadCallQueue();
+  if (tab === 'winners') loadWinners();
+}
+
+function refreshCurrentTab() {
+  const active = document.querySelector('.tab-btn.active');
+  if (active) switchTab(active.dataset.tab);
+}
+
+// ===================== DASHBOARD =====================
+function loadDashboard() {
+  api('dashboard').then(renderDashboard);
+}
+
+function renderDashboard(data) {
+  const s = data.stats || {};
+  const kpis = [
+    { label: 'Total Entries', value: s.total_entries || 0, icon: '📋', color: 'blue' },
+    { label: 'Paid', value: s.paid_entries || 0, icon: '💳', color: 'green' },
+    { label: 'Photos Uploaded', value: s.photos_uploaded || 0, icon: '📸', color: 'purple' },
+    { label: 'Total Revenue', value: '$' + (parseFloat(s.total_revenue) || 0).toFixed(2), icon: '💰', color: 'orange' },
+    { label: 'Base Revenue', value: '$' + (parseFloat(s.base_revenue) || 0).toFixed(2), icon: '🎫', color: 'pink' },
+    { label: 'Upsell Revenue', value: '$' + (parseFloat(s.upsell_revenue) || 0).toFixed(2), icon: '📈', color: 'yellow' },
+    { label: 'Winners', value: s.total_winners || 0, icon: '🏆', color: 'amber' },
+    { label: 'Calls Made', value: s.calls_made || 0, icon: '📞', color: 'teal' },
+  ];
+
+  document.getElementById('kpi-cards').innerHTML = kpis.map(k => `
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">${k.icon}</span>
+        <div>
+          <p class="text-xs text-gray-500 uppercase tracking-wide">${k.label}</p>
+          <p class="text-xl font-bold text-gray-900">${k.value}</p>
+        </div>
+      </div>
+    </div>`).join('');
+
+  // Recent entries
+  document.getElementById('recent-entries-body').innerHTML = (data.recent || []).map(e => `
+    <tr class="border-t border-gray-50 cursor-pointer" onclick="openEntry('${e.id}')">
+      <td class="px-4 py-3 font-medium text-gray-900">${esc(e.full_name)}</td>
+      <td class="px-4 py-3">${esc(e.pet_name || '—')}</td>
+      <td class="px-4 py-3">${paymentBadge(e.payment_confirmed)} ${e.photo_url ? '<span class="badge bg-purple-100 text-purple-700">📸</span>' : ''}</td>
+      <td class="px-4 py-3 text-gray-500">${shortDate(e.created_at)}</td>
+    </tr>`).join('') || '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-400">No entries yet</td></tr>';
+
+  // Need calls
+  document.getElementById('need-calls-body').innerHTML = (data.needCalls || []).map(e => `
+    <tr class="border-t border-gray-50">
+      <td class="px-4 py-3 font-medium text-gray-900">${esc(e.full_name)}</td>
+      <td class="px-4 py-3"><a href="tel:${e.phone}" class="text-orange-500 hover:underline">${esc(e.phone)}</a></td>
+      <td class="px-4 py-3 text-gray-500">${shortDate(e.created_at)}</td>
+      <td class="px-4 py-3"><button onclick="openCallModal('${e.id}','${esc(e.full_name)}')" class="text-xs bg-green-50 text-green-700 px-3 py-1 rounded-lg font-medium hover:bg-green-100">Log Call</button></td>
+    </tr>`).join('') || '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-400">All caught up! No calls needed.</td></tr>';
+}
+
+// ===================== ENTRIES =====================
+function loadEntries() {
+  const params = {
+    search: document.getElementById('filter-search')?.value || '',
+    payment: document.getElementById('filter-payment')?.value || '',
+    has_photo: document.getElementById('filter-photo')?.value || '',
+    call_status: document.getElementById('filter-call')?.value || '',
+    entry_status: document.getElementById('filter-entry-status')?.value || '',
+    limit: PAGE_SIZE,
+    offset: entriesOffset,
+  };
+  api('entries', params).then(data => {
+    currentEntries = data.entries || [];
+    renderEntries();
+  });
+}
+
+function renderEntries() {
+  const tbody = document.getElementById('entries-table-body');
+  tbody.innerHTML = currentEntries.map(e => `
+    <tr class="border-t border-gray-50 cursor-pointer" onclick="openEntry('${e.id}')">
+      <td class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">${esc(e.full_name)}</td>
+      <td class="px-4 py-3 text-gray-600 text-xs">
+        <div>${esc(e.email)}</div>
+        <div class="text-gray-400">${esc(e.phone || '')}</div>
+      </td>
+      <td class="px-4 py-3 whitespace-nowrap">
+        ${e.pet_type === 'dog' ? '🐕' : e.pet_type === 'cat' ? '🐈' : '🐾'} ${esc(e.pet_name || '—')}
+      </td>
+      <td class="px-4 py-3">${paymentBadge(e.payment_confirmed)}</td>
+      <td class="px-4 py-3">${e.photo_url ? '<span class="badge bg-green-100 text-green-700">Yes</span>' : '<span class="badge bg-gray-100 text-gray-500">No</span>'}</td>
+      <td class="px-4 py-3">${callBadge(e.call_status)}</td>
+      <td class="px-4 py-3 font-medium">$${(parseFloat(e.total_price) || 36).toFixed(2)}</td>
+      <td class="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">${shortDate(e.created_at)}</td>
+      <td class="px-4 py-3">
+        <button onclick="event.stopPropagation(); openEntry('${e.id}')" class="text-xs text-orange-500 hover:underline">View</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="9" class="px-4 py-12 text-center text-gray-400">No entries found</td></tr>';
+
+  document.getElementById('entries-count').textContent = `Showing ${currentEntries.length} entries`;
+  document.getElementById('entries-prev').disabled = entriesOffset === 0;
+  document.getElementById('entries-next').disabled = currentEntries.length < PAGE_SIZE;
+}
+
+function entriesPage(dir) {
+  entriesOffset = Math.max(0, entriesOffset + dir * PAGE_SIZE);
+  loadEntries();
+}
+
+// ===================== ENTRY DETAIL MODAL =====================
+function openEntry(id) {
+  api('entry', { id }).then(data => {
+    if (!data.entry) return;
+    const e = data.entry;
+    document.getElementById('modal-title').textContent = e.full_name + (e.pet_name && e.pet_name !== 'Pending' ? ' — ' + e.pet_name : '');
+
+    const monthNames = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    document.getElementById('modal-body').innerHTML = `
+      <!-- Contact & Pet Info -->
+      <div class="grid md:grid-cols-2 gap-6">
+        <div>
+          <h3 class="font-bold text-gray-900 mb-3">👤 Contact Info</h3>
+          <div class="space-y-1 text-sm">
+            <div><span class="text-gray-500 w-20 inline-block">Name:</span> <strong>${esc(e.full_name)}</strong></div>
+            <div><span class="text-gray-500 w-20 inline-block">Email:</span> <a href="mailto:${e.email}" class="text-orange-500">${esc(e.email)}</a></div>
+            <div><span class="text-gray-500 w-20 inline-block">Phone:</span> <a href="tel:${e.phone}" class="text-orange-500">${esc(e.phone || '—')}</a></div>
+            <div><span class="text-gray-500 w-20 inline-block">Address:</span> ${esc(e.address_line1 || '')}${e.address_line2 ? ', ' + esc(e.address_line2) : ''}, ${esc(e.city || '')}, ${esc(e.state || '')} ${esc(e.zip || '')}</div>
+          </div>
+        </div>
+        <div>
+          <h3 class="font-bold text-gray-900 mb-3">🐾 Pet Info</h3>
+          <div class="space-y-1 text-sm">
+            <div><span class="text-gray-500 w-20 inline-block">Pet:</span> ${e.pet_type === 'dog' ? '🐕' : '🐈'} <strong>${esc(e.pet_name || 'Pending')}</strong></div>
+            <div><span class="text-gray-500 w-20 inline-block">Type:</span> ${esc(e.pet_type || '—')}</div>
+            ${e.special_date_label ? `<div><span class="text-gray-500 w-20 inline-block">Special:</span> ${esc(e.special_date_label)}</div>` : ''}
+          </div>
+          ${e.photo_url ? `<img src="${e.photo_url}" class="mt-3 rounded-xl w-32 h-32 object-cover border-2 border-gray-100" alt="Pet photo">` : '<p class="mt-3 text-sm text-gray-400">No photo uploaded yet</p>'}
+        </div>
+      </div>
+
+      <!-- Status Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="bg-gray-50 rounded-xl p-3 text-center">
+          <div class="text-xs text-gray-500 mb-1">Payment</div>
+          <div>${paymentBadge(e.payment_confirmed)}</div>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-3 text-center">
+          <div class="text-xs text-gray-500 mb-1">Photo</div>
+          <div>${e.photo_url ? '<span class="badge bg-green-100 text-green-700">Uploaded</span>' : '<span class="badge bg-yellow-100 text-yellow-700">Missing</span>'}</div>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-3 text-center">
+          <div class="text-xs text-gray-500 mb-1">Call Status</div>
+          <div>${callBadge(e.call_status)}</div>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-3 text-center">
+          <div class="text-xs text-gray-500 mb-1">Total</div>
+          <div class="font-bold text-gray-900">$${(parseFloat(e.total_price) || 36).toFixed(2)}</div>
+        </div>
+      </div>
+
+      <!-- UTM Source -->
+      ${e.utm_source || e.utm_campaign ? `
+      <div class="bg-blue-50 rounded-xl p-4">
+        <h3 class="font-bold text-gray-900 mb-2 text-sm">📊 Traffic Source</h3>
+        <div class="flex flex-wrap gap-2 text-xs">
+          ${e.utm_source ? `<span class="badge bg-blue-100 text-blue-700">Source: ${esc(e.utm_source)}</span>` : ''}
+          ${e.utm_medium ? `<span class="badge bg-blue-100 text-blue-700">Medium: ${esc(e.utm_medium)}</span>` : ''}
+          ${e.utm_campaign ? `<span class="badge bg-blue-100 text-blue-700">Campaign: ${esc(e.utm_campaign)}</span>` : ''}
+          ${e.utm_content ? `<span class="badge bg-blue-100 text-blue-700">Content: ${esc(e.utm_content)}</span>` : ''}
+        </div>
+      </div>` : ''}
+
+      <!-- Quick Actions -->
+      <div class="bg-white border-2 border-orange-100 rounded-xl p-4">
+        <h3 class="font-bold text-gray-900 mb-3">⚡ Quick Actions</h3>
+        <div class="grid md:grid-cols-2 gap-4">
+          <!-- Entry Status -->
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Entry Status</label>
+            <select id="edit-entry-status" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" onchange="quickUpdate('${e.id}', 'entry_status', this.value)">
+              <option value="pending_review" ${e.entry_status === 'pending_review' ? 'selected' : ''}>Pending Review</option>
+              <option value="accepted" ${e.entry_status === 'accepted' ? 'selected' : ''}>Accepted</option>
+              <option value="rejected" ${e.entry_status === 'rejected' ? 'selected' : ''}>Rejected</option>
+            </select>
+          </div>
+          <!-- Call Status -->
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Call Status</label>
+            <select id="edit-call-status" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" onchange="quickUpdate('${e.id}', 'call_status', this.value)">
+              <option value="not_called" ${e.call_status === 'not_called' ? 'selected' : ''}>Not Called</option>
+              <option value="scheduled" ${e.call_status === 'scheduled' ? 'selected' : ''}>Scheduled</option>
+              <option value="called" ${e.call_status === 'called' ? 'selected' : ''}>Called</option>
+              <option value="follow_up" ${e.call_status === 'follow_up' ? 'selected' : ''}>Follow Up</option>
+            </select>
+          </div>
+          <!-- Winner Type -->
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Winner Type</label>
+            <select id="edit-winner-type" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" onchange="assignWinner('${e.id}')">
+              <option value="none" ${e.winner_type === 'none' || !e.winner_type ? 'selected' : ''}>Not a Winner</option>
+              <option value="cover" ${e.winner_type === 'cover' ? 'selected' : ''}>🏆 Cover Winner</option>
+              <option value="month" ${e.winner_type === 'month' ? 'selected' : ''}>⭐ Month Winner</option>
+              <option value="special_day" ${e.winner_type === 'special_day' ? 'selected' : ''}>📅 Special Day</option>
+            </select>
+          </div>
+          <!-- Winner Month -->
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Winner Month</label>
+            <select id="edit-winner-month" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm">
+              <option value="">N/A</option>
+              ${[1,2,3,4,5,6,7,8,9,10,11,12].map(m => `<option value="${m}" ${e.winner_month === m ? 'selected' : ''}>${monthNames[m]}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+
+        <!-- Log Call + Add Upsell buttons -->
+        <div class="flex flex-wrap gap-3 mt-4">
+          <button onclick="closeEntryModal(); openCallModal('${e.id}','${esc(e.full_name)}')" class="px-4 py-2 rounded-lg bg-green-50 text-green-700 text-sm font-medium hover:bg-green-100">📞 Log Call</button>
+          <button onclick="addUpsell('${e.id}','featured_month')" class="px-4 py-2 rounded-lg bg-purple-50 text-purple-700 text-sm font-medium hover:bg-purple-100">+ Featured Month ($127)</button>
+          <button onclick="addUpsell('${e.id}','special_day')" class="px-4 py-2 rounded-lg bg-pink-50 text-pink-700 text-sm font-medium hover:bg-pink-100">+ Special Day ($67)</button>
+          <button onclick="addUpsell('${e.id}','postcard_pack')" class="px-4 py-2 rounded-lg bg-orange-50 text-orange-700 text-sm font-medium hover:bg-orange-100">+ Postcard Pack ($29)</button>
+        </div>
+      </div>
+
+      <!-- Upsell Items -->
+      ${(data.items || []).length ? `
+      <div>
+        <h3 class="font-bold text-gray-900 mb-3">🛒 Upsell Items</h3>
+        <div class="space-y-2">
+          ${data.items.map(i => `
+            <div class="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+              <div>
+                <span class="font-medium text-gray-900">${esc(i.description || i.item_type)}</span>
+                <span class="text-gray-500 text-sm ml-2">$${parseFloat(i.total_price).toFixed(2)}</span>
+              </div>
+              <button onclick="removeUpsell('${i.id}','${e.id}')" class="text-red-400 hover:text-red-600 text-xs">Remove</button>
+            </div>`).join('')}
+        </div>
+      </div>` : ''}
+
+      <!-- Call History -->
+      ${(data.calls || []).length ? `
+      <div>
+        <h3 class="font-bold text-gray-900 mb-3">📞 Call History</h3>
+        <div class="space-y-2">
+          ${data.calls.map(c => `
+            <div class="bg-gray-50 rounded-lg p-3">
+              <div class="flex items-center justify-between">
+                <span class="badge ${outcomeBadgeClass(c.outcome)}">${formatOutcome(c.outcome)}</span>
+                <span class="text-xs text-gray-400">${shortDate(c.call_datetime)}</span>
+              </div>
+              ${c.notes ? `<p class="text-sm text-gray-600 mt-2">${esc(c.notes)}</p>` : ''}
+            </div>`).join('')}
+        </div>
+      </div>` : ''}
+
+      <!-- Admin Notes -->
+      <div>
+        <h3 class="font-bold text-gray-900 mb-2">📝 Admin Notes</h3>
+        <textarea id="admin-notes-${e.id}" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm resize-none" rows="3" placeholder="Add internal notes...">${esc(e.admin_notes || '')}</textarea>
+        <button onclick="saveNotes('${e.id}')" class="mt-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200">Save Notes</button>
+      </div>
+
+      <!-- Activity Log -->
+      ${(data.activity || []).length ? `
+      <div>
+        <details>
+          <summary class="font-bold text-gray-900 cursor-pointer text-sm">Activity Log (${data.activity.length})</summary>
+          <div class="mt-2 space-y-1 text-xs text-gray-500 max-h-40 overflow-y-auto">
+            ${data.activity.map(a => `<div>${shortDate(a.created_at)} — ${esc(a.action)}: ${esc(JSON.stringify(a.details))}</div>`).join('')}
+          </div>
+        </details>
+      </div>` : ''}
+    `;
+
+    document.getElementById('entry-modal').classList.add('open');
+  });
+}
+
+function closeEntryModal() {
+  document.getElementById('entry-modal').classList.remove('open');
+}
+
+// Close modal on backdrop click
+document.getElementById('entry-modal').addEventListener('click', e => {
+  if (e.target.id === 'entry-modal') closeEntryModal();
+});
+
+function quickUpdate(id, field, value) {
+  api('update-entry', {}, 'POST', { id, [field]: value }).then(() => {
+    showToast('Updated!');
+  });
+}
+
+function assignWinner(id) {
+  const wtype = document.getElementById('edit-winner-type').value;
+  const wmonth = document.getElementById('edit-winner-month').value;
+  api('assign-winner', {}, 'POST', {
+    id, winner_type: wtype, winner_month: wmonth ? parseInt(wmonth) : null
+  }).then(() => showToast(wtype === 'none' ? 'Winner removed' : 'Winner assigned! 🏆'));
+}
+
+function saveNotes(id) {
+  const notes = document.getElementById('admin-notes-' + id).value;
+  api('update-entry', {}, 'POST', { id, admin_notes: notes }).then(() => showToast('Notes saved'));
+}
+
+function addUpsell(entryId, itemType) {
+  api('add-upsell', {}, 'POST', { entry_id: entryId, item_type: itemType }).then(data => {
+    if (data.success) {
+      showToast('Upsell added! 💰');
+      openEntry(entryId); // Refresh modal
+    }
+  });
+}
+
+function removeUpsell(itemId, entryId) {
+  if (!confirm('Remove this upsell?')) return;
+  api('remove-upsell', {}, 'POST', { item_id: itemId, entry_id: entryId }).then(data => {
+    if (data.success) {
+      showToast('Upsell removed');
+      openEntry(entryId);
+    }
+  });
+}
+
+// ===================== CALL MODAL =====================
+function openCallModal(entryId, name) {
+  document.getElementById('call-entry-id').value = entryId;
+  document.getElementById('call-contact-name').textContent = 'Logging call for: ' + name;
+  document.getElementById('call-outcome').value = 'no_answer';
+  document.getElementById('call-notes').value = '';
+  document.getElementById('call-modal').classList.add('open');
+}
+
+function closeCallModal() {
+  document.getElementById('call-modal').classList.remove('open');
+}
+
+document.getElementById('call-modal').addEventListener('click', e => {
+  if (e.target.id === 'call-modal') closeCallModal();
+});
+
+function submitCall() {
+  const entryId = document.getElementById('call-entry-id').value;
+  const outcome = document.getElementById('call-outcome').value;
+  const notes = document.getElementById('call-notes').value;
+  const btn = document.getElementById('call-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  api('log-call', {}, 'POST', { entry_id: entryId, outcome, notes }).then(data => {
+    btn.disabled = false;
+    btn.textContent = 'Save Call';
+    if (data.success) {
+      closeCallModal();
+      showToast('Call logged! 📞');
+
+      // Auto-add upsell if they bought
+      const upsellMap = {
+        bought_featured_month: 'featured_month',
+        bought_special_day: 'special_day',
+        bought_postcard_pack: 'postcard_pack',
+      };
+      if (upsellMap[outcome]) {
+        api('add-upsell', {}, 'POST', { entry_id: entryId, item_type: upsellMap[outcome] });
+      }
+
+      refreshCurrentTab();
+    }
+  });
+}
+
+// ===================== CALL QUEUE =====================
+function loadCallQueue() {
+  api('entries', { payment: 'true', call_status: 'not_called' }).then(data => {
+    // Also load follow-ups
+    api('entries', { payment: 'true', call_status: 'follow_up' }).then(fuData => {
+      const all = [...(data.entries || []), ...(fuData.entries || [])];
+      const tbody = document.getElementById('calls-table-body');
+      tbody.innerHTML = all.map(e => `
+        <tr class="border-t border-gray-50">
+          <td class="px-4 py-3 font-medium text-gray-900 cursor-pointer hover:text-orange-500" onclick="openEntry('${e.id}')">${esc(e.full_name)}</td>
+          <td class="px-4 py-3"><a href="tel:${e.phone}" class="text-orange-500 hover:underline font-medium">${esc(e.phone || '—')}</a></td>
+          <td class="px-4 py-3 text-gray-600 text-xs">${esc(e.email)}</td>
+          <td class="px-4 py-3">${e.pet_type === 'dog' ? '🐕' : '🐈'} ${esc(e.pet_name || '—')}</td>
+          <td class="px-4 py-3 text-gray-500 text-xs">${shortDate(e.created_at)}</td>
+          <td class="px-4 py-3">
+            ${callBadge(e.call_status)}
+            <button onclick="openCallModal('${e.id}','${esc(e.full_name)}')" class="ml-2 text-xs bg-green-500 text-white px-3 py-1 rounded-lg font-medium hover:bg-green-600">Log Call</button>
+          </td>
+        </tr>`).join('') || '<tr><td colspan="6" class="px-4 py-12 text-center text-gray-400">🎉 All caught up! No calls pending.</td></tr>';
+    });
+  });
+}
+
+// ===================== WINNERS =====================
+function loadWinners() {
+  api('winners').then(data => {
+    const winners = data.winners || [];
+    const monthNames = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
+
+    if (!winners.length) {
+      document.getElementById('winners-grid').classList.add('hidden');
+      document.getElementById('winners-empty').classList.remove('hidden');
+      return;
+    }
+    document.getElementById('winners-grid').classList.remove('hidden');
+    document.getElementById('winners-empty').classList.add('hidden');
+
+    document.getElementById('winners-grid').innerHTML = winners.map(w => `
+      <div class="border-2 ${w.winner_type === 'cover' ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200 bg-white'} rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow" onclick="openEntry('${w.id}')">
+        <div class="flex items-center gap-3 mb-3">
+          ${w.photo_url ? `<img src="${w.photo_url}" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow" alt="">` : '<div class="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-2xl">🐾</div>'}
+          <div>
+            <p class="font-bold text-gray-900">${esc(w.pet_name || '—')}</p>
+            <p class="text-sm text-gray-500">${esc(w.full_name)}</p>
+          </div>
+        </div>
+        <div>
+          ${w.winner_type === 'cover' ? '<span class="badge bg-yellow-200 text-yellow-800">🏆 Cover Winner</span>' :
+            w.winner_type === 'month' ? `<span class="badge bg-orange-100 text-orange-700">⭐ ${monthNames[w.winner_month] || 'Month'} Star</span>` :
+            w.winner_type === 'special_day' ? '<span class="badge bg-pink-100 text-pink-700">📅 Special Day</span>' : ''}
+        </div>
+      </div>`).join('');
+  });
+}
+
+// ===================== HELPERS =====================
+function esc(s) { return (s || '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+function shortDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d);
+  return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+function paymentBadge(paid) {
+  return paid ? '<span class="badge bg-green-100 text-green-700">Paid</span>' : '<span class="badge bg-yellow-100 text-yellow-700">Unpaid</span>';
+}
+
+function callBadge(status) {
+  const map = {
+    not_called: '<span class="badge bg-gray-100 text-gray-500">Not Called</span>',
+    scheduled: '<span class="badge bg-blue-100 text-blue-700">Scheduled</span>',
+    called: '<span class="badge bg-green-100 text-green-700">Called</span>',
+    follow_up: '<span class="badge bg-yellow-100 text-yellow-700">Follow Up</span>',
+  };
+  return map[status] || map.not_called;
+}
+
+function outcomeBadgeClass(outcome) {
+  if (outcome.startsWith('bought_')) return 'bg-green-100 text-green-700';
+  if (outcome === 'not_interested') return 'bg-red-100 text-red-700';
+  if (outcome === 'callback') return 'bg-blue-100 text-blue-700';
+  return 'bg-gray-100 text-gray-600';
+}
+
+function formatOutcome(o) {
+  return o.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'fixed bottom-4 right-4 bg-gray-900 text-white px-5 py-3 rounded-xl shadow-xl text-sm font-medium z-50 transition-opacity';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 2000);
+}
+</script>
+</body>
+</html>
