@@ -54,7 +54,7 @@ exports.handler = async function (event) {
         // Recent entries
         const { data: recent } = await supabase
           .from('contest_entries')
-          .select('id, full_name, email, pet_name, pet_type, status, payment_confirmed, photo_url, created_at, total_price')
+          .select('id, full_name, email, pet_name, pet_type, status, payment_confirmed, photo_url, created_at, total_price, shipping_status')
           .order('created_at', { ascending: false })
           .limit(10);
 
@@ -84,6 +84,8 @@ exports.handler = async function (event) {
         if (params.winner === 'true') query = query.eq('is_winner', true);
         if (params.call_status) query = query.eq('call_status', params.call_status);
         if (params.entry_status) query = query.eq('entry_status', params.entry_status);
+        if (params.shipping_status) query = query.eq('shipping_status', params.shipping_status);
+        if (params.campaign_id) query = query.eq('campaign_id', params.campaign_id);
         if (params.search) {
           query = query.or(`full_name.ilike.%${params.search}%,email.ilike.%${params.search}%,pet_name.ilike.%${params.search}%,phone.ilike.%${params.search}%`);
         }
@@ -126,7 +128,18 @@ exports.handler = async function (event) {
           .order('created_at', { ascending: false })
           .limit(50);
 
-        return ok({ entry, calls: calls || [], items: items || [], activity: activity || [] });
+        // Get campaign name if linked
+        let campaign = null;
+        if (entry && entry.campaign_id) {
+          const { data: c } = await supabase
+            .from('ad_campaigns')
+            .select('id, name, platform')
+            .eq('id', entry.campaign_id)
+            .single();
+          campaign = c;
+        }
+
+        return ok({ entry, calls: calls || [], items: items || [], activity: activity || [], campaign });
       }
 
       // Winners list
@@ -137,6 +150,42 @@ exports.handler = async function (event) {
           .eq('is_winner', true)
           .order('winner_type', { ascending: true });
         return ok({ winners: data || [] });
+      }
+
+      // ===== CAMPAIGNS =====
+      if (action === 'campaigns') {
+        const { data } = await supabase
+          .from('campaign_stats')
+          .select('*')
+          .order('created_at', { ascending: false });
+        return ok({ campaigns: data || [] });
+      }
+
+      if (action === 'campaign') {
+        if (!params.id) return badRequest('Missing id');
+        const { data: campaign } = await supabase
+          .from('ad_campaigns')
+          .select('*')
+          .eq('id', params.id)
+          .single();
+
+        // Get entries linked to this campaign
+        const { data: entries } = await supabase
+          .from('contest_entries')
+          .select('id, full_name, email, pet_name, payment_confirmed, total_price, shipping_status, created_at')
+          .eq('campaign_id', params.id)
+          .order('created_at', { ascending: false });
+
+        return ok({ campaign, entries: entries || [] });
+      }
+
+      // List all campaigns (for dropdown)
+      if (action === 'campaigns-list') {
+        const { data } = await supabase
+          .from('ad_campaigns')
+          .select('id, name, platform, status')
+          .order('created_at', { ascending: false });
+        return ok({ campaigns: data || [] });
       }
 
       return badRequest('Unknown action');
@@ -153,11 +202,20 @@ exports.handler = async function (event) {
           'entry_status', 'is_winner', 'winner_type', 'winner_month',
           'call_status', 'admin_notes', 'total_price', 'pet_name', 'pet_type',
           'full_name', 'email', 'phone', 'address_line1', 'address_line2',
-          'city', 'state', 'zip'
+          'city', 'state', 'zip', 'shipping_status', 'tracking_number',
+          'campaign_id', 'refund_reason'
         ];
         const updates = {};
         for (const key of allowed) {
           if (body[key] !== undefined) updates[key] = body[key];
+        }
+
+        // Auto-set timestamps
+        if (updates.shipping_status === 'shipped' && !body.shipped_at) {
+          updates.shipped_at = new Date().toISOString();
+        }
+        if (updates.shipping_status === 'refunded' && !body.refunded_at) {
+          updates.refunded_at = new Date().toISOString();
         }
 
         const { data, error } = await supabase
@@ -318,6 +376,109 @@ exports.handler = async function (event) {
         });
 
         return ok({ success: true, entry: data });
+      }
+
+      // ===== CAMPAIGN CRUD =====
+      if (action === 'create-campaign') {
+        if (!body.name) return badRequest('Missing campaign name');
+        const { data, error } = await supabase
+          .from('ad_campaigns')
+          .insert({
+            name: body.name,
+            platform: body.platform || 'facebook',
+            status: body.status || 'draft',
+            headline: body.headline || '',
+            ad_copy: body.ad_copy || '',
+            description: body.description || '',
+            cta_text: body.cta_text || '',
+            image_url: body.image_url || '',
+            target_audience: body.target_audience || '',
+            daily_budget: body.daily_budget || 0,
+            total_spend: body.total_spend || 0,
+            utm_campaign: body.utm_campaign || '',
+            utm_source: body.utm_source || '',
+            utm_medium: body.utm_medium || '',
+            utm_content: body.utm_content || '',
+            fb_ad_id: body.fb_ad_id || '',
+            fb_adset_id: body.fb_adset_id || '',
+            fb_campaign_id: body.fb_campaign_id || '',
+            notes: body.notes || '',
+            start_date: body.start_date || null,
+            end_date: body.end_date || null,
+          })
+          .select()
+          .single();
+
+        if (error) return serverError(error);
+        return ok({ success: true, campaign: data });
+      }
+
+      if (action === 'update-campaign') {
+        if (!body.id) return badRequest('Missing id');
+        const allowed = [
+          'name', 'platform', 'status', 'headline', 'ad_copy', 'description',
+          'cta_text', 'image_url', 'target_audience', 'daily_budget', 'total_spend',
+          'utm_campaign', 'utm_source', 'utm_medium', 'utm_content',
+          'fb_ad_id', 'fb_adset_id', 'fb_campaign_id', 'notes',
+          'start_date', 'end_date'
+        ];
+        const updates = { updated_at: new Date().toISOString() };
+        for (const key of allowed) {
+          if (body[key] !== undefined) updates[key] = body[key];
+        }
+
+        const { data, error } = await supabase
+          .from('ad_campaigns')
+          .update(updates)
+          .eq('id', body.id)
+          .select()
+          .single();
+
+        if (error) return serverError(error);
+        return ok({ success: true, campaign: data });
+      }
+
+      if (action === 'delete-campaign') {
+        if (!body.id) return badRequest('Missing id');
+        // Unlink entries first
+        await supabase
+          .from('contest_entries')
+          .update({ campaign_id: null })
+          .eq('campaign_id', body.id);
+
+        const { error } = await supabase
+          .from('ad_campaigns')
+          .delete()
+          .eq('id', body.id);
+
+        if (error) return serverError(error);
+        return ok({ success: true });
+      }
+
+      // Link entry to campaign
+      if (action === 'link-campaign') {
+        if (!body.entry_id || !body.campaign_id) return badRequest('Missing entry_id or campaign_id');
+        const { error } = await supabase
+          .from('contest_entries')
+          .update({ campaign_id: body.campaign_id })
+          .eq('id', body.entry_id);
+
+        if (error) return serverError(error);
+        return ok({ success: true });
+      }
+
+      // Auto-link entries by UTM match
+      if (action === 'auto-link-campaign') {
+        if (!body.campaign_id || !body.utm_campaign) return badRequest('Missing campaign_id or utm_campaign');
+        const { data, error } = await supabase
+          .from('contest_entries')
+          .update({ campaign_id: body.campaign_id })
+          .eq('utm_campaign', body.utm_campaign)
+          .is('campaign_id', null)
+          .select('id');
+
+        if (error) return serverError(error);
+        return ok({ success: true, linked: (data || []).length });
       }
 
       return badRequest('Unknown action');
