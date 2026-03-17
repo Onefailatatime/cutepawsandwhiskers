@@ -386,8 +386,13 @@
           <input id="camp-cta" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="e.g. Enter Now, Learn More">
         </div>
         <div>
-          <label class="text-xs text-gray-500 block mb-1">Image URL</label>
-          <input id="camp-image" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="https://...">
+          <label class="text-xs text-gray-500 block mb-1">Ad Image</label>
+          <div id="camp-image-preview" class="hidden mb-2"><img id="camp-image-thumb" class="rounded-xl max-h-40 border-2 border-gray-100" alt="Ad image"></div>
+          <div class="flex gap-2 items-center">
+            <input type="file" id="camp-image-file" accept="image/*" onchange="uploadCampaignImage(this)" class="text-xs text-gray-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 flex-1">
+            <span id="camp-image-status" class="text-xs"></span>
+          </div>
+          <input id="camp-image" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none mt-2" placeholder="Or paste URL: https://...">
         </div>
 
         <details class="border border-gray-200 rounded-lg p-3">
@@ -1244,6 +1249,14 @@ function openCampaignModal(c = null) {
   document.getElementById('camp-copy').value = c ? c.ad_copy : '';
   document.getElementById('camp-cta').value = c ? c.cta_text : '';
   document.getElementById('camp-image').value = c ? c.image_url : '';
+  if (c && c.image_url) {
+    document.getElementById('camp-image-preview').classList.remove('hidden');
+    document.getElementById('camp-image-thumb').src = c.image_url;
+  } else {
+    document.getElementById('camp-image-preview').classList.add('hidden');
+  }
+  document.getElementById('camp-image-file').value = '';
+  document.getElementById('camp-image-status').textContent = '';
   document.getElementById('camp-utm-source').value = c ? c.utm_source : '';
   document.getElementById('camp-utm-medium').value = c ? c.utm_medium : '';
   document.getElementById('camp-utm-campaign').value = c ? c.utm_campaign : '';
@@ -1307,6 +1320,39 @@ function saveCampaign() {
       }
     }
   });
+}
+
+// ===================== CAMPAIGN IMAGE UPLOAD =====================
+function uploadCampaignImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) { showToast('File too large (max 10MB)'); return; }
+
+  const statusEl = document.getElementById('camp-image-status');
+  statusEl.innerHTML = '<span class="text-orange-500">Uploading...</span>';
+
+  const reader = new FileReader();
+  reader.onload = function() {
+    const base64 = reader.result.split(',')[1];
+    api('upload-campaign-image', {}, 'POST', {
+      photo_base64: base64,
+      file_name: file.name,
+      file_type: file.type,
+    }).then(data => {
+      if (data.success && data.image_url) {
+        document.getElementById('camp-image').value = data.image_url;
+        document.getElementById('camp-image-preview').classList.remove('hidden');
+        document.getElementById('camp-image-thumb').src = data.image_url;
+        statusEl.innerHTML = '<span class="text-green-600">Uploaded!</span>';
+        showToast('Ad image uploaded! 🖼️');
+      } else {
+        statusEl.innerHTML = '<span class="text-red-500">Upload failed</span>';
+      }
+    }).catch(() => {
+      statusEl.innerHTML = '<span class="text-red-500">Upload failed</span>';
+    });
+  };
+  reader.readAsDataURL(file);
 }
 
 // ===================== WINNERS =====================

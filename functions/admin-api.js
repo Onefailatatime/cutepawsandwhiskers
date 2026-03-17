@@ -505,6 +505,31 @@ exports.handler = async function (event) {
         return ok({ success: true, linked: (data || []).length });
       }
 
+      // ===== UPLOAD CAMPAIGN IMAGE =====
+      if (action === 'upload-campaign-image') {
+        if (!body.photo_base64) return badRequest('Missing photo_base64');
+
+        const buffer = Buffer.from(body.photo_base64, 'base64');
+        const ext = body.file_name?.split('.').pop()?.toLowerCase() || 'jpg';
+        const fileName = `campaign_${Date.now()}.${ext}`;
+        const filePath = `campaigns/${fileName}`;
+
+        const { error: uploadErr } = await supabase.storage
+          .from('pet-photos')
+          .upload(filePath, buffer, {
+            contentType: body.file_type || 'image/jpeg',
+            upsert: false,
+          });
+
+        if (uploadErr) return serverError(uploadErr);
+
+        const { data: urlData } = supabase.storage
+          .from('pet-photos')
+          .getPublicUrl(filePath);
+
+        return ok({ success: true, image_url: urlData.publicUrl });
+      }
+
       // ===== SEND EMAIL FROM CRM =====
       if (action === 'send-email') {
         if (!body.entry_id || !body.to || !body.subject || !body.html) {
