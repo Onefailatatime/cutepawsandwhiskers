@@ -23,6 +23,130 @@ function getTransporter() {
   });
 }
 
+async function sendReceiptEmail(entry, amountPaid) {
+  const firstName = entry.first_name || entry.full_name.split(' ')[0];
+  const orderDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const orderId = entry.id.substring(0, 8).toUpperCase();
+
+  const html = `
+    <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #fff;">
+      <div style="background: #111827; padding: 32px; text-align: center; border-radius: 16px 16px 0 0;">
+        <div style="width: 64px; height: 64px; background: rgba(255,255,255,0.1); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+          <span style="font-size: 32px;">🧾</span>
+        </div>
+        <h1 style="color: white; font-size: 24px; margin: 0;">Payment Confirmed!</h1>
+        <p style="color: rgba(255,255,255,0.7); margin: 8px 0 0; font-size: 14px;">Your receipt for the Paws &amp; Whiskers Calendar Contest</p>
+      </div>
+
+      <div style="padding: 32px; border: 1px solid #e5e7eb; border-top: 0; border-radius: 0 0 16px 16px;">
+        <p style="font-size: 16px; color: #374151;">Hi ${firstName},</p>
+        <p style="font-size: 15px; color: #374151; line-height: 1.6;">
+          Your payment has been received. Here's your receipt for your records.
+        </p>
+
+        <!-- Order Details -->
+        <div style="background: #f9fafb; border-radius: 12px; padding: 24px; margin: 24px 0;">
+          <table style="width: 100%; font-size: 14px; color: #374151; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0; color: #6b7280;">Order #</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: 600; font-family: monospace;">${orderId}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6b7280;">Date</td>
+              <td style="padding: 8px 0; text-align: right;">${orderDate}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #6b7280;">Payment Method</td>
+              <td style="padding: 8px 0; text-align: right;">Credit Card (via Stripe)</td>
+            </tr>
+            <tr style="border-top: 1px solid #e5e7eb;">
+              <td style="padding: 8px 0; color: #6b7280;">Email</td>
+              <td style="padding: 8px 0; text-align: right;">${entry.email}</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- Line Items -->
+        <div style="border: 2px solid #e5e7eb; border-radius: 12px; overflow: hidden; margin: 24px 0;">
+          <table style="width: 100%; font-size: 14px; color: #374151; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #f3f4f6;">
+                <th style="padding: 12px 16px; text-align: left; font-size: 12px; text-transform: uppercase; color: #6b7280; font-weight: 600;">Item</th>
+                <th style="padding: 12px 16px; text-align: right; font-size: 12px; text-transform: uppercase; color: #6b7280; font-weight: 600;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding: 14px 16px;">
+                  <div style="font-weight: 600;">Paws &amp; Whiskers 2027 Calendar Contest</div>
+                  <div style="font-size: 13px; color: #6b7280;">Contest entry + calendar inclusion</div>
+                </td>
+                <td style="padding: 14px 16px; text-align: right; font-weight: 600;">$${amountPaid.toFixed(2)}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr style="border-top: 2px solid #e5e7eb; background: #f0fdf4;">
+                <td style="padding: 14px 16px; font-weight: 700; font-size: 16px;">Total Paid</td>
+                <td style="padding: 14px 16px; text-align: right; font-weight: 700; font-size: 16px; color: #16a34a;">$${amountPaid.toFixed(2)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <!-- Shipping Info -->
+        <div style="background: #eff6ff; border: 2px solid #bfdbfe; border-radius: 12px; padding: 20px; margin: 24px 0;">
+          <h3 style="font-size: 15px; color: #1e40af; margin: 0 0 10px;">📦 Shipping To</h3>
+          <p style="font-size: 14px; color: #374151; margin: 0; line-height: 1.6;">
+            ${entry.full_name}<br>
+            ${entry.address_line1}${entry.address_line2 ? '<br>' + entry.address_line2 : ''}<br>
+            ${entry.city}, ${entry.state} ${entry.zip}
+          </p>
+          <p style="font-size: 12px; color: #6b7280; margin: 10px 0 0;">
+            We'll ship your calendar once all winners are selected and the calendar is printed. You'll receive a shipping notification with tracking info!
+          </p>
+        </div>
+
+        <!-- What's Next -->
+        <div style="background: #fff7ed; border: 2px solid #fed7aa; border-radius: 12px; padding: 20px; margin: 24px 0;">
+          <h3 style="font-size: 15px; color: #9a3412; margin: 0 0 10px;">📋 What Happens Next?</h3>
+          <ol style="font-size: 14px; color: #374151; line-height: 1.8; padding-left: 20px; margin: 0;">
+            <li><strong>Upload your pet's photo</strong> — check your other email from us!</li>
+            <li><strong>Winners announced</strong> — we'll notify all 13 winners by email</li>
+            <li><strong>Calendar printed &amp; shipped</strong> — straight to your door</li>
+          </ol>
+        </div>
+
+        <p style="font-size: 14px; color: #374151; line-height: 1.6;">
+          <strong>Need help?</strong> Reply to this email or contact us at <a href="mailto:orders@cutepawsandwhiskers.com" style="color: #f97316; text-decoration: underline;">orders@cutepawsandwhiskers.com</a>
+        </p>
+
+        <p style="font-size: 14px; color: #374151; line-height: 1.6;">
+          Thank you for your purchase! 🐾
+        </p>
+
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
+
+        <p style="font-size: 13px; color: #9ca3af; text-align: center; line-height: 1.6;">
+          Paws &amp; Whiskers 2027 Calendar Contest<br>
+          Presented by Hello Pat<br>
+          <a href="mailto:orders@cutepawsandwhiskers.com" style="color: #f97316;">orders@cutepawsandwhiskers.com</a><br>
+          <a href="${SITE_URL}/terms.html" style="color: #9ca3af; font-size: 12px;">Terms of Service</a> &bull; <a href="${SITE_URL}/privacy.html" style="color: #9ca3af; font-size: 12px;">Privacy Policy</a>
+        </p>
+      </div>
+    </div>
+  `;
+
+  const transporter = getTransporter();
+
+  await transporter.sendMail({
+    from: '"Paws & Whiskers" <orders@cutepawsandwhiskers.com>',
+    to: entry.email,
+    replyTo: 'orders@cutepawsandwhiskers.com',
+    subject: `🧾 Receipt — Order #${orderId} ($${amountPaid.toFixed(2)})`,
+    html,
+  });
+}
+
 async function sendWelcomeEmail(entry) {
   const uploadLink = `${SITE_URL}/upload.html?token=${entry.upload_token}`;
   const firstName = entry.first_name || entry.full_name.split(' ')[0];
@@ -235,8 +359,28 @@ exports.handler = async function (event) {
 
         console.log(`Welcome email sent to ${entry.email}`);
       } catch (emailErr) {
-        console.error('Email send error:', emailErr);
-        // Don't fail the webhook — we can resend manually
+        console.error('Welcome email error:', emailErr);
+      }
+
+      // Send purchase receipt email
+      try {
+        await sendReceiptEmail(entry, amountPaid);
+
+        await supabase.from('crm_activity_log').insert({
+          entry_id: entryId,
+          action: 'email_sent',
+          details: {
+            type: 'receipt_email',
+            to: entry.email,
+            subject: `Receipt — Order #${entryId.substring(0, 8).toUpperCase()} ($${amountPaid.toFixed(2)})`,
+            template: 'receipt',
+            amount: amountPaid,
+          },
+        });
+
+        console.log(`Receipt email sent to ${entry.email}`);
+      } catch (emailErr) {
+        console.error('Receipt email error:', emailErr);
       }
     }
 
