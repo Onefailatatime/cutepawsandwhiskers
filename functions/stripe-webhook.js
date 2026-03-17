@@ -1,6 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 const nodemailer = require('nodemailer');
 const { sendEvent } = require('./fb-capi');
+const { notifyOwner } = require('./telegram-notify');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -188,6 +189,18 @@ exports.handler = async function (event) {
           content_ids: [entryId],
         },
       }).catch(err => console.error('FB Purchase event error:', err));
+
+      // Telegram notification — sale!
+      notifyOwner(
+        `💰 <b>NEW SALE!</b>\n\n` +
+        `<b>${entry.full_name}</b>\n` +
+        `${entry.email} | ${entry.phone}\n` +
+        `${entry.city}, ${entry.state} ${entry.zip}\n\n` +
+        `Amount: <b>$36.00</b>\n` +
+        `Pet: ${entry.pet_name || 'Pending'}\n` +
+        `ID: <code>${entryId}</code>\n` +
+        (entry.utm_source ? `UTM: ${entry.utm_source} / ${entry.utm_campaign || '-'}` : '')
+      ).catch(err => console.error('Telegram notify error:', err));
 
       // Send welcome email
       try {

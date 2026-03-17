@@ -1,4 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
+const { notifyOwner } = require('./telegram-notify');
+
+function escapeHtml(t) { return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -102,6 +105,14 @@ exports.handler = async function (event) {
         body: JSON.stringify({ error: 'Failed to save entry' }),
       };
     }
+
+    // Telegram notification
+    notifyOwner(
+      `📸 <b>Photo Uploaded!</b>\n\n` +
+      `Pet: <b>${escapeHtml(pet_name)}</b> (${pet_type})\n` +
+      `Entry: <code>${entry.id}</code>\n` +
+      `Email: ${entry.email}`
+    ).catch(err => console.error('Telegram notify error:', err));
 
     return {
       statusCode: 200,

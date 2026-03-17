@@ -1,5 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
 const { sendEvent } = require('./fb-capi');
+const { notifyOwner } = require('./telegram-notify');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -98,6 +99,16 @@ exports.handler = async function (event) {
         content_category: 'contest_entry',
       },
     }).catch(err => console.error('FB Lead event error:', err));
+
+    // Telegram notification
+    notifyOwner(
+      `🐾 <b>New Entry Submitted</b>\n\n` +
+      `<b>${row.full_name}</b>\n` +
+      `${row.email} | ${row.phone}\n` +
+      `${row.city}, ${row.state}\n\n` +
+      `ID: <code>${row.id}</code>\n` +
+      `Status: Awaiting payment`
+    ).catch(err => console.error('Telegram notify error:', err));
 
     return {
       statusCode: 200,
