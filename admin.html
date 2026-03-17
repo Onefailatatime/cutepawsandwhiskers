@@ -2524,8 +2524,8 @@ function toggleDarkMode() {
   localStorage.setItem('darkMode', isDark ? '1' : '0');
   document.getElementById('dark-mode-icon').textContent = isDark ? '☀️' : '🌙';
 }
-// Restore preference on load
-if (localStorage.getItem('darkMode') === '1') {
+// Dark mode ON by default — only light if explicitly toggled off
+if (localStorage.getItem('darkMode') !== '0') {
   document.body.classList.add('dark');
   document.getElementById('dark-mode-icon').textContent = '☀️';
 }
