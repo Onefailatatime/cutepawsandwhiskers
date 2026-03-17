@@ -1,5 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
-const { verifyToken } = require('./admin-login');
+const { verifyToken, verifyCsrfToken } = require('./admin-login');
 const nodemailer = require('nodemailer');
 const { notifyOwner } = require('./telegram-notify');
 
@@ -279,6 +279,12 @@ exports.handler = async function (event) {
 
     // ========== POST/PATCH actions ==========
     if (event.httpMethod === 'POST' || event.httpMethod === 'PATCH') {
+      // CSRF protection — verify token on all state-changing requests
+      const csrfToken = event.headers['x-csrf-token'] || '';
+      if (!verifyCsrfToken(csrfToken, token)) {
+        return { statusCode: 403, headers: HEADERS, body: JSON.stringify({ error: 'Invalid CSRF token' }) };
+      }
+
       const body = JSON.parse(event.body || '{}');
 
       // Update entry fields

@@ -23,6 +23,19 @@ function generateToken(email) {
   return Buffer.from(`${payload}|${sig}`).toString('base64');
 }
 
+// Generate a CSRF token tied to the session
+function generateCsrfToken(sessionToken) {
+  return crypto.createHmac('sha256', ADMIN_SECRET).update('csrf:' + sessionToken).digest('hex').substring(0, 32);
+}
+
+// Verify a CSRF token
+function verifyCsrfToken(csrfToken, sessionToken) {
+  if (!csrfToken || !sessionToken) return false;
+  const expected = generateCsrfToken(sessionToken);
+  return csrfToken.length === expected.length &&
+    crypto.timingSafeEqual(Buffer.from(csrfToken), Buffer.from(expected));
+}
+
 // Verify a session token
 function verifyToken(token) {
   try {
@@ -41,6 +54,34 @@ function verifyToken(token) {
   }
 }
 
+// Brute force protection: 3 failed attempts = 15 min lockout per IP
+const loginAttempts = new Map();
+const MAX_ATTEMPTS = 3;
+const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
+
+function checkLockout(ip) {
+  const record = loginAttempts.get(ip);
+  if (!record) return false;
+  if (Date.now() - record.firstAttempt > LOCKOUT_DURATION) {
+    loginAttempts.delete(ip);
+    return false;
+  }
+  return record.count >= MAX_ATTEMPTS;
+}
+
+function recordFailedAttempt(ip) {
+  const record = loginAttempts.get(ip);
+  if (!record || Date.now() - record.firstAttempt > LOCKOUT_DURATION) {
+    loginAttempts.set(ip, { count: 1, firstAttempt: Date.now() });
+  } else {
+    record.count++;
+  }
+}
+
+function clearAttempts(ip) {
+  loginAttempts.delete(ip);
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: HEADERS };
@@ -50,6 +91,9 @@ exports.handler = async function (event) {
     return { statusCode: 405, headers: HEADERS, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
+  const clientIp = event.headers['x-forwarded-for']?.split(',')[0]?.trim()
+    || event.headers['x-nf-client-connection-ip'] || 'unknown';
+
   try {
     const { action, email, password, token } = JSON.parse(event.body || '{}');
 
@@ -57,6 +101,11 @@ exports.handler = async function (event) {
     if (action === 'login') {
       if (!email || !password) {
         return { statusCode: 400, headers: HEADERS, body: JSON.stringify({ error: 'Email and password required' }) };
+      }
+
+      // Check if this IP is locked out (3 failed attempts)
+      if (checkLockout(clientIp)) {
+        return { statusCode: 429, headers: HEADERS, body: JSON.stringify({ error: 'Too many failed attempts. Try again in 15 minutes.' }) };
       }
 
       // Constant-time comparison to prevent timing attacks
@@ -71,16 +120,25 @@ exports.handler = async function (event) {
         crypto.timingSafeEqual(Buffer.from(passInput), Buffer.from(passExpected || ' '));
 
       if (!emailMatch || !passMatch) {
-        // Small delay to prevent brute force
+        recordFailedAttempt(clientIp);
+        const record = loginAttempts.get(clientIp);
+        const remaining = MAX_ATTEMPTS - (record?.count || 0);
+        // Delay to slow brute force
         await new Promise(r => setTimeout(r, 1000));
-        return { statusCode: 401, headers: HEADERS, body: JSON.stringify({ error: 'Invalid credentials' }) };
+        const msg = remaining <= 0
+          ? 'Account locked. Try again in 15 minutes.'
+          : `Invalid credentials. ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining.`;
+        return { statusCode: 401, headers: HEADERS, body: JSON.stringify({ error: msg }) };
       }
 
+      // Success — clear failed attempts
+      clearAttempts(clientIp);
       const sessionToken = generateToken(email.trim().toLowerCase());
+      const csrfToken = generateCsrfToken(sessionToken);
       return {
         statusCode: 200,
         headers: HEADERS,
-        body: JSON.stringify({ success: true, token: sessionToken, email: email.trim().toLowerCase() }),
+        body: JSON.stringify({ success: true, token: sessionToken, csrf: csrfToken, email: email.trim().toLowerCase() }),
       };
     }
 
@@ -100,5 +158,6 @@ exports.handler = async function (event) {
   }
 };
 
-// Export verifyToken for use by admin-api
+// Export for use by admin-api
 exports.verifyToken = verifyToken;
+exports.verifyCsrfToken = verifyCsrfToken;

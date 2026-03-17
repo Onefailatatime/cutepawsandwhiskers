@@ -7,8 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
-  <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+  <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet" integrity="sha384-cPa8kzsYWhqpAfWOLWYIw3V0BhPi/m3lrd8tBTPxr2NrYCHRVZ7xy1cEoRGOM/03" crossorigin="anonymous">
+  <script src="https://cdn.quilljs.com/1.3.7/quill.min.js" integrity="sha384-QUJ+ckWz1M+a7w0UfG1sEn4pPrbQwSxGm/1TIPyioqXBrwuT9l4f9gdHWLDLbVWI" crossorigin="anonymous"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter','system-ui','sans-serif'] } } } }</script>
   <style>
@@ -768,6 +768,7 @@
 <script>
 // ===================== STATE =====================
 let SESSION_TOKEN = '';
+let CSRF_TOKEN = '';
 const API = '/api/admin-api';
 const LOGIN_API = '/api/admin-login';
 let currentEntries = [];
@@ -788,6 +789,7 @@ function api(action, params = {}, method = 'GET', body = null) {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer ' + SESSION_TOKEN,
+      'X-CSRF-Token': CSRF_TOKEN,
     },
   };
   if (body) opts.body = JSON.stringify(body);
@@ -809,8 +811,10 @@ async function login() {
     const data = await res.json();
     if (!res.ok || !data.success) { errEl.textContent = data.error || 'Invalid email or password'; errEl.classList.remove('hidden'); btn.disabled = false; btn.textContent = 'Sign In'; return; }
     SESSION_TOKEN = data.token;
-    localStorage.setItem('hp_session', SESSION_TOKEN);
-    localStorage.setItem('hp_email', data.email);
+    CSRF_TOKEN = data.csrf || '';
+    sessionStorage.setItem('hp_session', SESSION_TOKEN);
+    sessionStorage.setItem('hp_csrf', CSRF_TOKEN);
+    sessionStorage.setItem('hp_email', data.email);
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('crm-app').classList.remove('hidden');
     loadCampaignsList();
@@ -818,16 +822,17 @@ async function login() {
   } catch (err) { errEl.textContent = 'Connection error. Please try again.'; errEl.classList.remove('hidden'); btn.disabled = false; btn.textContent = 'Sign In'; }
 }
 
-function logout() { SESSION_TOKEN = ''; localStorage.removeItem('hp_session'); localStorage.removeItem('hp_email'); location.reload(); }
+function logout() { SESSION_TOKEN = ''; CSRF_TOKEN = ''; sessionStorage.removeItem('hp_session'); sessionStorage.removeItem('hp_csrf'); sessionStorage.removeItem('hp_email'); location.reload(); }
 
 (async function() {
-  const saved = localStorage.getItem('hp_session');
+  const saved = sessionStorage.getItem('hp_session');
   if (saved) {
     try {
       const res = await fetch(LOGIN_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'verify', token: saved }) });
       const data = await res.json();
       if (data.success) {
         SESSION_TOKEN = saved;
+        CSRF_TOKEN = sessionStorage.getItem('hp_csrf') || '';
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('crm-app').classList.remove('hidden');
         loadCampaignsList();
@@ -835,7 +840,8 @@ function logout() { SESSION_TOKEN = ''; localStorage.removeItem('hp_session'); l
         return;
       }
     } catch {}
-    localStorage.removeItem('hp_session');
+    sessionStorage.removeItem('hp_session');
+    sessionStorage.removeItem('hp_csrf');
   }
   document.getElementById('login-email').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('login-password').focus(); });
   document.getElementById('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
