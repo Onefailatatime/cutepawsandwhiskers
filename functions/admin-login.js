@@ -7,9 +7,10 @@ if (!ADMIN_SECRET) {
   console.error('CRITICAL: ADMIN_KEY env var is not set! Auth will fail.');
 }
 
+const ALLOWED_ORIGIN = process.env.URL || 'https://cutepawsandwhiskers.com';
 const HEADERS = {
   'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Headers': 'Content-Type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
@@ -45,9 +46,9 @@ function verifyToken(token) {
     const [email, expires, sig] = parts;
     // Check expiry
     if (Date.now() > parseInt(expires)) return null;
-    // Check signature
+    // Check signature (constant-time)
     const expectedSig = crypto.createHmac('sha256', ADMIN_SECRET).update(`${email}|${expires}`).digest('hex');
-    if (sig !== expectedSig) return null;
+    if (sig.length !== expectedSig.length || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig))) return null;
     return { email, expires: parseInt(expires) };
   } catch {
     return null;

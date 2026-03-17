@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
 
 const supabase = createClient(
@@ -10,8 +11,17 @@ exports.handler = async function (event) {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  const key = event.queryStringParameters?.key;
-  if (key !== process.env.ADMIN_KEY) {
+  // Auth via Authorization header (preferred) or query param key (legacy)
+  const authHeader = event.headers['authorization'] || '';
+  const headerKey = authHeader.replace('Bearer ', '');
+  const queryKey = event.queryStringParameters?.key;
+  const providedKey = headerKey || queryKey || '';
+  const expectedKey = process.env.ADMIN_KEY || '';
+
+  // Constant-time comparison
+  if (!providedKey || !expectedKey ||
+      providedKey.length !== expectedKey.length ||
+      !crypto.timingSafeEqual(Buffer.from(providedKey), Buffer.from(expectedKey))) {
     return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
   }
 
@@ -29,6 +39,7 @@ exports.handler = async function (event) {
     const reached = entries.filter(e => e.reached).length;
     const withUpsells = entries.filter(e => e.upsell_count > 0).length;
 
+    // Return ONLY aggregated stats — never raw entry data with PII
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -42,7 +53,6 @@ exports.handler = async function (event) {
         reach_rate: entries.length ? ((reached / entries.length) * 100).toFixed(1) + '%' : '0%',
         upsell_count: withUpsells,
         upsell_take_rate: reached ? ((withUpsells / reached) * 100).toFixed(1) + '%' : '0%',
-        entries,
       }),
     };
   } catch (err) {

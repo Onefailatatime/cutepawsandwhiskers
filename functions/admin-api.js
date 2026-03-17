@@ -8,11 +8,12 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
+const ALLOWED_ORIGIN = process.env.URL || 'https://cutepawsandwhiskers.com';
 const HEADERS = {
   'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-CSRF-Token',
+  'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS',
 };
 
 function unauthorized() {

@@ -160,13 +160,14 @@
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('upload-form').classList.remove('hidden');
 
-        // Display info
+        // Display info (escape HTML to prevent XSS from user-controlled data)
+        function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
         const info = document.getElementById('info-display');
         info.innerHTML = `
-          <div><span class="text-gray-500">Name:</span></div><div class="font-medium">${entryData.full_name}</div>
-          <div><span class="text-gray-500">Email:</span></div><div class="font-medium">${entryData.email}</div>
-          <div><span class="text-gray-500">Phone:</span></div><div class="font-medium">${entryData.phone}</div>
-          <div class="col-span-2"><span class="text-gray-500">Address:</span> <span class="font-medium">${entryData.address_line1}${entryData.address_line2 ? ', ' + entryData.address_line2 : ''}, ${entryData.city}, ${entryData.state} ${entryData.zip}</span></div>
+          <div><span class="text-gray-500">Name:</span></div><div class="font-medium">${esc(entryData.full_name)}</div>
+          <div><span class="text-gray-500">Email:</span></div><div class="font-medium">${esc(entryData.email)}</div>
+          <div><span class="text-gray-500">Phone:</span></div><div class="font-medium">${esc(entryData.phone)}</div>
+          <div class="col-span-2"><span class="text-gray-500">Address:</span> <span class="font-medium">${esc(entryData.address_line1)}${entryData.address_line2 ? ', ' + esc(entryData.address_line2) : ''}, ${esc(entryData.city)}, ${esc(entryData.state)} ${esc(entryData.zip)}</span></div>
         `;
 
         // Pre-fill pet name if exists

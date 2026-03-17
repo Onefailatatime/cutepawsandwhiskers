@@ -5,6 +5,8 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
+const ALLOWED_ORIGIN = process.env.URL || 'https://cutepawsandwhiskers.com';
+
 exports.handler = async function (event) {
   if (event.httpMethod !== 'GET') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
@@ -14,7 +16,7 @@ exports.handler = async function (event) {
   if (!token) {
     return {
       statusCode: 400,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
       body: JSON.stringify({ error: 'Missing token' }),
     };
   }
@@ -29,14 +31,14 @@ exports.handler = async function (event) {
     if (error || !entry) {
       return {
         statusCode: 404,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
         body: JSON.stringify({ error: 'Entry not found' }),
       };
     }
 
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
       body: JSON.stringify(entry),
     };
   } catch (err) {

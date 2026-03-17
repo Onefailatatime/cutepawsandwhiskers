@@ -8,17 +8,34 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
+const ALLOWED_ORIGIN = process.env.URL || 'https://cutepawsandwhiskers.com';
+const CORS_HEADERS = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
+  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
+// Rate limiter (per upload token — 3 uploads per 5 min)
+const uploadRateMap = new Map();
+function isUploadLimited(tkn) {
+  const now = Date.now();
+  const record = uploadRateMap.get(tkn);
+  if (!record || now - record.start > 300000) {
+    uploadRateMap.set(tkn, { start: now, count: 1 });
+    return false;
+  }
+  record.count++;
+  return record.count > 3;
+}
+
+// Allowed image extensions
+const ALLOWED_EXT = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'];
+
 exports.handler = async function (event) {
   // CORS preflight
   if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      },
-    };
+    return { statusCode: 200, headers: CORS_HEADERS };
   }
 
   if (event.httpMethod !== 'POST') {
@@ -30,11 +47,17 @@ exports.handler = async function (event) {
     const { token, pet_name, pet_type, special_date_label, photo_base64, photo_name, photo_type } = data;
 
     if (!token || !pet_name || !pet_type || !photo_base64) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ error: 'Missing required fields' }),
-      };
+      return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Missing required fields' }) };
+    }
+
+    // Rate limit by token
+    if (isUploadLimited(token)) {
+      return { statusCode: 429, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Too many uploads. Please try again later.' }) };
+    }
+
+    // Server-side file size limit (10MB)
+    if (photo_base64.length > 10 * 1024 * 1024 * 1.37) {
+      return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: 'File too large (max 10MB)' }) };
     }
 
     // Look up entry by token
@@ -45,18 +68,15 @@ exports.handler = async function (event) {
       .single();
 
     if (lookupErr || !entry) {
-      return {
-        statusCode: 404,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ error: 'Invalid upload token' }),
-      };
+      return { statusCode: 404, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Invalid upload token' }) };
     }
 
     // Decode base64 to buffer
     const buffer = Buffer.from(photo_base64, 'base64');
 
-    // Determine file extension
-    const ext = photo_name?.split('.').pop()?.toLowerCase() || 'jpg';
+    // Validate file extension — only allow safe image types
+    const rawExt = photo_name?.split('.').pop()?.toLowerCase() || 'jpg';
+    const ext = ALLOWED_EXT.includes(rawExt) ? rawExt : 'jpg';
     const fileName = `${entry.id}_${Date.now()}.${ext}`;
     const filePath = `uploads/${fileName}`;
 
@@ -72,7 +92,7 @@ exports.handler = async function (event) {
       console.error('Storage upload error:', uploadErr);
       return {
         statusCode: 500,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
         body: JSON.stringify({ error: 'Failed to upload photo' }),
       };
     }
@@ -101,7 +121,7 @@ exports.handler = async function (event) {
       console.error('DB update error:', updateErr);
       return {
         statusCode: 500,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
         body: JSON.stringify({ error: 'Failed to save entry' }),
       };
     }
@@ -116,14 +136,14 @@ exports.handler = async function (event) {
 
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
       body: JSON.stringify({ success: true, photo_url: photoUrl }),
     };
   } catch (err) {
     console.error('upload-photo error:', err);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
       body: JSON.stringify({ error: 'Server error' }),
     };
   }

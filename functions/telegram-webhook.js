@@ -358,13 +358,11 @@ exports.handler = async function (event) {
     return { statusCode: 200, body: 'OK' };
   }
 
-  // Verify webhook secret
-  if (WEBHOOK_SECRET) {
-    const headerSecret = event.headers['x-telegram-bot-api-secret-token'];
-    if (headerSecret !== WEBHOOK_SECRET) {
-      console.warn('Invalid webhook secret');
-      return { statusCode: 200, body: 'OK' };
-    }
+  // Verify webhook secret (REQUIRED — reject if not set or mismatch)
+  const headerSecret = event.headers['x-telegram-bot-api-secret-token'];
+  if (!WEBHOOK_SECRET || headerSecret !== WEBHOOK_SECRET) {
+    console.warn('Telegram webhook: invalid or missing secret');
+    return { statusCode: 200, body: 'OK' };
   }
 
   try {
