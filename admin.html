@@ -7,6 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+  <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter','system-ui','sans-serif'] } } } }</script>
   <style>
@@ -17,6 +19,32 @@
     .modal-bg.open { opacity: 1; pointer-events: auto; }
     tr:hover td { background: #fff7ed; }
     .badge { display: inline-block; padding: 2px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; }
+    /* Quill editor overrides */
+    .ql-toolbar.ql-snow { border-radius: 12px 12px 0 0; border-color: #e5e7eb; background: #f9fafb; }
+    .ql-container.ql-snow { border-radius: 0 0 12px 12px; border-color: #e5e7eb; font-family: 'Inter','system-ui','sans-serif'; font-size: 14px; min-height: 250px; }
+    .ql-editor { min-height: 250px; line-height: 1.7; }
+    .ql-editor p { margin-bottom: 8px; }
+    .ql-snow .ql-picker.ql-header .ql-picker-label::before, .ql-snow .ql-picker.ql-header .ql-picker-item::before { content: 'Normal'; }
+    .ql-snow .ql-picker.ql-header .ql-picker-label[data-value="1"]::before, .ql-snow .ql-picker.ql-header .ql-picker-item[data-value="1"]::before { content: 'Heading 1'; }
+    .ql-snow .ql-picker.ql-header .ql-picker-label[data-value="2"]::before, .ql-snow .ql-picker.ql-header .ql-picker-item[data-value="2"]::before { content: 'Heading 2'; }
+    .ql-snow .ql-picker.ql-header .ql-picker-label[data-value="3"]::before, .ql-snow .ql-picker.ql-header .ql-picker-item[data-value="3"]::before { content: 'Heading 3'; }
+    /* Email preview panel */
+    .email-preview-frame { background: #f3f4f6; border-radius: 12px; padding: 20px; max-height: 400px; overflow-y: auto; }
+    .email-preview-frame .preview-inner { background: white; max-width: 600px; margin: 0 auto; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 32px; font-family: 'Inter','system-ui','sans-serif'; font-size: 14px; line-height: 1.7; color: #374151; }
+    /* Merge tag pills */
+    .merge-tag { display: inline-block; background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s; }
+    .merge-tag:hover { background: #fde68a; }
+    /* Word count bar */
+    .word-count-bar { font-size: 11px; color: #9ca3af; padding: 6px 12px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; }
+    /* Kanban board */
+    .kanban-col { min-width: 280px; max-width: 300px; flex-shrink: 0; background: #f9fafb; border-radius: 16px; display: flex; flex-direction: column; }
+    .kanban-col-header { padding: 16px; border-bottom: 2px solid; font-weight: 700; font-size: 14px; border-radius: 16px 16px 0 0; display: flex; align-items: center; justify-content: space-between; }
+    .kanban-col-body { padding: 8px; flex: 1; overflow-y: auto; max-height: 600px; min-height: 100px; }
+    .kanban-card { background: white; border-radius: 12px; padding: 14px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); cursor: grab; transition: box-shadow .15s, transform .15s; border-left: 3px solid transparent; }
+    .kanban-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-1px); }
+    .kanban-card:active { cursor: grabbing; }
+    .kanban-card.dragging { opacity: 0.5; transform: rotate(2deg); }
+    .kanban-col-body.drag-over { background: #fef3c7; border-radius: 0 0 16px 16px; }
   </style>
 </head>
 <body class="bg-gray-100 font-sans antialiased">
@@ -66,6 +94,7 @@
         <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="ads">Ad Campaigns</button>
         <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="winners">Winners</button>
         <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="email">Email</button>
+        <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="kanban">Board</button>
         <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="products">Products</button>
       </div>
     </nav>
@@ -274,6 +303,18 @@
             <p>No email campaigns yet. Create one to send to your groups.</p>
           </div>
         </div>
+      </div>
+
+      <!-- ===== KANBAN BOARD TAB ===== -->
+      <div class="tab-content" id="tab-kanban">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-bold text-gray-900">📋 Pipeline Board</h2>
+            <p class="text-sm text-gray-500 mt-1">Drag & drop leads through your pipeline stages</p>
+          </div>
+          <button onclick="loadKanban()" class="text-sm text-orange-500 hover:underline">↻ Refresh</button>
+        </div>
+        <div id="kanban-board" class="flex gap-4 overflow-x-auto pb-4" style="min-height:500px;"></div>
       </div>
 
       <!-- ===== PRODUCTS TAB ===== -->
@@ -525,18 +566,23 @@
     </div>
   </div>
 
-  <!-- Email Blast/Campaign Modal -->
-  <div id="blast-modal" class="modal-bg fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-8 pb-8 overflow-y-auto opacity-0 pointer-events-none">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 p-6 space-y-4">
+  <!-- Email Campaign Editor Modal (Enhanced) -->
+  <div id="blast-modal" class="modal-bg fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-4 pb-4 overflow-y-auto opacity-0 pointer-events-none">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 p-6 space-y-4">
       <div class="flex items-center justify-between">
-        <h2 class="font-bold text-gray-900 text-lg" id="blast-modal-title">New Email Campaign</h2>
+        <div class="flex items-center gap-3">
+          <h2 class="font-bold text-gray-900 text-lg" id="blast-modal-title">New Email Campaign</h2>
+          <span id="blast-autosave-indicator" class="text-xs text-gray-400 hidden">Draft saved</span>
+        </div>
         <button onclick="closeBlastModal()" class="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
       </div>
       <input type="hidden" id="blast-id">
+
+      <!-- Top row: Name, Group, Subject -->
       <div class="grid md:grid-cols-2 gap-4">
         <div>
           <label class="text-xs text-gray-500 block mb-1">Campaign Name</label>
-          <input id="blast-name" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="e.g. Photo Reminder">
+          <input id="blast-name" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="e.g. Photo Reminder" spellcheck="true">
         </div>
         <div>
           <label class="text-xs text-gray-500 block mb-1">Send To Group</label>
@@ -547,16 +593,58 @@
       </div>
       <div>
         <label class="text-xs text-gray-500 block mb-1">Email Subject</label>
-        <input id="blast-subject" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="Subject line...">
+        <input id="blast-subject" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="Subject line..." spellcheck="true">
       </div>
+
+      <!-- Merge Tags -->
       <div>
-        <label class="text-xs text-gray-500 block mb-1">Email Body (plain text — auto-formatted with branding)</label>
-        <textarea id="blast-body" rows="8" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none resize-none" placeholder="Type your message here. Each line becomes a paragraph. Use {name} for the lead's first name."></textarea>
+        <label class="text-xs text-gray-500 block mb-1">Insert Merge Tags</label>
+        <div class="flex flex-wrap gap-2">
+          <span class="merge-tag" onclick="insertMergeTag('{name}')" title="Lead's first name">👤 {name}</span>
+          <span class="merge-tag" onclick="insertMergeTag('{email}')" title="Lead's email">📧 {email}</span>
+          <span class="merge-tag" onclick="insertMergeTag('{pet_name}')" title="Pet's name">🐾 {pet_name}</span>
+          <span class="merge-tag" onclick="insertMergeTag('{order_number}')" title="Order number">🧾 {order_number}</span>
+        </div>
       </div>
+
+      <!-- Editor / Preview toggle -->
+      <div class="flex items-center gap-2 border-b border-gray-200 pb-2">
+        <button onclick="toggleEditorView('editor')" id="editor-tab-btn" class="px-4 py-1.5 rounded-lg text-sm font-medium bg-orange-500 text-white">✏️ Editor</button>
+        <button onclick="toggleEditorView('preview')" id="preview-tab-btn" class="px-4 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200">👁️ Preview</button>
+        <button onclick="toggleEditorView('code')" id="code-tab-btn" class="px-4 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200">🔧 HTML</button>
+      </div>
+
+      <!-- Quill Rich Text Editor -->
+      <div id="editor-view">
+        <div id="blast-editor"></div>
+        <div class="word-count-bar rounded-b-xl bg-gray-50">
+          <span id="editor-word-count">0 words</span>
+          <span id="editor-char-count">0 characters</span>
+        </div>
+      </div>
+
+      <!-- Preview View -->
+      <div id="preview-view" class="hidden">
+        <div class="email-preview-frame">
+          <div class="text-center text-xs text-gray-500 mb-3">📱 Email Preview — How your recipients will see it</div>
+          <div class="preview-inner" id="email-preview-content"></div>
+        </div>
+      </div>
+
+      <!-- HTML Code View -->
+      <div id="code-view" class="hidden">
+        <textarea id="blast-html-code" rows="12" class="w-full px-4 py-3 rounded-xl border border-gray-200 text-xs font-mono outline-none resize-none bg-gray-900 text-green-400" spellcheck="false"></textarea>
+        <div class="flex justify-end mt-2">
+          <button onclick="applyHtmlCode()" class="text-xs bg-gray-800 text-green-400 px-4 py-1.5 rounded-lg hover:bg-gray-700">Apply HTML to Editor</button>
+        </div>
+      </div>
+
+      <!-- Status & Actions -->
       <div id="blast-status-bar" class="hidden bg-green-50 rounded-lg p-3 text-sm text-green-700"></div>
       <div class="flex gap-3">
-        <button id="blast-save-btn" onclick="saveBlast()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200">Save Draft</button>
-        <button id="blast-send-btn" onclick="sendBlast()" class="flex-1 bg-gradient-to-r from-orange-500 to-pink-500 text-white py-3 rounded-xl font-bold hover:opacity-90">Send Now</button>
+        <button id="blast-save-btn" onclick="saveBlast()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200">💾 Save Draft</button>
+        <button onclick="previewAndTest()" class="bg-blue-50 text-blue-600 px-5 py-3 rounded-xl font-bold hover:bg-blue-100">📧 Send Test</button>
+        <button id="blast-send-btn" onclick="sendBlast()" class="flex-1 bg-gradient-to-r from-orange-500 to-pink-500 text-white py-3 rounded-xl font-bold hover:opacity-90">🚀 Send Campaign</button>
       </div>
     </div>
   </div>
@@ -682,6 +770,7 @@ function switchTab(tab) {
   if (tab === 'winners') loadWinners();
   if (tab === 'products') loadProducts();
   if (tab === 'email') loadEmailTab();
+  if (tab === 'kanban') loadKanban();
 }
 
 function refreshCurrentTab() { const active = document.querySelector('.tab-btn.active'); if (active) switchTab(active.dataset.tab); }
@@ -1680,12 +1769,52 @@ function openBlastModal(c) {
   document.getElementById('blast-id').value = c ? c.id : '';
   document.getElementById('blast-name').value = c ? c.name : '';
   document.getElementById('blast-subject').value = c ? c.subject : '';
-  document.getElementById('blast-body').value = c ? c.body_text : '';
   document.getElementById('blast-status-bar').classList.add('hidden');
+  document.getElementById('blast-autosave-indicator').classList.add('hidden');
+
+  // Initialize Quill editor if not done
+  if (!window.blastQuill) {
+    window.blastQuill = new Quill('#blast-editor', {
+      theme: 'snow',
+      placeholder: 'Compose your email here... Use the toolbar above to format text, add links, images, and more.',
+      modules: {
+        toolbar: [
+          [{ 'header': [1, 2, 3, false] }],
+          ['bold', 'italic', 'underline', 'strike'],
+          [{ 'color': [] }, { 'background': [] }],
+          [{ 'align': [] }],
+          [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+          ['blockquote'],
+          ['link', 'image'],
+          ['clean']
+        ]
+      }
+    });
+    // Word/char count
+    window.blastQuill.on('text-change', function() {
+      const text = window.blastQuill.getText().trim();
+      const words = text ? text.split(/\s+/).length : 0;
+      const chars = text.length;
+      document.getElementById('editor-word-count').textContent = words + ' word' + (words !== 1 ? 's' : '');
+      document.getElementById('editor-char-count').textContent = chars + ' character' + (chars !== 1 ? 's' : '');
+    });
+  }
+
+  // Load content into editor
+  if (c && c.body_html) {
+    window.blastQuill.root.innerHTML = c.body_html;
+  } else if (c && c.body_text) {
+    window.blastQuill.setText(c.body_text);
+  } else {
+    window.blastQuill.setText('');
+  }
+
+  // Reset to editor view
+  toggleEditorView('editor');
+
   // Populate group dropdown
   const sel = document.getElementById('blast-group');
   sel.innerHTML = '<option value="">Select a group...</option>' + allEmailGroups.map(g => `<option value="${g.id}" ${c && c.group_id === g.id ? 'selected' : ''}>${esc(g.name)} (${g.member_count})</option>`).join('');
-  // If no groups loaded, fetch them
   if (!allEmailGroups.length) {
     api('email-groups').then(data => {
       allEmailGroups = data.groups || [];
@@ -1698,10 +1827,72 @@ function openBlastModal(c) {
 function closeBlastModal() { document.getElementById('blast-modal').classList.remove('open'); }
 document.getElementById('blast-modal').addEventListener('click', e => { if (e.target.id === 'blast-modal') closeBlastModal(); });
 
+// Editor view toggle
+function toggleEditorView(view) {
+  document.getElementById('editor-view').classList.toggle('hidden', view !== 'editor');
+  document.getElementById('preview-view').classList.toggle('hidden', view !== 'preview');
+  document.getElementById('code-view').classList.toggle('hidden', view !== 'code');
+  document.getElementById('editor-tab-btn').className = view === 'editor' ? 'px-4 py-1.5 rounded-lg text-sm font-medium bg-orange-500 text-white' : 'px-4 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200';
+  document.getElementById('preview-tab-btn').className = view === 'preview' ? 'px-4 py-1.5 rounded-lg text-sm font-medium bg-orange-500 text-white' : 'px-4 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200';
+  document.getElementById('code-tab-btn').className = view === 'code' ? 'px-4 py-1.5 rounded-lg text-sm font-medium bg-orange-500 text-white' : 'px-4 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200';
+
+  if (view === 'preview') {
+    const html = getBlastHtml();
+    const subject = document.getElementById('blast-subject').value || '(No subject)';
+    document.getElementById('email-preview-content').innerHTML =
+      `<div style="text-align:center;margin-bottom:20px;"><span style="font-size:28px;">🐾</span><br><strong style="color:#f97316;font-size:16px;">Paws & Whiskers 2027</strong></div>` +
+      `<div style="border-bottom:2px solid #fed7aa;margin-bottom:16px;padding-bottom:8px;"><strong style="font-size:14px;color:#6b7280;">Subject:</strong> <span style="font-size:14px;">${esc(subject)}</span></div>` +
+      `<div style="font-size:14px;line-height:1.7;color:#374151;">${html.replace(/\{name\}/g, '<span style="color:#f97316;font-weight:600;">Sarah</span>').replace(/\{email\}/g, 'sarah@example.com').replace(/\{pet_name\}/g, '<span style="color:#f97316;font-weight:600;">Buddy</span>').replace(/\{order_number\}/g, 'ORD-12345')}</div>` +
+      `<div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;text-align:center;font-size:11px;color:#9ca3af;">Paws & Whiskers Calendar Contest 2027<br>cutepawsandwhiskers.com</div>`;
+  }
+  if (view === 'code') {
+    document.getElementById('blast-html-code').value = getBlastHtml();
+  }
+}
+
+function getBlastHtml() {
+  if (!window.blastQuill) return '';
+  return window.blastQuill.root.innerHTML;
+}
+
+function getBlastText() {
+  if (!window.blastQuill) return '';
+  return window.blastQuill.getText().trim();
+}
+
+function insertMergeTag(tag) {
+  if (!window.blastQuill) return;
+  const range = window.blastQuill.getSelection(true);
+  window.blastQuill.insertText(range.index, tag);
+  window.blastQuill.setSelection(range.index + tag.length);
+}
+
+function applyHtmlCode() {
+  const html = document.getElementById('blast-html-code').value;
+  if (window.blastQuill) {
+    window.blastQuill.root.innerHTML = html;
+  }
+  toggleEditorView('editor');
+  showToast('HTML applied to editor');
+}
+
+function previewAndTest() {
+  const subject = document.getElementById('blast-subject').value;
+  if (!subject) { showToast('Add a subject first'); return; }
+  const bodyHtml = getBlastHtml();
+  const bodyText = getBlastText();
+  if (!bodyText) { showToast('Write some content first'); return; }
+  if (!confirm('Send a test email to orders@cutepawsandwhiskers.com?')) return;
+  api('send-test-email', {}, 'POST', { subject: '[TEST] ' + subject, body_html: bodyHtml, body_text: bodyText }).then(d => {
+    if (d.success) showToast('Test email sent! Check your inbox 📬');
+    else showToast('Failed to send test: ' + (d.error || 'Unknown'));
+  });
+}
+
 function saveBlast() {
   const id = document.getElementById('blast-id').value;
-  const bodyText = document.getElementById('blast-body').value;
-  const bodyHtml = bodyText.split('\n').map(p => `<p style="font-size:15px;color:#374151;line-height:1.6;margin:0 0 12px;">${p}</p>`).join('');
+  const bodyHtml = getBlastHtml();
+  const bodyText = getBlastText();
   const payload = {
     name: document.getElementById('blast-name').value,
     subject: document.getElementById('blast-subject').value,
@@ -1715,8 +1906,15 @@ function saveBlast() {
   const btn = document.getElementById('blast-save-btn');
   btn.disabled = true; btn.textContent = 'Saving...';
   api(action, {}, 'POST', payload).then(d => {
-    btn.disabled = false; btn.textContent = 'Save Draft';
-    if (d.success) { showToast('Saved!'); loadEmailBlasts(); if (!id) { document.getElementById('blast-id').value = d.campaign.id; } }
+    btn.disabled = false; btn.textContent = '💾 Save Draft';
+    if (d.success) {
+      showToast('Saved!');
+      loadEmailBlasts();
+      if (!id) { document.getElementById('blast-id').value = d.campaign.id; }
+      const indicator = document.getElementById('blast-autosave-indicator');
+      indicator.textContent = '✓ Saved ' + new Date().toLocaleTimeString();
+      indicator.classList.remove('hidden');
+    }
   });
 }
 
@@ -1724,11 +1922,11 @@ function sendBlast() {
   let id = document.getElementById('blast-id').value;
   const group = document.getElementById('blast-group').value;
   if (!group) { showToast('Select a group to send to'); return; }
+  const bodyText = getBlastText();
+  if (!bodyText) { showToast('Write some email content first'); return; }
   if (!confirm('Send this email campaign to all members of the selected group? This cannot be undone.')) return;
 
-  // Save first if new
-  const bodyText = document.getElementById('blast-body').value;
-  const bodyHtml = bodyText.split('\n').map(p => `<p style="font-size:15px;color:#374151;line-height:1.6;margin:0 0 12px;">${p}</p>`).join('');
+  const bodyHtml = getBlastHtml();
   const payload = {
     name: document.getElementById('blast-name').value,
     subject: document.getElementById('blast-subject').value,
@@ -1739,19 +1937,20 @@ function sendBlast() {
   const sendBtn = document.getElementById('blast-send-btn');
   sendBtn.disabled = true; sendBtn.textContent = 'Sending...';
   statusBar.classList.remove('hidden');
+  statusBar.className = 'bg-green-50 rounded-lg p-3 text-sm text-green-700';
   statusBar.textContent = 'Saving campaign...';
 
   const doSend = (campId) => {
-    statusBar.textContent = 'Sending emails...';
+    statusBar.textContent = '📤 Sending emails... This may take a moment.';
     api('send-email-campaign', {}, 'POST', { id: campId }).then(d => {
-      sendBtn.disabled = false; sendBtn.textContent = 'Send Now';
+      sendBtn.disabled = false; sendBtn.textContent = '🚀 Send Campaign';
       if (d.success) {
-        statusBar.innerHTML = `<strong>Sent!</strong> ${d.sent}/${d.total} emails delivered`;
+        statusBar.innerHTML = `<strong>✅ Sent!</strong> ${d.sent}/${d.total} emails delivered`;
         showToast('Campaign sent! 📨');
         loadEmailBlasts();
       } else {
-        statusBar.className = statusBar.className.replace('bg-green-50 text-green-700', 'bg-red-50 text-red-700');
-        statusBar.textContent = 'Failed to send: ' + (d.error || 'Unknown error');
+        statusBar.className = 'bg-red-50 rounded-lg p-3 text-sm text-red-700';
+        statusBar.textContent = '❌ Failed to send: ' + (d.error || 'Unknown error');
       }
     });
   };
@@ -1858,6 +2057,140 @@ function shippingBadge(status) {
 function outcomeBadgeClass(o) { if (o.startsWith('bought_')) return 'bg-green-100 text-green-700'; if (o === 'not_interested') return 'bg-red-100 text-red-700'; if (o === 'callback') return 'bg-blue-100 text-blue-700'; return 'bg-gray-100 text-gray-600'; }
 function formatOutcome(o) { return o.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()); }
 function showToast(msg) { const t = document.createElement('div'); t.className = 'fixed bottom-4 right-4 bg-gray-900 text-white px-5 py-3 rounded-xl shadow-xl text-sm font-medium z-50 transition-opacity'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 2000); }
+
+// ===================== KANBAN BOARD =====================
+const KANBAN_COLUMNS = [
+  { id: 'new_lead', label: '🆕 New Lead', color: '#6366f1', borderColor: '#a5b4fc', bgColor: '#eef2ff', filter: e => !e.payment_confirmed },
+  { id: 'paid', label: '💳 Paid', color: '#f59e0b', borderColor: '#fcd34d', bgColor: '#fffbeb', filter: e => e.payment_confirmed && !e.photo_url && e.call_status !== 'called' },
+  { id: 'photo_received', label: '📸 Photo In', color: '#10b981', borderColor: '#6ee7b7', bgColor: '#ecfdf5', filter: e => e.payment_confirmed && e.photo_url && e.shipping_status === 'pending' },
+  { id: 'processing', label: '⚙️ Processing', color: '#3b82f6', borderColor: '#93c5fd', bgColor: '#eff6ff', filter: e => e.payment_confirmed && e.shipping_status === 'processing' },
+  { id: 'shipped', label: '📦 Shipped', color: '#8b5cf6', borderColor: '#c4b5fd', bgColor: '#f5f3ff', filter: e => e.payment_confirmed && e.shipping_status === 'shipped' },
+  { id: 'delivered', label: '✅ Delivered', color: '#059669', borderColor: '#6ee7b7', bgColor: '#ecfdf5', filter: e => e.payment_confirmed && e.shipping_status === 'delivered' },
+];
+
+let kanbanEntries = [];
+
+function loadKanban() {
+  api('entries', { limit: 500, offset: 0 }).then(data => {
+    kanbanEntries = data.entries || [];
+    renderKanban();
+  });
+}
+
+function renderKanban() {
+  const board = document.getElementById('kanban-board');
+  // Distribute entries into columns (first matching column wins)
+  const assigned = new Set();
+  const cols = KANBAN_COLUMNS.map(col => {
+    const items = kanbanEntries.filter(e => {
+      if (assigned.has(e.id)) return false;
+      if (col.filter(e)) { assigned.add(e.id); return true; }
+      return false;
+    });
+    return { ...col, items };
+  });
+
+  board.innerHTML = cols.map(col => `
+    <div class="kanban-col" data-col="${col.id}">
+      <div class="kanban-col-header" style="border-color:${col.color};background:${col.bgColor};color:${col.color};">
+        <span>${col.label}</span>
+        <span class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:${col.color};color:white;">${col.items.length}</span>
+      </div>
+      <div class="kanban-col-body" data-col="${col.id}"
+           ondragover="kanbanDragOver(event)" ondragleave="kanbanDragLeave(event)" ondrop="kanbanDrop(event, '${col.id}')">
+        ${col.items.map(e => kanbanCard(e, col)).join('')}
+        ${!col.items.length ? '<div class="text-center text-gray-300 text-sm py-8">No entries</div>' : ''}
+      </div>
+    </div>`).join('');
+}
+
+function kanbanCard(e, col) {
+  const revenue = parseFloat(e.total_price) || 0;
+  return `
+    <div class="kanban-card" draggable="true" data-id="${e.id}"
+         ondragstart="kanbanDragStart(event, '${e.id}')" ondragend="kanbanDragEnd(event)"
+         onclick="openEntry('${e.id}')" style="border-left-color:${col.color};">
+      <div class="flex items-center gap-2 mb-2">
+        ${e.photo_url ? `<img src="${e.photo_url}" class="w-8 h-8 rounded-full object-cover border border-gray-200">` : `<div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm">🐾</div>`}
+        <div class="min-w-0 flex-1">
+          <div class="font-semibold text-gray-900 text-sm truncate">${esc(e.full_name || 'Unknown')}</div>
+          <div class="text-xs text-gray-400 truncate">${esc(e.email || '')}</div>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-1 mb-1.5">
+        ${e.pet_name ? `<span class="text-xs bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full">🐾 ${esc(e.pet_name)}</span>` : ''}
+        ${revenue > 0 ? `<span class="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full">$${revenue.toFixed(0)}</span>` : ''}
+      </div>
+      <div class="flex items-center gap-1 flex-wrap">
+        ${e.payment_confirmed ? '<span class="text-xs text-green-600">💳</span>' : '<span class="text-xs text-gray-400">💳</span>'}
+        ${e.photo_url ? '<span class="text-xs text-green-600">📸</span>' : '<span class="text-xs text-gray-400">📸</span>'}
+        ${e.call_status === 'called' ? '<span class="text-xs text-green-600">📞</span>' : e.call_status === 'scheduled' ? '<span class="text-xs text-blue-500">📞</span>' : '<span class="text-xs text-gray-400">📞</span>'}
+        <span class="text-xs text-gray-300 ml-auto">${shortDate(e.created_at)}</span>
+      </div>
+    </div>`;
+}
+
+let draggedEntryId = null;
+
+function kanbanDragStart(e, id) {
+  draggedEntryId = id;
+  e.target.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function kanbanDragEnd(e) {
+  e.target.classList.remove('dragging');
+  document.querySelectorAll('.kanban-col-body').forEach(b => b.classList.remove('drag-over'));
+}
+
+function kanbanDragOver(e) {
+  e.preventDefault();
+  e.currentTarget.classList.add('drag-over');
+}
+
+function kanbanDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function kanbanDrop(e, colId) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (!draggedEntryId) return;
+
+  // Determine what update to make based on target column
+  const updates = {};
+  if (colId === 'new_lead') {
+    updates.payment_confirmed = false;
+  } else if (colId === 'paid') {
+    updates.payment_confirmed = true;
+    updates.shipping_status = 'pending';
+  } else if (colId === 'photo_received') {
+    updates.shipping_status = 'pending';
+  } else if (colId === 'processing') {
+    updates.shipping_status = 'processing';
+  } else if (colId === 'shipped') {
+    updates.shipping_status = 'shipped';
+  } else if (colId === 'delivered') {
+    updates.shipping_status = 'delivered';
+  }
+
+  // Only allow shipping status updates via drag (not payment changes to prevent accidents)
+  if (colId === 'new_lead' || colId === 'paid') {
+    showToast('Use the entry detail to change payment status');
+    return;
+  }
+
+  api('update-entry', {}, 'POST', { id: draggedEntryId, ...updates }).then(d => {
+    if (d.success) {
+      showToast('Moved to ' + KANBAN_COLUMNS.find(c => c.id === colId)?.label);
+      // Update local data
+      const entry = kanbanEntries.find(en => en.id === draggedEntryId);
+      if (entry) Object.assign(entry, updates);
+      renderKanban();
+    }
+  });
+  draggedEntryId = null;
+}
 </script>
 </body>
 </html>

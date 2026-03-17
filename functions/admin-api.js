@@ -734,6 +734,35 @@ exports.handler = async function (event) {
         return ok({ success: true });
       }
 
+      if (action === 'send-test-email') {
+        if (!body.subject || !body.body_html) return badRequest('Missing subject or body');
+        const transporter = nodemailer.createTransport({
+          host: 'smtp.zoho.com', port: 465, secure: true,
+          auth: { user: process.env.ZOHO_EMAIL, pass: process.env.ZOHO_APP_PASSWORD },
+        });
+        const testWrap = `
+          <div style="font-family:'Inter',Arial,sans-serif;max-width:600px;margin:0 auto;">
+            <div style="background:linear-gradient(to right,#f97316,#ec4899);padding:20px 32px;border-radius:16px 16px 0 0;">
+              <h2 style="color:white;font-size:18px;margin:0;">🐾 Paws & Whiskers</h2>
+            </div>
+            <div style="padding:24px 32px;border:1px solid #f3e8ff;border-top:0;border-radius:0 0 16px 16px;">
+              <p style="font-size:15px;color:#374151;">Hi Sarah!</p>
+              ${body.body_html.replace(/\{name\}/g, 'Sarah').replace(/\{email\}/g, 'sarah@example.com').replace(/\{pet_name\}/g, 'Buddy').replace(/\{order_number\}/g, 'ORD-12345')}
+              <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+              <p style="font-size:13px;color:#9ca3af;text-align:center;">Paws & Whiskers 2027 Calendar Contest<br>
+              <a href="mailto:orders@cutepawsandwhiskers.com" style="color:#f97316;">orders@cutepawsandwhiskers.com</a></p>
+            </div>
+          </div>`;
+        await transporter.sendMail({
+          from: '"Paws & Whiskers" <' + process.env.ZOHO_EMAIL + '>',
+          to: process.env.ZOHO_EMAIL,
+          replyTo: process.env.ZOHO_EMAIL,
+          subject: body.subject,
+          html: testWrap,
+        });
+        return ok({ success: true });
+      }
+
       if (action === 'send-email-campaign') {
         if (!body.id) return badRequest('Missing campaign id');
 
@@ -744,7 +773,7 @@ exports.handler = async function (event) {
         // Get group members
         const { data: members } = await supabase
           .from('email_group_members')
-          .select('entry_id, contest_entries(id, email, full_name)')
+          .select('entry_id, contest_entries(id, email, full_name, pet_name, order_number)')
           .eq('group_id', camp.group_id);
 
         if (!members || !members.length) return badRequest('No members in this group');
@@ -755,31 +784,39 @@ exports.handler = async function (event) {
         });
 
         let sentCount = 0;
-        const wrapHtml = (bodyHtml, firstName) => `
+        const wrapHtml = (bodyHtml, entry) => {
+          const firstName = entry.full_name?.split(' ')[0] || 'there';
+          // Replace merge tags
+          let html = bodyHtml
+            .replace(/\{name\}/g, firstName)
+            .replace(/\{email\}/g, entry.email || '')
+            .replace(/\{pet_name\}/g, entry.pet_name || 'your pet')
+            .replace(/\{order_number\}/g, entry.order_number || '');
+          return `
           <div style="font-family:'Inter',Arial,sans-serif;max-width:600px;margin:0 auto;">
             <div style="background:linear-gradient(to right,#f97316,#ec4899);padding:20px 32px;border-radius:16px 16px 0 0;">
               <h2 style="color:white;font-size:18px;margin:0;">🐾 Paws & Whiskers</h2>
             </div>
             <div style="padding:24px 32px;border:1px solid #f3e8ff;border-top:0;border-radius:0 0 16px 16px;">
               <p style="font-size:15px;color:#374151;">Hi ${firstName}!</p>
-              ${bodyHtml}
+              ${html}
               <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
               <p style="font-size:13px;color:#9ca3af;text-align:center;">Paws & Whiskers 2027 Calendar Contest<br>
               <a href="mailto:orders@cutepawsandwhiskers.com" style="color:#f97316;">orders@cutepawsandwhiskers.com</a></p>
             </div>
           </div>`;
+        };
 
         for (const m of members) {
           const entry = m.contest_entries;
           if (!entry || !entry.email) continue;
-          const firstName = entry.full_name?.split(' ')[0] || 'there';
           try {
             await transporter.sendMail({
               from: '"Paws & Whiskers" <' + process.env.ZOHO_EMAIL + '>',
               to: entry.email,
               replyTo: process.env.ZOHO_EMAIL,
               subject: camp.subject,
-              html: wrapHtml(camp.body_html, firstName),
+              html: wrapHtml(camp.body_html, entry),
             });
 
             await supabase.from('crm_activity_log').insert({
