@@ -2,7 +2,10 @@ const crypto = require('crypto');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-const ADMIN_SECRET = process.env.ADMIN_KEY || 'hellopat2027stats';
+const ADMIN_SECRET = process.env.ADMIN_KEY;
+if (!ADMIN_SECRET) {
+  console.error('CRITICAL: ADMIN_KEY env var is not set! Auth will fail.');
+}
 
 const HEADERS = {
   'Content-Type': 'application/json',
@@ -57,8 +60,15 @@ exports.handler = async function (event) {
       }
 
       // Constant-time comparison to prevent timing attacks
-      const emailMatch = email.trim().toLowerCase() === (ADMIN_EMAIL || '').trim().toLowerCase();
-      const passMatch = password === ADMIN_PASSWORD;
+      const emailInput = email.trim().toLowerCase();
+      const emailExpected = (ADMIN_EMAIL || '').trim().toLowerCase();
+      const emailMatch = emailInput.length === emailExpected.length &&
+        crypto.timingSafeEqual(Buffer.from(emailInput), Buffer.from(emailExpected || ' '));
+
+      const passInput = password || '';
+      const passExpected = ADMIN_PASSWORD || '';
+      const passMatch = passInput.length === passExpected.length &&
+        crypto.timingSafeEqual(Buffer.from(passInput), Buffer.from(passExpected || ' '));
 
       if (!emailMatch || !passMatch) {
         // Small delay to prevent brute force

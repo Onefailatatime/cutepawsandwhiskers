@@ -37,9 +37,9 @@ exports.handler = async function (event) {
     return { statusCode: 200, headers: HEADERS };
   }
 
-  // Auth check — verify session token from Authorization header or query param
+  // Auth check — verify session token from Authorization header ONLY (never URL params)
   const authHeader = event.headers['authorization'] || '';
-  const token = authHeader.replace('Bearer ', '') || (event.queryStringParameters || {}).token;
+  const token = authHeader.replace('Bearer ', '');
   if (!token || !verifyToken(token)) return unauthorized();
 
   const params = event.queryStringParameters || {};
@@ -89,7 +89,11 @@ exports.handler = async function (event) {
         if (params.shipping_status) query = query.eq('shipping_status', params.shipping_status);
         if (params.campaign_id) query = query.eq('campaign_id', params.campaign_id);
         if (params.search) {
-          query = query.or(`full_name.ilike.%${params.search}%,email.ilike.%${params.search}%,pet_name.ilike.%${params.search}%,phone.ilike.%${params.search}%`);
+          // Sanitize search input — escape special PostgREST filter characters
+          const sanitized = params.search.replace(/[%_\\(),.*]/g, '').trim().substring(0, 100);
+          if (sanitized) {
+            query = query.or(`full_name.ilike.%${sanitized}%,email.ilike.%${sanitized}%,pet_name.ilike.%${sanitized}%,phone.ilike.%${sanitized}%`);
+          }
         }
 
         const limit = parseInt(params.limit) || 50;
@@ -567,8 +571,15 @@ exports.handler = async function (event) {
       if (action === 'upload-campaign-image') {
         if (!body.photo_base64) return badRequest('Missing photo_base64');
 
+        // Validate file extension — only allow safe image types
+        const ALLOWED_EXT = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        const rawExt = body.file_name?.split('.').pop()?.toLowerCase() || 'jpg';
+        const ext = ALLOWED_EXT.includes(rawExt) ? rawExt : 'jpg';
+
+        // Limit upload size (10MB max)
+        if (body.photo_base64.length > 10 * 1024 * 1024 * 1.37) return badRequest('File too large (max 10MB)');
+
         const buffer = Buffer.from(body.photo_base64, 'base64');
-        const ext = body.file_name?.split('.').pop()?.toLowerCase() || 'jpg';
         const fileName = `campaign_${Date.now()}.${ext}`;
         const filePath = `campaigns/${fileName}`;
 
@@ -919,8 +930,15 @@ exports.handler = async function (event) {
       if (action === 'upload-photo') {
         if (!body.entry_id || !body.photo_base64) return badRequest('Missing entry_id or photo_base64');
 
+        // Validate file extension — only allow safe image types
+        const ALLOWED_IMG_EXT = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'];
+        const rawImgExt = body.file_name?.split('.').pop()?.toLowerCase() || 'jpg';
+        const ext = ALLOWED_IMG_EXT.includes(rawImgExt) ? rawImgExt : 'jpg';
+
+        // Limit upload size (10MB max)
+        if (body.photo_base64.length > 10 * 1024 * 1024 * 1.37) return badRequest('File too large (max 10MB)');
+
         const buffer = Buffer.from(body.photo_base64, 'base64');
-        const ext = body.file_name?.split('.').pop()?.toLowerCase() || 'jpg';
         const fileName = `${body.entry_id}_admin_${Date.now()}.${ext}`;
         const filePath = `uploads/${fileName}`;
 

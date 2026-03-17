@@ -263,6 +263,53 @@ exports.handler = async function (event) {
   }
 
   try {
+    // ===== STRIPE SIGNATURE VERIFICATION =====
+    const sig = event.headers['stripe-signature'];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!sig || !webhookSecret) {
+      console.error('Missing Stripe signature or webhook secret');
+      return { statusCode: 400, body: 'Missing signature' };
+    }
+
+    // Manual Stripe signature verification (avoids needing full stripe SDK)
+    const crypto = require('crypto');
+    const payload = event.body;
+    const sigParts = {};
+    sig.split(',').forEach(part => {
+      const [key, value] = part.split('=');
+      sigParts[key.trim()] = value;
+    });
+
+    const timestamp = sigParts.t;
+    const expectedSig = sigParts.v1;
+
+    if (!timestamp || !expectedSig) {
+      console.error('Invalid Stripe signature format');
+      return { statusCode: 400, body: 'Invalid signature format' };
+    }
+
+    // Reject if timestamp is older than 5 minutes (replay attack protection)
+    const tolerance = 300; // 5 minutes
+    const now = Math.floor(Date.now() / 1000);
+    if (Math.abs(now - parseInt(timestamp)) > tolerance) {
+      console.error('Stripe webhook timestamp too old — possible replay attack');
+      return { statusCode: 400, body: 'Timestamp outside tolerance' };
+    }
+
+    // Compute expected signature
+    const signedPayload = `${timestamp}.${payload}`;
+    const computedSig = crypto
+      .createHmac('sha256', webhookSecret)
+      .update(signedPayload, 'utf8')
+      .digest('hex');
+
+    // Constant-time comparison
+    if (!crypto.timingSafeEqual(Buffer.from(computedSig), Buffer.from(expectedSig))) {
+      console.error('Stripe signature verification failed');
+      return { statusCode: 400, body: 'Invalid signature' };
+    }
+
     const stripeEvent = JSON.parse(event.body);
 
     // Handle checkout.session.completed

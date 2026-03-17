@@ -84,10 +84,14 @@ async function handleRecent(chatId, count = 10) {
 async function handleSearch(chatId, query) {
   if (!query) return reply(chatId, 'Usage: /search <name, email, or phone>');
 
+  // Sanitize search input to prevent filter injection
+  const sanitized = query.replace(/[%_\\(),.*]/g, '').trim().substring(0, 100);
+  if (!sanitized) return reply(chatId, 'Invalid search query.');
+
   const { data: entries } = await supabase
     .from('contest_entries')
     .select('id, full_name, email, phone, pet_name, pet_type, status, payment_confirmed, photo_url, shipping_status, total_price, created_at')
-    .or(`full_name.ilike.%${query}%,email.ilike.%${query}%,pet_name.ilike.%${query}%,phone.ilike.%${query}%`)
+    .or(`full_name.ilike.%${sanitized}%,email.ilike.%${sanitized}%,pet_name.ilike.%${sanitized}%,phone.ilike.%${sanitized}%`)
     .order('created_at', { ascending: false })
     .limit(10);
 

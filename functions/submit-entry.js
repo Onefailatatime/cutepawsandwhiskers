@@ -7,14 +7,39 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
+// Simple in-memory rate limiter (resets on cold start, but still prevents bursts)
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW = 60000; // 1 minute
+const RATE_LIMIT_MAX = 5; // max 5 entries per IP per minute
+
+function isRateLimited(ip) {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now - entry.start > RATE_LIMIT_WINDOW) {
+    rateLimitMap.set(ip, { start: now, count: 1 });
+    return false;
+  }
+  entry.count++;
+  return entry.count > RATE_LIMIT_MAX;
+}
+
+const ALLOWED_ORIGIN = process.env.URL || 'https://cutepawsandwhiskers.com';
+
 exports.handler = async function (event) {
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type' } };
+    return { statusCode: 200, headers: { 'Access-Control-Allow-Origin': ALLOWED_ORIGIN, 'Access-Control-Allow-Headers': 'Content-Type' } };
   }
 
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+  }
+
+  // Rate limit by IP
+  const clientIp = event.headers['x-forwarded-for']?.split(',')[0]?.trim()
+    || event.headers['x-nf-client-connection-ip'] || 'unknown';
+  if (isRateLimited(clientIp)) {
+    return { statusCode: 429, body: JSON.stringify({ error: 'Too many requests. Please try again in a minute.' }) };
   }
 
   try {
@@ -112,7 +137,7 @@ exports.handler = async function (event) {
 
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
       body: JSON.stringify({ success: true, entry_id: row.id, fb_event_id: eventId }),
     };
   } catch (err) {
