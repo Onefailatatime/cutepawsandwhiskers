@@ -157,44 +157,103 @@
   </section>
 
   <!-- ============ GRAND PRIZE ============ -->
-  <section class="py-16 px-4 bg-gradient-to-br from-purple-100 via-pink-50 to-orange-100">
-    <div class="max-w-5xl mx-auto">
-      <div class="text-center mb-12">
-        <svg class="w-12 h-12 mx-auto mb-4 text-yellow-500" fill="currentColor" viewBox="0 0 24 24"><path d="M2 20h20v2H2v-2zm2-8h2v7H4v-7zm5 0h2v7H9v-7zm4 0h2v7h-2v-7zm5 0h2v7h-2v-7zM2 7l10-5 10 5v3H2V7z"/></svg>
-        <h2 class="text-3xl md:text-4xl font-bold mb-4 text-gray-900">Big Prizes For Our Biggest Stars</h2>
-        <p class="text-xl text-gray-600">Every entry gets in the calendar, but these lucky pets get the spotlight</p>
+  <section class="py-20 px-4 relative overflow-hidden" style="background: linear-gradient(135deg, #fdf4ff 0%, #fff7ed 30%, #fef3c7 60%, #fce7f3 100%);">
+    <!-- Decorative sparkles -->
+    <div class="absolute top-10 left-10 text-4xl opacity-40 animate-pulse">✨</div>
+    <div class="absolute top-20 right-16 text-3xl opacity-30 animate-pulse" style="animation-delay:.5s">🌟</div>
+    <div class="absolute bottom-16 left-20 text-3xl opacity-30 animate-pulse" style="animation-delay:1s">✨</div>
+    <div class="absolute bottom-10 right-10 text-4xl opacity-40 animate-pulse" style="animation-delay:1.5s">🌟</div>
+
+    <div class="max-w-5xl mx-auto relative z-10">
+      <div class="text-center mb-10">
+        <span class="text-5xl mb-4 block">🏆</span>
+        <h2 class="text-3xl md:text-5xl font-extrabold mb-4 text-gray-900">Grand Prize Winner Gets It All</h2>
+        <p class="text-xl text-gray-600 max-w-2xl mx-auto">One lucky pet will be crowned the <strong class="text-orange-600">Cover Star</strong> of the Paws &amp; Whiskers 2027 Calendar</p>
       </div>
 
-      <div class="grid md:grid-cols-2 gap-8 mb-12">
-        <!-- Cover Winner -->
-        <div class="bg-white rounded-3xl p-8 shadow-2xl border-4 border-yellow-300 relative">
-          <img src="https://images.unsplash.com/photo-1572297448250-ac6dcaedf2a7?w=540&q=80" alt="Adorable puppy" class="w-full h-48 object-cover rounded-2xl mb-6" loading="lazy">
-          <div class="text-center">
-            <h3 class="text-2xl font-bold mb-3 text-gray-900">&#127942; Cover Star Winner</h3>
-            <p class="text-gray-700 mb-4 leading-relaxed">One lucky pet will grace the entire front cover of the 2027 Paws &amp; Whiskers Calendar.</p>
-            <div class="bg-yellow-50 px-4 py-3 rounded-xl">
-              <p class="text-sm text-gray-800"><strong>Bonus:</strong> Cover winner receives 1 free extra calendar!</p>
+      <!-- Main Grand Prize Card -->
+      <div class="bg-white rounded-3xl shadow-2xl border-4 border-yellow-400 overflow-hidden mb-10 relative">
+        <div class="absolute top-0 left-0 right-0 h-2" style="background: linear-gradient(to right, #f97316, #ec4899, #a855f7, #f97316);"></div>
+
+        <div class="grid md:grid-cols-2 gap-0">
+          <!-- Image Side -->
+          <div class="p-6 md:p-8 flex items-center justify-center bg-gradient-to-br from-yellow-50 to-orange-50">
+            <img src="images/grand-prize.png" alt="Grand Prize Winner gets front cover, framed portrait, and gift box" class="w-full max-w-md rounded-2xl shadow-lg" loading="lazy">
+          </div>
+
+          <!-- Details Side -->
+          <div class="p-8 md:p-10 flex flex-col justify-center">
+            <div class="inline-flex items-center gap-2 bg-yellow-100 text-yellow-800 px-4 py-2 rounded-full text-sm font-bold mb-6 w-fit">
+              <span>🏆</span> GRAND PRIZE PACKAGE
+            </div>
+
+            <h3 class="text-2xl md:text-3xl font-extrabold text-gray-900 mb-6 leading-tight">Your Pet On The Front Cover + An Incredible Prize Bundle</h3>
+
+            <div class="space-y-4 mb-8">
+              <div class="flex items-start gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-yellow-100 flex items-center justify-center flex-shrink-0 text-2xl">📅</div>
+                <div>
+                  <p class="font-bold text-gray-900">Front Cover Star</p>
+                  <p class="text-gray-600 text-sm">Your pet featured as the face of the entire 2027 Paws &amp; Whiskers Calendar</p>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-purple-100 flex items-center justify-center flex-shrink-0 text-2xl">🎨</div>
+                <div>
+                  <p class="font-bold text-gray-900">Custom Watercolor Framed Portrait</p>
+                  <p class="text-gray-600 text-sm">A beautiful hand-style watercolor portrait of your pet, professionally framed and shipped to you</p>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-pink-100 flex items-center justify-center flex-shrink-0 text-2xl">🎁</div>
+                <div>
+                  <p class="font-bold text-gray-900">Free Gift Box With Toys &amp; Goodies</p>
+                  <p class="text-gray-600 text-sm">A surprise gift box packed with premium pet toys, treats, and goodies shipped straight to your door</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-orange-500 to-pink-500 rounded-2xl p-5 text-center">
+              <p class="text-white text-sm font-medium mb-1">Total Prize Value</p>
+              <p class="text-white text-3xl font-extrabold">$200+ Bundle</p>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Month Winners -->
-        <div class="bg-white rounded-3xl p-8 shadow-2xl border-4 border-pink-300 relative">
-          <img src="https://images.unsplash.com/photo-1656230953839-979cad7e7b45?w=540&q=80" alt="Beautiful kitten" class="w-full h-48 object-cover rounded-2xl mb-6" loading="lazy">
-          <div class="text-center">
-            <h3 class="text-2xl font-bold mb-3 text-gray-900">&#11088; Pet Of The Month Winners</h3>
-            <p class="text-gray-700 mb-4 leading-relaxed">12 amazing pets will be selected as feature pets &mdash; one for each month of 2027.</p>
-            <div class="bg-pink-50 px-4 py-3 rounded-xl">
-              <p class="text-sm text-gray-800"><strong>Recognition:</strong> Full month page with your pet as the star!</p>
+      <!-- Monthly Winners -->
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="bg-white rounded-2xl p-6 shadow-lg border-2 border-pink-200">
+          <div class="flex items-center gap-4 mb-4">
+            <span class="text-3xl">⭐</span>
+            <div>
+              <h3 class="text-xl font-bold text-gray-900">12 Monthly Stars</h3>
+              <p class="text-sm text-gray-500">One pet featured for each month</p>
             </div>
           </div>
+          <p class="text-gray-700 leading-relaxed">12 amazing pets will each be chosen as the star of their very own month in the 2027 calendar. That's a full page dedicated to your fur baby!</p>
+        </div>
+
+        <div class="bg-white rounded-2xl p-6 shadow-lg border-2 border-purple-200">
+          <div class="flex items-center gap-4 mb-4">
+            <span class="text-3xl">📸</span>
+            <div>
+              <h3 class="text-xl font-bold text-gray-900">Every Pet Gets In</h3>
+              <p class="text-sm text-gray-500">Your entry = your spot in the calendar</p>
+            </div>
+          </div>
+          <p class="text-gray-700 leading-relaxed">Every single entry is guaranteed a spot in the calendar. You'll see your pet's adorable face when you open it up &mdash; plus you get a printed copy shipped to your door!</p>
         </div>
       </div>
 
-      <!-- Premium spots -->
-      <div class="bg-white/80 backdrop-blur rounded-2xl p-8 text-center border-2 border-purple-200">
-        <h3 class="text-xl font-semibold mb-3 text-gray-900">Limited Premium Feature Spots Available</h3>
-        <p class="text-gray-700 leading-relaxed max-w-2xl mx-auto">We have a few exclusive featured month and special day upgrade spots that we'll personally offer to select entrants after the contest. These won't be sold on this page &mdash; we'll reach out directly if you qualify.</p>
+      <!-- CTA -->
+      <div class="text-center mt-10">
+        <button onclick="openModal()" class="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-10 py-5 rounded-full text-xl font-bold shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer">
+          Enter My Pet For A Chance To Win 🏆
+        </button>
+        <p class="text-sm text-gray-500 mt-3">13 total winners &bull; Every entry gets in the calendar</p>
       </div>
     </div>
   </section>
