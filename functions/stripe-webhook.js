@@ -147,15 +147,26 @@ exports.handler = async function (event) {
         return { statusCode: 200, body: 'OK - no entry ID' };
       }
 
-      // Update entry with payment confirmation
+      // Extract real amount from Stripe (amount_total is in cents)
+      const amountPaidCents = session.amount_total || 3600;
+      const amountPaid = amountPaidCents / 100;
+      const currency = (session.currency || 'usd').toUpperCase();
+      const stripeEmail = session.customer_details?.email || session.customer_email || null;
+
+      // Update entry with payment confirmation + real Stripe data
+      const updateFields = {
+        stripe_payment_id: paymentId,
+        payment_confirmed: true,
+        payment_confirmed_at: new Date().toISOString(),
+        status: 'paid',
+        total_price: amountPaid,
+      };
+      // If Stripe has customer email and entry doesn't, backfill it
+      if (stripeEmail) updateFields.stripe_customer_email = stripeEmail;
+
       const { data: entry, error: updateErr } = await supabase
         .from('contest_entries')
-        .update({
-          stripe_payment_id: paymentId,
-          payment_confirmed: true,
-          payment_confirmed_at: new Date().toISOString(),
-          status: 'paid',
-        })
+        .update(updateFields)
         .eq('id', entryId)
         .select()
         .single();
@@ -165,7 +176,7 @@ exports.handler = async function (event) {
         return { statusCode: 200, body: 'DB error but 200 to prevent retry' };
       }
 
-      // Fire Facebook Conversions API — Purchase event
+      // Fire Facebook Conversions API — Purchase event with real amount
       sendEvent({
         event_name: 'Purchase',
         event_id: `Purchase_${entryId}`,
@@ -182,21 +193,21 @@ exports.handler = async function (event) {
           client_user_agent: entry.client_user_agent,
         },
         custom_data: {
-          currency: 'USD',
-          value: 36.00,
+          currency: currency,
+          value: amountPaid,
           content_name: 'Paws & Whiskers 2027 Calendar Contest Entry',
           content_type: 'product',
           content_ids: [entryId],
         },
       }).catch(err => console.error('FB Purchase event error:', err));
 
-      // Telegram notification — sale!
+      // Telegram notification — sale with real amount!
       notifyOwner(
         `💰 <b>NEW SALE!</b>\n\n` +
         `<b>${entry.full_name}</b>\n` +
         `${entry.email} | ${entry.phone}\n` +
         `${entry.city}, ${entry.state} ${entry.zip}\n\n` +
-        `Amount: <b>$36.00</b>\n` +
+        `Amount: <b>$${amountPaid.toFixed(2)}</b>\n` +
         `Pet: ${entry.pet_name || 'Pending'}\n` +
         `ID: <code>${entryId}</code>\n` +
         (entry.utm_source ? `UTM: ${entry.utm_source} / ${entry.utm_campaign || '-'}` : '')

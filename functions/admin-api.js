@@ -188,6 +188,15 @@ exports.handler = async function (event) {
         return ok({ campaigns: data || [] });
       }
 
+      // Upsell products list
+      if (action === 'upsell-products') {
+        const { data } = await supabase
+          .from('upsell_products')
+          .select('*')
+          .order('sort_order', { ascending: true });
+        return ok({ products: data || [] });
+      }
+
       return badRequest('Unknown action');
     }
 
@@ -203,7 +212,7 @@ exports.handler = async function (event) {
           'call_status', 'admin_notes', 'total_price', 'pet_name', 'pet_type',
           'full_name', 'email', 'phone', 'address_line1', 'address_line2',
           'city', 'state', 'zip', 'shipping_status', 'tracking_number',
-          'campaign_id', 'refund_reason'
+          'campaign_id', 'refund_reason', 'special_date_label'
         ];
         const updates = {};
         for (const key of allowed) {
@@ -270,27 +279,27 @@ exports.handler = async function (event) {
         return ok({ success: true, call });
       }
 
-      // Add upsell item
+      // Add upsell item (now reads from upsell_products table)
       if (action === 'add-upsell') {
         if (!body.entry_id || !body.item_type) return badRequest('Missing entry_id or item_type');
 
-        const UPSELL_PRICES = {
-          featured_month: { price: 127, desc: 'Featured Month Package' },
-          special_day: { price: 67, desc: 'Special Day Upgrade' },
-          postcard_pack: { price: 29, desc: 'Postcard Pack' },
-        };
+        // Look up the product from the database
+        const { data: product } = await supabase
+          .from('upsell_products')
+          .select('*')
+          .eq('slug', body.item_type)
+          .single();
 
-        const upsell = UPSELL_PRICES[body.item_type];
-        if (!upsell) return badRequest('Invalid item_type');
+        if (!product) return badRequest('Invalid item_type — product not found');
 
-        const unitPrice = body.unit_price || upsell.price;
+        const unitPrice = body.unit_price || product.price;
 
         const { data: item, error } = await supabase
           .from('order_items')
           .insert({
             entry_id: body.entry_id,
             item_type: body.item_type,
-            description: body.description || upsell.desc,
+            description: body.description || product.description || product.name,
             unit_price: unitPrice,
             total_price: unitPrice,
           })
@@ -479,6 +488,119 @@ exports.handler = async function (event) {
 
         if (error) return serverError(error);
         return ok({ success: true, linked: (data || []).length });
+      }
+
+      // ===== DELETE ENTRY =====
+      if (action === 'delete-entry') {
+        if (!body.id) return badRequest('Missing id');
+
+        // Delete related records first
+        await supabase.from('order_items').delete().eq('entry_id', body.id);
+        await supabase.from('upsell_calls').delete().eq('entry_id', body.id);
+        await supabase.from('crm_activity_log').delete().eq('entry_id', body.id);
+
+        // Delete the entry itself
+        const { error } = await supabase
+          .from('contest_entries')
+          .delete()
+          .eq('id', body.id);
+
+        if (error) return serverError(error);
+        return ok({ success: true });
+      }
+
+      // ===== UPLOAD PHOTO (admin manual upload) =====
+      if (action === 'upload-photo') {
+        if (!body.entry_id || !body.photo_base64) return badRequest('Missing entry_id or photo_base64');
+
+        const buffer = Buffer.from(body.photo_base64, 'base64');
+        const ext = body.file_name?.split('.').pop()?.toLowerCase() || 'jpg';
+        const fileName = `${body.entry_id}_admin_${Date.now()}.${ext}`;
+        const filePath = `uploads/${fileName}`;
+
+        const { error: uploadErr } = await supabase.storage
+          .from('pet-photos')
+          .upload(filePath, buffer, {
+            contentType: body.file_type || 'image/jpeg',
+            upsert: false,
+          });
+
+        if (uploadErr) return serverError(uploadErr);
+
+        const { data: urlData } = supabase.storage
+          .from('pet-photos')
+          .getPublicUrl(filePath);
+
+        const photoUrl = urlData.publicUrl;
+
+        // Update entry with photo URL
+        const { data: entry, error: updateErr } = await supabase
+          .from('contest_entries')
+          .update({ photo_url: photoUrl })
+          .eq('id', body.entry_id)
+          .select()
+          .single();
+
+        if (updateErr) return serverError(updateErr);
+
+        await supabase.from('crm_activity_log').insert({
+          entry_id: body.entry_id,
+          action: 'photo_uploaded',
+          details: { source: 'admin_manual', photo_url: photoUrl },
+        });
+
+        return ok({ success: true, photo_url: photoUrl, entry });
+      }
+
+      // ===== UPSELL PRODUCT CRUD =====
+      if (action === 'create-upsell-product') {
+        if (!body.name || !body.slug || !body.price) return badRequest('Missing name, slug, or price');
+        const { data, error } = await supabase
+          .from('upsell_products')
+          .insert({
+            name: body.name,
+            slug: body.slug,
+            description: body.description || '',
+            price: parseFloat(body.price),
+            is_active: body.is_active !== false,
+            sort_order: body.sort_order || 0,
+          })
+          .select()
+          .single();
+
+        if (error) return serverError(error);
+        return ok({ success: true, product: data });
+      }
+
+      if (action === 'update-upsell-product') {
+        if (!body.id) return badRequest('Missing id');
+        const allowed = ['name', 'slug', 'description', 'price', 'is_active', 'sort_order'];
+        const updates = { updated_at: new Date().toISOString() };
+        for (const key of allowed) {
+          if (body[key] !== undefined) updates[key] = body[key];
+        }
+        if (updates.price) updates.price = parseFloat(updates.price);
+
+        const { data, error } = await supabase
+          .from('upsell_products')
+          .update(updates)
+          .eq('id', body.id)
+          .select()
+          .single();
+
+        if (error) return serverError(error);
+        return ok({ success: true, product: data });
+      }
+
+      if (action === 'delete-upsell-product') {
+        if (!body.id) return badRequest('Missing id');
+        const { error } = await supabase
+          .from('upsell_products')
+          .delete()
+          .eq('id', body.id);
+
+        if (error) return serverError(error);
+        return ok({ success: true });
       }
 
       return badRequest('Unknown action');

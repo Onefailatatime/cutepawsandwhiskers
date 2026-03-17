@@ -46,6 +46,9 @@
           <h1 class="text-lg font-bold text-gray-900">Hello Pat CRM</h1>
         </div>
         <div class="flex items-center gap-4">
+          <a href="https://dashboard.stripe.com/acct_1SUHPc7EoxIl2YAc/payments/new" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-50 text-purple-700 text-sm font-medium hover:bg-purple-100 transition-colors" title="Take payment in Stripe">
+            💳 Charge
+          </a>
           <button onclick="refreshCurrentTab()" class="text-gray-500 hover:text-orange-500 transition-colors" title="Refresh">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
           </button>
@@ -62,6 +65,7 @@
         <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="calls">Upsell Calls</button>
         <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="ads">Ad Campaigns</button>
         <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="winners">Winners</button>
+        <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="products">Products</button>
       </div>
     </nav>
 
@@ -224,7 +228,57 @@
         </div>
       </div>
 
+      <!-- ===== PRODUCTS TAB ===== -->
+      <div class="tab-content" id="tab-products">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-bold text-gray-900">🛒 Upsell Products</h2>
+            <p class="text-sm text-gray-500 mt-1">Manage your upsell products. These appear as options when adding upsells to entries.</p>
+          </div>
+          <button onclick="openProductModal()" class="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-5 py-2 rounded-xl text-sm font-bold hover:opacity-90">+ New Product</button>
+        </div>
+        <div id="products-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        <div id="products-empty" class="hidden bg-white rounded-2xl p-12 text-center text-gray-400">
+          <div class="text-4xl mb-3">🛒</div>
+          <p>No upsell products yet. Click "+ New Product" to create one.</p>
+        </div>
+      </div>
+
     </main>
+  </div>
+
+  <!-- ===== PRODUCT MODAL ===== -->
+  <div id="product-modal" class="modal-bg fixed inset-0 bg-black/50 z-50 flex items-center justify-center opacity-0 pointer-events-none">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+      <h2 class="font-bold text-gray-900 text-lg mb-4" id="product-modal-title">New Upsell Product</h2>
+      <input type="hidden" id="prod-id">
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs text-gray-500 block mb-1">Product Name *</label>
+          <input id="prod-name" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="e.g. Featured Month Package">
+        </div>
+        <div>
+          <label class="text-xs text-gray-500 block mb-1">Slug (unique key) *</label>
+          <input id="prod-slug" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="e.g. featured_month">
+        </div>
+        <div>
+          <label class="text-xs text-gray-500 block mb-1">Price ($) *</label>
+          <input id="prod-price" type="number" step="0.01" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="127.00">
+        </div>
+        <div>
+          <label class="text-xs text-gray-500 block mb-1">Description</label>
+          <textarea id="prod-desc" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none resize-none" rows="2" placeholder="Short description..."></textarea>
+        </div>
+        <div class="flex items-center gap-2">
+          <input id="prod-active" type="checkbox" checked class="rounded">
+          <label for="prod-active" class="text-sm text-gray-700">Active</label>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-5">
+        <button id="prod-save-btn" onclick="saveProduct()" class="flex-1 bg-gradient-to-r from-orange-500 to-pink-500 text-white py-2 rounded-xl font-bold text-sm hover:opacity-90">Save Product</button>
+        <button onclick="closeProductModal()" class="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+      </div>
+    </div>
   </div>
 
   <!-- ===== ENTRY DETAIL MODAL ===== -->
@@ -485,6 +539,7 @@ function switchTab(tab) {
   if (tab === 'calls') loadCallQueue();
   if (tab === 'ads') loadCampaigns();
   if (tab === 'winners') loadWinners();
+  if (tab === 'products') loadProducts();
 }
 
 function refreshCurrentTab() { const active = document.querySelector('.tab-btn.active'); if (active) switchTab(active.dataset.tab); }
@@ -548,7 +603,12 @@ function loadEntries() {
 function renderEntries() {
   document.getElementById('entries-table-body').innerHTML = currentEntries.map(e => `
     <tr class="border-t border-gray-50 cursor-pointer" onclick="openEntry('${e.id}')">
-      <td class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">${esc(e.full_name)}</td>
+      <td class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">
+        <div class="flex items-center gap-2">
+          ${e.photo_url ? `<img src="${e.photo_url}" class="w-8 h-8 rounded-full object-cover border border-gray-200 flex-shrink-0" alt="">` : `<div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm flex-shrink-0">${e.pet_type === 'dog' ? '🐕' : e.pet_type === 'cat' ? '🐈' : '🐾'}</div>`}
+          ${esc(e.full_name)}
+        </div>
+      </td>
       <td class="px-4 py-3 text-gray-600 text-xs"><div>${esc(e.email)}</div><div class="text-gray-400">${esc(e.phone || '')}</div></td>
       <td class="px-4 py-3 whitespace-nowrap">${e.pet_type === 'dog' ? '🐕' : e.pet_type === 'cat' ? '🐈' : '🐾'} ${esc(e.pet_name || '—')}</td>
       <td class="px-4 py-3">${paymentBadge(e.payment_confirmed)}</td>
@@ -567,32 +627,66 @@ function entriesPage(dir) { entriesOffset = Math.max(0, entriesOffset + dir * PA
 
 // ===================== ENTRY DETAIL MODAL =====================
 function openEntry(id) {
-  api('entry', { id }).then(data => {
+  // Load entry data AND upsell products in parallel
+  Promise.all([
+    api('entry', { id }),
+    api('upsell-products')
+  ]).then(([data, prodData]) => {
     if (!data.entry) return;
     const e = data.entry;
     const camp = data.campaign;
+    const products = (prodData.products || []).filter(p => p.is_active);
     document.getElementById('modal-title').textContent = e.full_name + (e.pet_name && e.pet_name !== 'Pending' ? ' — ' + e.pet_name : '');
     const monthNames = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
     document.getElementById('modal-body').innerHTML = `
+      <!-- Editable Contact & Pet Info -->
       <div class="grid md:grid-cols-2 gap-6">
         <div>
-          <h3 class="font-bold text-gray-900 mb-3">👤 Contact Info</h3>
-          <div class="space-y-1 text-sm">
+          <h3 class="font-bold text-gray-900 mb-3">👤 Contact Info <button onclick="toggleEditContact('${e.id}')" class="text-xs text-orange-500 font-normal ml-2 hover:underline" id="edit-contact-btn">Edit</button></h3>
+          <div id="contact-display-${e.id}" class="space-y-1 text-sm">
             <div><span class="text-gray-500 w-20 inline-block">Name:</span> <strong>${esc(e.full_name)}</strong></div>
             <div><span class="text-gray-500 w-20 inline-block">Email:</span> <a href="mailto:${e.email}" class="text-orange-500">${esc(e.email)}</a></div>
             <div><span class="text-gray-500 w-20 inline-block">Phone:</span> <a href="tel:${e.phone}" class="text-orange-500">${esc(e.phone || '—')}</a></div>
             <div><span class="text-gray-500 w-20 inline-block">Address:</span> ${esc(e.address_line1 || '')}${e.address_line2 ? ', ' + esc(e.address_line2) : ''}, ${esc(e.city || '')}, ${esc(e.state || '')} ${esc(e.zip || '')}</div>
           </div>
+          <div id="contact-edit-${e.id}" class="hidden space-y-2 text-sm">
+            <div><label class="text-xs text-gray-500">Full Name</label><input id="edit-name-${e.id}" class="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm outline-none" value="${esc(e.full_name)}"></div>
+            <div><label class="text-xs text-gray-500">Email</label><input id="edit-email-${e.id}" class="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm outline-none" value="${esc(e.email)}"></div>
+            <div><label class="text-xs text-gray-500">Phone</label><input id="edit-phone-${e.id}" class="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm outline-none" value="${esc(e.phone || '')}"></div>
+            <div><label class="text-xs text-gray-500">Address Line 1</label><input id="edit-addr1-${e.id}" class="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm outline-none" value="${esc(e.address_line1 || '')}"></div>
+            <div><label class="text-xs text-gray-500">Address Line 2</label><input id="edit-addr2-${e.id}" class="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm outline-none" value="${esc(e.address_line2 || '')}"></div>
+            <div class="grid grid-cols-3 gap-2">
+              <div><label class="text-xs text-gray-500">City</label><input id="edit-city-${e.id}" class="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm outline-none" value="${esc(e.city || '')}"></div>
+              <div><label class="text-xs text-gray-500">State</label><input id="edit-state-${e.id}" class="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm outline-none" value="${esc(e.state || '')}"></div>
+              <div><label class="text-xs text-gray-500">ZIP</label><input id="edit-zip-${e.id}" class="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm outline-none" value="${esc(e.zip || '')}"></div>
+            </div>
+            <button onclick="saveContactEdit('${e.id}')" class="px-4 py-1.5 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600">Save Contact Info</button>
+          </div>
         </div>
         <div>
-          <h3 class="font-bold text-gray-900 mb-3">🐾 Pet Info</h3>
-          <div class="space-y-1 text-sm">
+          <h3 class="font-bold text-gray-900 mb-3">🐾 Pet Info <button onclick="toggleEditPet('${e.id}')" class="text-xs text-orange-500 font-normal ml-2 hover:underline">Edit</button></h3>
+          <div id="pet-display-${e.id}" class="space-y-1 text-sm">
             <div><span class="text-gray-500 w-20 inline-block">Pet:</span> ${e.pet_type === 'dog' ? '🐕' : '🐈'} <strong>${esc(e.pet_name || 'Pending')}</strong></div>
             <div><span class="text-gray-500 w-20 inline-block">Type:</span> ${esc(e.pet_type || '—')}</div>
             ${e.special_date_label ? `<div><span class="text-gray-500 w-20 inline-block">Special:</span> ${esc(e.special_date_label)}</div>` : ''}
           </div>
-          ${e.photo_url ? `<img src="${e.photo_url}" class="mt-3 rounded-xl w-32 h-32 object-cover border-2 border-gray-100" alt="Pet photo">` : '<p class="mt-3 text-sm text-gray-400">No photo uploaded yet</p>'}
+          <div id="pet-edit-${e.id}" class="hidden space-y-2 text-sm">
+            <div><label class="text-xs text-gray-500">Pet Name</label><input id="edit-petname-${e.id}" class="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm outline-none" value="${esc(e.pet_name || '')}"></div>
+            <div><label class="text-xs text-gray-500">Pet Type</label><select id="edit-pettype-${e.id}" class="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm outline-none"><option value="dog" ${e.pet_type==='dog'?'selected':''}>Dog</option><option value="cat" ${e.pet_type==='cat'?'selected':''}>Cat</option></select></div>
+            <div><label class="text-xs text-gray-500">Special Date Label</label><input id="edit-special-${e.id}" class="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm outline-none" value="${esc(e.special_date_label || '')}"></div>
+            <button onclick="savePetEdit('${e.id}')" class="px-4 py-1.5 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600">Save Pet Info</button>
+          </div>
+
+          <!-- Photo with manual upload -->
+          <div class="mt-3">
+            ${e.photo_url ? `<img src="${e.photo_url}" class="rounded-xl w-32 h-32 object-cover border-2 border-gray-100 mb-2" alt="Pet photo">` : '<p class="text-sm text-gray-400 mb-2">No photo uploaded yet</p>'}
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">📸 Upload Photo Manually</label>
+              <input type="file" accept="image/*" onchange="adminUploadPhoto('${e.id}', this)" class="text-xs text-gray-600 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100">
+              <div id="upload-status-${e.id}" class="text-xs mt-1"></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -704,9 +798,7 @@ function openEntry(id) {
 
         <div class="flex flex-wrap gap-3 mt-4">
           <button onclick="closeEntryModal(); openCallModal('${e.id}','${esc(e.full_name)}')" class="px-4 py-2 rounded-lg bg-green-50 text-green-700 text-sm font-medium hover:bg-green-100">📞 Log Call</button>
-          <button onclick="addUpsell('${e.id}','featured_month')" class="px-4 py-2 rounded-lg bg-purple-50 text-purple-700 text-sm font-medium hover:bg-purple-100">+ Featured Month ($127)</button>
-          <button onclick="addUpsell('${e.id}','special_day')" class="px-4 py-2 rounded-lg bg-pink-50 text-pink-700 text-sm font-medium hover:bg-pink-100">+ Special Day ($67)</button>
-          <button onclick="addUpsell('${e.id}','postcard_pack')" class="px-4 py-2 rounded-lg bg-orange-50 text-orange-700 text-sm font-medium hover:bg-orange-100">+ Postcard Pack ($29)</button>
+          ${products.map(p => `<button onclick="addUpsell('${e.id}','${p.slug}')" class="px-4 py-2 rounded-lg bg-purple-50 text-purple-700 text-sm font-medium hover:bg-purple-100">+ ${esc(p.name)} ($${parseFloat(p.price).toFixed(0)})</button>`).join('')}
         </div>
       </div>
 
@@ -752,6 +844,17 @@ function openEntry(id) {
           ${data.activity.map(a => `<div>${shortDate(a.created_at)} — ${esc(a.action)}: ${esc(JSON.stringify(a.details))}</div>`).join('')}
         </div>
       </details></div>` : ''}
+
+      <!-- Delete Entry -->
+      <div class="border-t border-gray-100 pt-4">
+        <details>
+          <summary class="text-xs text-red-400 cursor-pointer hover:text-red-600">Danger Zone</summary>
+          <div class="mt-3 bg-red-50 rounded-xl p-4">
+            <p class="text-sm text-red-700 mb-3">Permanently delete this entry and all associated data (calls, upsells, activity log). This cannot be undone.</p>
+            <button onclick="deleteEntry('${e.id}', '${esc(e.full_name)}')" class="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-bold hover:bg-red-700">🗑️ Delete Entry</button>
+          </div>
+        </details>
+      </div>
     `;
     document.getElementById('entry-modal').classList.add('open');
   });
@@ -785,6 +888,173 @@ function addUpsell(entryId, itemType) {
 function removeUpsell(itemId, entryId) {
   if (!confirm('Remove this upsell?')) return;
   api('remove-upsell', {}, 'POST', { item_id: itemId, entry_id: entryId }).then(data => { if (data.success) { showToast('Upsell removed'); openEntry(entryId); } });
+}
+
+// ===================== EDIT CONTACT / PET =====================
+function toggleEditContact(id) {
+  document.getElementById('contact-display-' + id).classList.toggle('hidden');
+  document.getElementById('contact-edit-' + id).classList.toggle('hidden');
+}
+
+function toggleEditPet(id) {
+  document.getElementById('pet-display-' + id).classList.toggle('hidden');
+  document.getElementById('pet-edit-' + id).classList.toggle('hidden');
+}
+
+function saveContactEdit(id) {
+  const updates = {
+    id,
+    full_name: document.getElementById('edit-name-' + id).value,
+    email: document.getElementById('edit-email-' + id).value,
+    phone: document.getElementById('edit-phone-' + id).value,
+    address_line1: document.getElementById('edit-addr1-' + id).value,
+    address_line2: document.getElementById('edit-addr2-' + id).value,
+    city: document.getElementById('edit-city-' + id).value,
+    state: document.getElementById('edit-state-' + id).value,
+    zip: document.getElementById('edit-zip-' + id).value,
+  };
+  api('update-entry', {}, 'POST', updates).then(data => {
+    if (data.success) { showToast('Contact info saved!'); openEntry(id); }
+  });
+}
+
+function savePetEdit(id) {
+  const updates = {
+    id,
+    pet_name: document.getElementById('edit-petname-' + id).value,
+    pet_type: document.getElementById('edit-pettype-' + id).value,
+  };
+  const special = document.getElementById('edit-special-' + id).value;
+  if (special !== undefined) updates.special_date_label = special;
+  api('update-entry', {}, 'POST', updates).then(data => {
+    if (data.success) { showToast('Pet info saved!'); openEntry(id); }
+  });
+}
+
+// ===================== ADMIN PHOTO UPLOAD =====================
+function adminUploadPhoto(entryId, input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) { showToast('File too large (max 10MB)'); return; }
+
+  const statusEl = document.getElementById('upload-status-' + entryId);
+  statusEl.innerHTML = '<span class="text-orange-500">Uploading...</span>';
+
+  const reader = new FileReader();
+  reader.onload = function() {
+    const base64 = reader.result.split(',')[1];
+    api('upload-photo', {}, 'POST', {
+      entry_id: entryId,
+      photo_base64: base64,
+      file_name: file.name,
+      file_type: file.type,
+    }).then(data => {
+      if (data.success) {
+        showToast('Photo uploaded! 📸');
+        openEntry(entryId);
+      } else {
+        statusEl.innerHTML = '<span class="text-red-500">Upload failed</span>';
+      }
+    }).catch(() => {
+      statusEl.innerHTML = '<span class="text-red-500">Upload failed</span>';
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+// ===================== DELETE ENTRY =====================
+function deleteEntry(id, name) {
+  if (!confirm('Are you sure you want to permanently delete the entry for "' + name + '"? This cannot be undone.')) return;
+  if (!confirm('FINAL WARNING: This will delete ALL data for this entry including calls, upsells, and activity logs. Continue?')) return;
+
+  api('delete-entry', {}, 'POST', { id }).then(data => {
+    if (data.success) {
+      showToast('Entry deleted');
+      closeEntryModal();
+      refreshCurrentTab();
+    }
+  });
+}
+
+// ===================== PRODUCTS =====================
+let allProducts = [];
+
+function loadProducts() {
+  api('upsell-products').then(data => {
+    allProducts = data.products || [];
+    if (!allProducts.length) {
+      document.getElementById('products-grid').classList.add('hidden');
+      document.getElementById('products-empty').classList.remove('hidden');
+      return;
+    }
+    document.getElementById('products-grid').classList.remove('hidden');
+    document.getElementById('products-empty').classList.add('hidden');
+    document.getElementById('products-grid').innerHTML = allProducts.map(p => `
+      <div class="bg-white rounded-xl border-2 ${p.is_active ? 'border-gray-200' : 'border-red-200 opacity-60'} p-5 hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-bold text-gray-900">${esc(p.name)}</h3>
+          <span class="text-lg font-bold text-green-600">$${parseFloat(p.price).toFixed(0)}</span>
+        </div>
+        <p class="text-sm text-gray-500 mb-3">${esc(p.description || 'No description')}</p>
+        <div class="flex items-center justify-between">
+          <span class="badge ${p.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${p.is_active ? 'Active' : 'Inactive'}</span>
+          <code class="text-xs text-gray-400">${esc(p.slug)}</code>
+        </div>
+        <div class="flex gap-2 mt-3">
+          <button onclick="openProductModal(allProducts.find(x=>x.id==='${p.id}'))" class="flex-1 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-medium hover:bg-gray-200">Edit</button>
+          <button onclick="deleteProduct('${p.id}','${esc(p.name)}')" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-medium hover:bg-red-100">Delete</button>
+        </div>
+      </div>
+    `).join('');
+  });
+}
+
+function openProductModal(p) {
+  p = p || null;
+  document.getElementById('product-modal-title').textContent = p ? 'Edit Product' : 'New Upsell Product';
+  document.getElementById('prod-id').value = p ? p.id : '';
+  document.getElementById('prod-name').value = p ? p.name : '';
+  document.getElementById('prod-slug').value = p ? p.slug : '';
+  document.getElementById('prod-price').value = p ? p.price : '';
+  document.getElementById('prod-desc').value = p ? p.description : '';
+  document.getElementById('prod-active').checked = p ? p.is_active : true;
+  document.getElementById('product-modal').classList.add('open');
+}
+
+function closeProductModal() { document.getElementById('product-modal').classList.remove('open'); }
+document.getElementById('product-modal').addEventListener('click', e => { if (e.target.id === 'product-modal') closeProductModal(); });
+
+function saveProduct() {
+  const id = document.getElementById('prod-id').value;
+  const payload = {
+    name: document.getElementById('prod-name').value,
+    slug: document.getElementById('prod-slug').value,
+    price: parseFloat(document.getElementById('prod-price').value) || 0,
+    description: document.getElementById('prod-desc').value,
+    is_active: document.getElementById('prod-active').checked,
+  };
+  if (!payload.name || !payload.slug || !payload.price) { showToast('Name, slug, and price are required'); return; }
+  if (id) payload.id = id;
+
+  const action = id ? 'update-upsell-product' : 'create-upsell-product';
+  const btn = document.getElementById('prod-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+
+  api(action, {}, 'POST', payload).then(data => {
+    btn.disabled = false; btn.textContent = 'Save Product';
+    if (data.success) {
+      closeProductModal();
+      showToast(id ? 'Product updated!' : 'Product created! 🛒');
+      loadProducts();
+    }
+  });
+}
+
+function deleteProduct(id, name) {
+  if (!confirm('Delete product "' + name + '"? Existing upsell items on entries will not be affected.')) return;
+  api('delete-upsell-product', {}, 'POST', { id }).then(data => {
+    if (data.success) { showToast('Product deleted'); loadProducts(); }
+  });
 }
 
 // ===================== CALL MODAL =====================
