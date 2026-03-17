@@ -1,5 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 const { verifyToken } = require('./admin-login');
+const nodemailer = require('nodemailer');
+const { notifyOwner } = require('./telegram-notify');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -186,6 +188,19 @@ exports.handler = async function (event) {
           .select('id, name, platform, status')
           .order('created_at', { ascending: false });
         return ok({ campaigns: data || [] });
+      }
+
+      // Email history for an entry
+      if (action === 'email-history') {
+        if (!params.id) return badRequest('Missing id');
+        const { data } = await supabase
+          .from('crm_activity_log')
+          .select('*')
+          .eq('entry_id', params.id)
+          .in('action', ['email_sent', 'email_received'])
+          .order('created_at', { ascending: false })
+          .limit(50);
+        return ok({ emails: data || [] });
       }
 
       // Upsell products list
@@ -488,6 +503,58 @@ exports.handler = async function (event) {
 
         if (error) return serverError(error);
         return ok({ success: true, linked: (data || []).length });
+      }
+
+      // ===== SEND EMAIL FROM CRM =====
+      if (action === 'send-email') {
+        if (!body.entry_id || !body.to || !body.subject || !body.html) {
+          return badRequest('Missing entry_id, to, subject, or html');
+        }
+
+        try {
+          const transporter = nodemailer.createTransport({
+            host: 'smtp.zoho.com',
+            port: 465,
+            secure: true,
+            auth: {
+              user: process.env.ZOHO_EMAIL,
+              pass: process.env.ZOHO_APP_PASSWORD,
+            },
+          });
+
+          await transporter.sendMail({
+            from: '"Paws & Whiskers" <' + process.env.ZOHO_EMAIL + '>',
+            to: body.to,
+            replyTo: process.env.ZOHO_EMAIL,
+            subject: body.subject,
+            html: body.html,
+          });
+
+          // Log email in activity log
+          await supabase.from('crm_activity_log').insert({
+            entry_id: body.entry_id,
+            action: 'email_sent',
+            details: {
+              type: 'manual_email',
+              to: body.to,
+              subject: body.subject,
+              body_preview: body.html.replace(/<[^>]+>/g, '').substring(0, 200),
+            },
+          });
+
+          // Notify owner via Telegram
+          notifyOwner(
+            `📤 <b>EMAIL SENT</b>\n\n` +
+            `To: ${body.to}\n` +
+            `Subject: ${body.subject}\n` +
+            `Entry: <code>${body.entry_id}</code>`
+          ).catch(() => {});
+
+          return ok({ success: true });
+        } catch (emailErr) {
+          console.error('Send email error:', emailErr);
+          return serverError({ message: 'Failed to send email: ' + emailErr.message });
+        }
       }
 
       // ===== DELETE ENTRY =====

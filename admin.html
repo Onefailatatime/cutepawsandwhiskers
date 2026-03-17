@@ -837,6 +837,26 @@ function openEntry(id) {
         <button onclick="saveNotes('${e.id}')" class="mt-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200">Save Notes</button>
       </div>
 
+      <!-- Email Section -->
+      <div>
+        <h3 class="font-bold text-gray-900 mb-3">📧 Emails</h3>
+        <div id="email-history-${e.id}" class="space-y-2 mb-3 text-sm text-gray-500">Loading...</div>
+        <details>
+          <summary class="text-sm text-orange-500 cursor-pointer hover:underline font-medium">✉️ Send Email to ${esc(e.full_name.split(' ')[0])}</summary>
+          <div class="mt-3 space-y-3 bg-orange-50 rounded-xl p-4">
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">Subject</label>
+              <input id="email-subject-${e.id}" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="Email subject...">
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">Message</label>
+              <textarea id="email-body-${e.id}" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm resize-none outline-none" rows="5" placeholder="Type your message... (plain text, will be formatted automatically)"></textarea>
+            </div>
+            <button onclick="sendEmailToEntry('${e.id}', '${esc(e.email)}')" class="px-4 py-2 rounded-lg bg-orange-500 text-white text-sm font-bold hover:bg-orange-600">Send Email</button>
+          </div>
+        </details>
+      </div>
+
       ${(data.activity || []).length ? `
       <div><details>
         <summary class="font-bold text-gray-900 cursor-pointer text-sm">Activity Log (${data.activity.length})</summary>
@@ -857,7 +877,70 @@ function openEntry(id) {
       </div>
     `;
     document.getElementById('entry-modal').classList.add('open');
+
+    // Load email history for this entry
+    loadEmailHistory(e.id);
   });
+}
+
+function loadEmailHistory(entryId) {
+  api('email-history', { id: entryId }).then(data => {
+    const emails = data.emails || [];
+    const el = document.getElementById('email-history-' + entryId);
+    if (!el) return;
+    if (!emails.length) {
+      el.innerHTML = '<p class="text-gray-400 text-sm">No emails yet</p>';
+      return;
+    }
+    el.innerHTML = emails.map(e => {
+      const d = e.details || {};
+      const isSent = e.action === 'email_sent';
+      return `
+        <div class="bg-${isSent ? 'blue' : 'green'}-50 rounded-lg p-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold ${isSent ? 'text-blue-700' : 'text-green-700'}">${isSent ? '📤 Sent' : '📥 Received'}</span>
+            <span class="text-xs text-gray-400">${shortDate(e.created_at)}</span>
+          </div>
+          <div class="text-sm text-gray-700 mt-1"><strong>${esc(d.subject || '(no subject)')}</strong></div>
+          ${d.to ? `<div class="text-xs text-gray-500">To: ${esc(d.to)}</div>` : ''}
+          ${d.from ? `<div class="text-xs text-gray-500">From: ${esc(d.from)}</div>` : ''}
+          ${d.type ? `<div class="text-xs text-gray-400 mt-1">${esc(d.type.replace(/_/g, ' '))}</div>` : ''}
+          ${d.body_preview ? `<div class="text-xs text-gray-500 mt-1">${esc(d.body_preview)}</div>` : ''}
+        </div>`;
+    }).join('');
+  });
+}
+
+function sendEmailToEntry(entryId, toEmail) {
+  const subject = document.getElementById('email-subject-' + entryId).value.trim();
+  const bodyText = document.getElementById('email-body-' + entryId).value.trim();
+  if (!subject || !bodyText) { showToast('Please fill in subject and message'); return; }
+
+  const html = `
+    <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: linear-gradient(to right, #f97316, #ec4899); padding: 20px 32px; border-radius: 16px 16px 0 0;">
+        <h2 style="color: white; font-size: 18px; margin: 0;">🐾 Paws & Whiskers</h2>
+      </div>
+      <div style="padding: 24px 32px; border: 1px solid #f3e8ff; border-top: 0; border-radius: 0 0 16px 16px;">
+        ${bodyText.split('\n').map(p => '<p style="font-size: 15px; color: #374151; line-height: 1.6; margin: 0 0 12px;">' + p + '</p>').join('')}
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
+        <p style="font-size: 13px; color: #9ca3af; text-align: center;">Paws & Whiskers 2027 Calendar Contest<br>
+        <a href="mailto:orders@cutepawsandwhiskers.com" style="color: #f97316;">orders@cutepawsandwhiskers.com</a></p>
+      </div>
+    </div>`;
+
+  if (!confirm('Send email to ' + toEmail + '?')) return;
+
+  api('send-email', {}, 'POST', { entry_id: entryId, to: toEmail, subject, html }).then(data => {
+    if (data.success) {
+      showToast('Email sent! 📤');
+      document.getElementById('email-subject-' + entryId).value = '';
+      document.getElementById('email-body-' + entryId).value = '';
+      loadEmailHistory(entryId);
+    } else {
+      showToast('Failed to send email');
+    }
+  }).catch(() => showToast('Failed to send email'));
 }
 
 function closeEntryModal() { document.getElementById('entry-modal').classList.remove('open'); }

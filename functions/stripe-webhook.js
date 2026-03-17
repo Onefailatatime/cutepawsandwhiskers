@@ -220,6 +220,19 @@ exports.handler = async function (event) {
           .from('contest_entries')
           .update({ welcome_email_sent: true, welcome_email_sent_at: new Date().toISOString() })
           .eq('id', entryId);
+
+        // Log email in activity log
+        await supabase.from('crm_activity_log').insert({
+          entry_id: entryId,
+          action: 'email_sent',
+          details: {
+            type: 'welcome_email',
+            to: entry.email,
+            subject: `Welcome ${entry.first_name || entry.full_name.split(' ')[0]}! Upload your pet's photo`,
+            template: 'welcome',
+          },
+        });
+
         console.log(`Welcome email sent to ${entry.email}`);
       } catch (emailErr) {
         console.error('Email send error:', emailErr);

@@ -1,4 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
+const { notifyOwner } = require('./telegram-notify');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -125,6 +126,29 @@ exports.handler = async function (event) {
       console.error('DB update error:', updateErr);
     } else {
       console.log(`Photo uploaded via email reply for entry ${entry.id}`);
+
+      // Log in activity log
+      await supabase.from('crm_activity_log').insert({
+        entry_id: entry.id,
+        action: 'email_received',
+        details: {
+          from: senderEmail,
+          subject: data.subject || '(no subject)',
+          has_photo: true,
+          pet_name: petName,
+          pet_type: petType,
+        },
+      });
+
+      // Notify owner via Telegram
+      notifyOwner(
+        `📧 <b>INBOUND EMAIL</b>\n\n` +
+        `From: <b>${senderEmail}</b>\n` +
+        `Subject: ${data.subject || '(no subject)'}\n` +
+        `📸 Photo attached & uploaded!\n` +
+        (petName ? `Pet: ${petName}\n` : '') +
+        `Entry: <code>${entry.id}</code>`
+      ).catch(err => console.error('Telegram notify error:', err));
     }
 
     return { statusCode: 200, body: 'OK' };
