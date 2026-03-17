@@ -33,6 +33,21 @@
     .shake { animation: shake .4s ease; }
     @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
   </style>
+
+  <!-- Facebook Pixel -->
+  <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', 'YOUR_PIXEL_ID_HERE');
+    fbq('track', 'PageView');
+  </script>
+  <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=YOUR_PIXEL_ID_HERE&ev=PageView&noscript=1"/></noscript>
 </head>
 
 <body class="bg-gradient-to-b from-orange-50 via-white to-orange-50 font-sans antialiased">
@@ -479,8 +494,23 @@
     });
     document.getElementById('cta-btn').addEventListener('click', function (e) { e.preventDefault(); openModal(); });
 
+    /* ---------- FACEBOOK COOKIE HELPERS ---------- */
+    function getCookie(name) {
+      const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return match ? decodeURIComponent(match[2]) : null;
+    }
+    function getFbc() {
+      // Check URL param first (from ad click), then cookie
+      const params = new URLSearchParams(window.location.search);
+      const fbclid = params.get('fbclid');
+      if (fbclid) return 'fb.1.' + Date.now() + '.' + fbclid;
+      return getCookie('_fbc') || null;
+    }
+    function getFbp() {
+      return getCookie('_fbp') || null;
+    }
+
     /* ---------- FORM SUBMIT ---------- */
-    // TODO: Replace with your real Stripe payment link
     const PAYMENT_LINK = 'https://buy.stripe.com/eVq28lg4A6Tcdy01y1bZe04';
 
     form.addEventListener('submit', async function (e) {
@@ -515,6 +545,10 @@
       // Grab UTM params from URL
       const params = new URLSearchParams(window.location.search);
 
+      // Grab Facebook cookie IDs for Conversions API matching
+      const fbc = getFbc();
+      const fbp = getFbp();
+
       try {
         const res = await fetch('/api/submit-entry', {
           method: 'POST',
@@ -536,6 +570,10 @@
             utm_medium: params.get('utm_medium') || '',
             utm_campaign: params.get('utm_campaign') || '',
             utm_content: params.get('utm_content') || '',
+            // Facebook CAPI fields
+            fbc: fbc,
+            fbp: fbp,
+            event_source_url: window.location.href,
           }),
         });
 
@@ -543,6 +581,14 @@
 
         if (!res.ok || !result.success) {
           throw new Error(result.error || 'Something went wrong');
+        }
+
+        // Fire client-side Facebook Lead event (deduped with server via event_id)
+        if (typeof fbq === 'function' && result.fb_event_id) {
+          fbq('track', 'Lead', {
+            content_name: 'Paws & Whiskers 2027 Calendar Contest Entry',
+            content_category: 'contest_entry',
+          }, { eventID: result.fb_event_id });
         }
 
         // Success — redirect to payment with email prefilled

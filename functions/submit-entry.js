@@ -1,4 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
+const { sendEvent } = require('./fb-capi');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -31,6 +32,13 @@ exports.handler = async function (event) {
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
 
+    // Get client IP and user agent from request headers
+    const clientIp = event.headers['x-forwarded-for']?.split(',')[0]?.trim()
+      || event.headers['x-nf-client-connection-ip']
+      || event.headers['client-ip']
+      || null;
+    const clientUserAgent = event.headers['user-agent'] || null;
+
     const entry = {
       full_name: data.full_name.trim(),
       first_name: firstName,
@@ -53,6 +61,11 @@ exports.handler = async function (event) {
       utm_medium: data.utm_medium || null,
       utm_campaign: data.utm_campaign || null,
       utm_content: data.utm_content || null,
+      // Facebook Pixel / CAPI fields
+      fb_click_id: data.fbc || null,
+      fb_browser_id: data.fbp || null,
+      client_ip: clientIp,
+      client_user_agent: clientUserAgent,
     };
 
     const { data: row, error } = await supabase
@@ -63,10 +76,33 @@ exports.handler = async function (event) {
 
     if (error) throw error;
 
+    // Fire Facebook Conversions API — Lead event
+    const eventId = `Lead_${row.id}`;
+    sendEvent({
+      event_name: 'Lead',
+      event_id: eventId,
+      event_source_url: data.event_source_url || 'https://cutepawsandwhiskers.com',
+      user_data: {
+        email: entry.email,
+        phone: entry.phone,
+        first_name: firstName,
+        last_name: lastName,
+        zip: entry.zip,
+        fbc: data.fbc || null,
+        fbp: data.fbp || null,
+        client_ip: clientIp,
+        client_user_agent: clientUserAgent,
+      },
+      custom_data: {
+        content_name: 'Paws & Whiskers 2027 Calendar Contest Entry',
+        content_category: 'contest_entry',
+      },
+    }).catch(err => console.error('FB Lead event error:', err));
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ success: true, entry_id: row.id }),
+      body: JSON.stringify({ success: true, entry_id: row.id, fb_event_id: eventId }),
     };
   } catch (err) {
     console.error('submit-entry error:', err);

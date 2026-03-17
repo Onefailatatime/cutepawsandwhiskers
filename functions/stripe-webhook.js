@@ -1,5 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
 const nodemailer = require('nodemailer');
+const { sendEvent } = require('./fb-capi');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -162,6 +163,31 @@ exports.handler = async function (event) {
         console.error('DB update error:', updateErr);
         return { statusCode: 200, body: 'DB error but 200 to prevent retry' };
       }
+
+      // Fire Facebook Conversions API — Purchase event
+      sendEvent({
+        event_name: 'Purchase',
+        event_id: `Purchase_${entryId}`,
+        event_source_url: 'https://cutepawsandwhiskers.com',
+        user_data: {
+          email: entry.email,
+          phone: entry.phone,
+          first_name: entry.first_name,
+          last_name: entry.last_name,
+          zip: entry.zip,
+          fbc: entry.fb_click_id,
+          fbp: entry.fb_browser_id,
+          client_ip: entry.client_ip,
+          client_user_agent: entry.client_user_agent,
+        },
+        custom_data: {
+          currency: 'USD',
+          value: 36.00,
+          content_name: 'Paws & Whiskers 2027 Calendar Contest Entry',
+          content_type: 'product',
+          content_ids: [entryId],
+        },
+      }).catch(err => console.error('FB Purchase event error:', err));
 
       // Send welcome email
       try {
