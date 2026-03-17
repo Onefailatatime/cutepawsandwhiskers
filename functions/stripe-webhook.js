@@ -382,6 +382,20 @@ exports.handler = async function (event) {
       } catch (emailErr) {
         console.error('Receipt email error:', emailErr);
       }
+
+      // Auto-add to email groups by utm_campaign
+      if (entry.utm_campaign) {
+        try {
+          const { data: groups } = await supabase
+            .from('email_groups')
+            .select('id')
+            .eq('auto_utm_campaign', entry.utm_campaign);
+          for (const g of (groups || [])) {
+            await supabase.from('email_group_members')
+              .upsert({ group_id: g.id, entry_id: entryId }, { onConflict: 'group_id,entry_id', ignoreDuplicates: true });
+          }
+        } catch (e) { console.error('Auto-group error:', e); }
+      }
     }
 
     return { statusCode: 200, body: 'OK' };

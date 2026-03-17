@@ -203,6 +203,64 @@ exports.handler = async function (event) {
         return ok({ emails: data || [] });
       }
 
+      // ===== ALL EMAILS (global inbox) =====
+      if (action === 'all-emails') {
+        const limit = parseInt(params.limit) || 50;
+        const offset = parseInt(params.offset) || 0;
+        const { data } = await supabase
+          .from('crm_activity_log')
+          .select('*, contest_entries!inner(full_name, email, pet_name, photo_url)')
+          .in('action', ['email_sent', 'email_received'])
+          .order('created_at', { ascending: false })
+          .range(offset, offset + limit - 1);
+        return ok({ emails: data || [] });
+      }
+
+      // ===== EMAIL GROUPS =====
+      if (action === 'email-groups') {
+        const { data: groups } = await supabase
+          .from('email_groups')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        // Get member counts
+        const groupsWithCounts = [];
+        for (const g of (groups || [])) {
+          const { count } = await supabase
+            .from('email_group_members')
+            .select('id', { count: 'exact', head: true })
+            .eq('group_id', g.id);
+          groupsWithCounts.push({ ...g, member_count: count || 0 });
+        }
+        return ok({ groups: groupsWithCounts });
+      }
+
+      if (action === 'email-group') {
+        if (!params.id) return badRequest('Missing id');
+        const { data: group } = await supabase
+          .from('email_groups')
+          .select('*')
+          .eq('id', params.id)
+          .single();
+
+        const { data: members } = await supabase
+          .from('email_group_members')
+          .select('*, contest_entries(id, full_name, email, pet_name, photo_url, payment_confirmed, utm_campaign)')
+          .eq('group_id', params.id)
+          .order('added_at', { ascending: false });
+
+        return ok({ group, members: members || [] });
+      }
+
+      // ===== EMAIL CAMPAIGNS =====
+      if (action === 'email-campaigns') {
+        const { data } = await supabase
+          .from('email_campaigns')
+          .select('*, email_groups(name)')
+          .order('created_at', { ascending: false });
+        return ok({ campaigns: data || [] });
+      }
+
       // Upsell products list
       if (action === 'upsell-products') {
         const { data } = await supabase
@@ -580,6 +638,174 @@ exports.handler = async function (event) {
           console.error('Send email error:', emailErr);
           return serverError({ message: 'Failed to send email: ' + emailErr.message });
         }
+      }
+
+      // ===== EMAIL GROUP CRUD =====
+      if (action === 'create-email-group') {
+        if (!body.name) return badRequest('Missing name');
+        const insert = { name: body.name, description: body.description || '', color: body.color || '#f97316' };
+        if (body.auto_campaign_id) insert.auto_campaign_id = body.auto_campaign_id;
+        if (body.auto_utm_campaign) insert.auto_utm_campaign = body.auto_utm_campaign;
+
+        const { data, error } = await supabase.from('email_groups').insert(insert).select().single();
+        if (error) return serverError(error);
+
+        // Auto-populate if utm set
+        if (body.auto_utm_campaign) {
+          const { data: entries } = await supabase
+            .from('contest_entries')
+            .select('id')
+            .eq('utm_campaign', body.auto_utm_campaign);
+          if (entries && entries.length) {
+            const rows = entries.map(e => ({ group_id: data.id, entry_id: e.id }));
+            await supabase.from('email_group_members').upsert(rows, { onConflict: 'group_id,entry_id', ignoreDuplicates: true });
+          }
+        }
+        return ok({ success: true, group: data });
+      }
+
+      if (action === 'update-email-group') {
+        if (!body.id) return badRequest('Missing id');
+        const allowed = ['name', 'description', 'color', 'auto_campaign_id', 'auto_utm_campaign'];
+        const updates = {};
+        for (const k of allowed) { if (body[k] !== undefined) updates[k] = body[k]; }
+
+        const { data, error } = await supabase.from('email_groups').update(updates).eq('id', body.id).select().single();
+        if (error) return serverError(error);
+        return ok({ success: true, group: data });
+      }
+
+      if (action === 'delete-email-group') {
+        if (!body.id) return badRequest('Missing id');
+        await supabase.from('email_group_members').delete().eq('group_id', body.id);
+        const { error } = await supabase.from('email_groups').delete().eq('id', body.id);
+        if (error) return serverError(error);
+        return ok({ success: true });
+      }
+
+      if (action === 'add-group-members') {
+        if (!body.group_id || !body.entry_ids || !body.entry_ids.length) return badRequest('Missing group_id or entry_ids');
+        const rows = body.entry_ids.map(eid => ({ group_id: body.group_id, entry_id: eid }));
+        await supabase.from('email_group_members').upsert(rows, { onConflict: 'group_id,entry_id', ignoreDuplicates: true });
+        return ok({ success: true, added: rows.length });
+      }
+
+      if (action === 'remove-group-member') {
+        if (!body.group_id || !body.entry_id) return badRequest('Missing group_id or entry_id');
+        await supabase.from('email_group_members').delete().eq('group_id', body.group_id).eq('entry_id', body.entry_id);
+        return ok({ success: true });
+      }
+
+      if (action === 'auto-populate-group') {
+        if (!body.group_id || !body.utm_campaign) return badRequest('Missing group_id or utm_campaign');
+        const { data: entries } = await supabase.from('contest_entries').select('id').eq('utm_campaign', body.utm_campaign);
+        if (!entries || !entries.length) return ok({ success: true, added: 0 });
+        const rows = entries.map(e => ({ group_id: body.group_id, entry_id: e.id }));
+        await supabase.from('email_group_members').upsert(rows, { onConflict: 'group_id,entry_id', ignoreDuplicates: true });
+        return ok({ success: true, added: entries.length });
+      }
+
+      // ===== EMAIL CAMPAIGN CRUD & SEND =====
+      if (action === 'create-email-campaign') {
+        if (!body.name || !body.subject) return badRequest('Missing name or subject');
+        const { data, error } = await supabase.from('email_campaigns').insert({
+          name: body.name, subject: body.subject,
+          body_html: body.body_html || '', body_text: body.body_text || '',
+          group_id: body.group_id || null, status: 'draft',
+        }).select().single();
+        if (error) return serverError(error);
+        return ok({ success: true, campaign: data });
+      }
+
+      if (action === 'update-email-campaign') {
+        if (!body.id) return badRequest('Missing id');
+        const allowed = ['name', 'subject', 'body_html', 'body_text', 'group_id', 'status'];
+        const updates = {};
+        for (const k of allowed) { if (body[k] !== undefined) updates[k] = body[k]; }
+        const { data, error } = await supabase.from('email_campaigns').update(updates).eq('id', body.id).select().single();
+        if (error) return serverError(error);
+        return ok({ success: true, campaign: data });
+      }
+
+      if (action === 'delete-email-campaign') {
+        if (!body.id) return badRequest('Missing id');
+        const { error } = await supabase.from('email_campaigns').delete().eq('id', body.id);
+        if (error) return serverError(error);
+        return ok({ success: true });
+      }
+
+      if (action === 'send-email-campaign') {
+        if (!body.id) return badRequest('Missing campaign id');
+
+        const { data: camp } = await supabase.from('email_campaigns').select('*').eq('id', body.id).single();
+        if (!camp) return badRequest('Campaign not found');
+        if (!camp.group_id) return badRequest('No group assigned to this campaign');
+
+        // Get group members
+        const { data: members } = await supabase
+          .from('email_group_members')
+          .select('entry_id, contest_entries(id, email, full_name)')
+          .eq('group_id', camp.group_id);
+
+        if (!members || !members.length) return badRequest('No members in this group');
+
+        const transporter = nodemailer.createTransport({
+          host: 'smtp.zoho.com', port: 465, secure: true,
+          auth: { user: process.env.ZOHO_EMAIL, pass: process.env.ZOHO_APP_PASSWORD },
+        });
+
+        let sentCount = 0;
+        const wrapHtml = (bodyHtml, firstName) => `
+          <div style="font-family:'Inter',Arial,sans-serif;max-width:600px;margin:0 auto;">
+            <div style="background:linear-gradient(to right,#f97316,#ec4899);padding:20px 32px;border-radius:16px 16px 0 0;">
+              <h2 style="color:white;font-size:18px;margin:0;">🐾 Paws & Whiskers</h2>
+            </div>
+            <div style="padding:24px 32px;border:1px solid #f3e8ff;border-top:0;border-radius:0 0 16px 16px;">
+              <p style="font-size:15px;color:#374151;">Hi ${firstName}!</p>
+              ${bodyHtml}
+              <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+              <p style="font-size:13px;color:#9ca3af;text-align:center;">Paws & Whiskers 2027 Calendar Contest<br>
+              <a href="mailto:orders@cutepawsandwhiskers.com" style="color:#f97316;">orders@cutepawsandwhiskers.com</a></p>
+            </div>
+          </div>`;
+
+        for (const m of members) {
+          const entry = m.contest_entries;
+          if (!entry || !entry.email) continue;
+          const firstName = entry.full_name?.split(' ')[0] || 'there';
+          try {
+            await transporter.sendMail({
+              from: '"Paws & Whiskers" <' + process.env.ZOHO_EMAIL + '>',
+              to: entry.email,
+              replyTo: process.env.ZOHO_EMAIL,
+              subject: camp.subject,
+              html: wrapHtml(camp.body_html, firstName),
+            });
+
+            await supabase.from('crm_activity_log').insert({
+              entry_id: entry.id,
+              action: 'email_sent',
+              details: { type: 'email_campaign', campaign_name: camp.name, subject: camp.subject },
+            });
+            sentCount++;
+          } catch (e) {
+            console.error(`Failed to send to ${entry.email}:`, e.message);
+          }
+        }
+
+        // Update campaign
+        await supabase.from('email_campaigns').update({
+          status: 'sent', sent_count: sentCount, total_recipients: members.length, sent_at: new Date().toISOString(),
+        }).eq('id', body.id);
+
+        notifyOwner(
+          `📨 <b>EMAIL CAMPAIGN SENT</b>\n\n` +
+          `"${camp.name}"\n` +
+          `Sent to: <b>${sentCount}/${members.length}</b> recipients\n` +
+          `Subject: ${camp.subject}`
+        ).catch(() => {});
+
+        return ok({ success: true, sent: sentCount, total: members.length });
       }
 
       // ===== DELETE ENTRY =====

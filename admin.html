@@ -65,6 +65,7 @@
         <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="calls">Upsell Calls</button>
         <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="ads">Ad Campaigns</button>
         <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="winners">Winners</button>
+        <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="email">Email</button>
         <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="products">Products</button>
       </div>
     </nav>
@@ -224,6 +225,53 @@
           <div id="winners-empty" class="hidden p-12 text-center text-gray-400">
             <div class="text-4xl mb-3">🏆</div>
             <p>No winners assigned yet. Open an entry and assign a winner type.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== EMAIL TAB ===== -->
+      <div class="tab-content" id="tab-email">
+        <!-- Sub-tabs -->
+        <div class="flex gap-2 mb-4">
+          <button onclick="switchEmailSub('inbox')" id="email-sub-inbox" class="px-4 py-2 rounded-lg text-sm font-medium bg-orange-500 text-white">Inbox</button>
+          <button onclick="switchEmailSub('groups')" id="email-sub-groups" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200">Groups</button>
+          <button onclick="switchEmailSub('blast')" id="email-sub-blast" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200">Campaigns</button>
+        </div>
+
+        <!-- INBOX sub-tab -->
+        <div id="email-inbox-section">
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h2 class="font-bold text-gray-900">📧 All Emails</h2>
+              <button onclick="loadAllEmails()" class="text-sm text-orange-500 hover:underline">Refresh</button>
+            </div>
+            <div id="all-emails-list" class="divide-y divide-gray-50 max-h-[600px] overflow-y-auto"></div>
+          </div>
+        </div>
+
+        <!-- GROUPS sub-tab -->
+        <div id="email-groups-section" class="hidden">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold text-gray-900">👥 Email Groups</h2>
+            <button onclick="openGroupModal()" class="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-5 py-2 rounded-xl text-sm font-bold hover:opacity-90">+ New Group</button>
+          </div>
+          <div id="email-groups-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+          <div id="email-groups-empty" class="hidden bg-white rounded-2xl p-12 text-center text-gray-400">
+            <div class="text-4xl mb-3">👥</div>
+            <p>No groups yet. Create a group to organize leads for email campaigns.</p>
+          </div>
+        </div>
+
+        <!-- CAMPAIGNS sub-tab -->
+        <div id="email-blast-section" class="hidden">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold text-gray-900">📨 Email Campaigns</h2>
+            <button onclick="openBlastModal()" class="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-5 py-2 rounded-xl text-sm font-bold hover:opacity-90">+ New Campaign</button>
+          </div>
+          <div id="email-blasts-grid" class="space-y-3"></div>
+          <div id="email-blasts-empty" class="hidden bg-white rounded-2xl p-12 text-center text-gray-400">
+            <div class="text-4xl mb-3">📨</div>
+            <p>No email campaigns yet. Create one to send to your groups.</p>
           </div>
         </div>
       </div>
@@ -442,6 +490,88 @@
     </div>
   </div>
 
+  <!-- Email Group Modal -->
+  <div id="group-modal" class="modal-bg fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-8 pb-8 overflow-y-auto opacity-0 pointer-events-none">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="font-bold text-gray-900 text-lg" id="group-modal-title">New Email Group</h2>
+        <button onclick="closeGroupModal()" class="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+      </div>
+      <input type="hidden" id="group-id">
+      <div>
+        <label class="text-xs text-gray-500 block mb-1">Group Name</label>
+        <input id="group-name" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="e.g. Spring Dogs Ad Leads">
+      </div>
+      <div>
+        <label class="text-xs text-gray-500 block mb-1">Description</label>
+        <input id="group-desc" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="Optional description">
+      </div>
+      <div>
+        <label class="text-xs text-gray-500 block mb-1">Color</label>
+        <input id="group-color" type="color" value="#f97316" class="w-12 h-8 rounded cursor-pointer border-0">
+      </div>
+      <div>
+        <label class="text-xs text-gray-500 block mb-1">Auto-add leads from UTM Campaign</label>
+        <input id="group-utm" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="e.g. spring_dogs (matches utm_campaign)">
+        <p class="text-xs text-gray-400 mt-1">Leads from this ad campaign will be auto-added to this group</p>
+      </div>
+      <div>
+        <label class="text-xs text-gray-500 block mb-1">Link to Ad Campaign</label>
+        <select id="group-campaign" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none">
+          <option value="">None</option>
+        </select>
+      </div>
+      <button id="group-save-btn" onclick="saveGroup()" class="w-full bg-gradient-to-r from-orange-500 to-pink-500 text-white py-3 rounded-xl font-bold hover:opacity-90">Save Group</button>
+    </div>
+  </div>
+
+  <!-- Email Blast/Campaign Modal -->
+  <div id="blast-modal" class="modal-bg fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-8 pb-8 overflow-y-auto opacity-0 pointer-events-none">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="font-bold text-gray-900 text-lg" id="blast-modal-title">New Email Campaign</h2>
+        <button onclick="closeBlastModal()" class="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+      </div>
+      <input type="hidden" id="blast-id">
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <label class="text-xs text-gray-500 block mb-1">Campaign Name</label>
+          <input id="blast-name" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="e.g. Photo Reminder">
+        </div>
+        <div>
+          <label class="text-xs text-gray-500 block mb-1">Send To Group</label>
+          <select id="blast-group" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none">
+            <option value="">Select a group...</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="text-xs text-gray-500 block mb-1">Email Subject</label>
+        <input id="blast-subject" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="Subject line...">
+      </div>
+      <div>
+        <label class="text-xs text-gray-500 block mb-1">Email Body (plain text — auto-formatted with branding)</label>
+        <textarea id="blast-body" rows="8" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none resize-none" placeholder="Type your message here. Each line becomes a paragraph. Use {name} for the lead's first name."></textarea>
+      </div>
+      <div id="blast-status-bar" class="hidden bg-green-50 rounded-lg p-3 text-sm text-green-700"></div>
+      <div class="flex gap-3">
+        <button id="blast-save-btn" onclick="saveBlast()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200">Save Draft</button>
+        <button id="blast-send-btn" onclick="sendBlast()" class="flex-1 bg-gradient-to-r from-orange-500 to-pink-500 text-white py-3 rounded-xl font-bold hover:opacity-90">Send Now</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Group Detail Modal -->
+  <div id="group-detail-modal" class="modal-bg fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-8 pb-8 overflow-y-auto opacity-0 pointer-events-none">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-bold text-gray-900 text-lg" id="group-detail-title">Group</h2>
+        <button onclick="closeGroupDetailModal()" class="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+      </div>
+      <div id="group-detail-body"></div>
+    </div>
+  </div>
+
   <!-- Image Lightbox -->
   <div id="image-lightbox" class="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center opacity-0 pointer-events-none transition-opacity cursor-pointer" onclick="closeImageLightbox()">
     <img id="lightbox-img" class="max-w-[90vw] max-h-[90vh] rounded-xl shadow-2xl" alt="Full size">
@@ -551,6 +681,7 @@ function switchTab(tab) {
   if (tab === 'ads') loadCampaigns();
   if (tab === 'winners') loadWinners();
   if (tab === 'products') loadProducts();
+  if (tab === 'email') loadEmailTab();
 }
 
 function refreshCurrentTab() { const active = document.querySelector('.tab-btn.active'); if (active) switchTab(active.dataset.tab); }
@@ -1329,6 +1460,315 @@ function saveCampaign() {
       }
     }
   });
+}
+
+// ===================== EMAIL TAB =====================
+let emailSubTab = 'inbox';
+
+function switchEmailSub(sub) {
+  emailSubTab = sub;
+  ['inbox','groups','blast'].forEach(s => {
+    document.getElementById('email-' + s + '-section').classList.toggle('hidden', s !== sub);
+    const btn = document.getElementById('email-sub-' + s);
+    if (s === sub) { btn.className = 'px-4 py-2 rounded-lg text-sm font-medium bg-orange-500 text-white'; }
+    else { btn.className = 'px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200'; }
+  });
+  if (sub === 'inbox') loadAllEmails();
+  if (sub === 'groups') loadEmailGroups();
+  if (sub === 'blast') loadEmailBlasts();
+}
+
+function loadEmailTab() { loadAllEmails(); }
+
+// --- INBOX ---
+function loadAllEmails() {
+  api('all-emails', { limit: 100 }).then(data => {
+    const emails = data.emails || [];
+    const el = document.getElementById('all-emails-list');
+    if (!emails.length) { el.innerHTML = '<div class="p-8 text-center text-gray-400">No emails yet</div>'; return; }
+    el.innerHTML = emails.map(e => {
+      const d = e.details || {};
+      const isSent = e.action === 'email_sent';
+      const entry = e.contest_entries || {};
+      return `
+        <div class="px-6 py-4 hover:bg-gray-50 cursor-pointer" onclick="openEntry('${e.entry_id}')">
+          <div class="flex items-center gap-3">
+            ${entry.photo_url ? `<img src="${entry.photo_url}" class="w-10 h-10 rounded-full object-cover border border-gray-200 flex-shrink-0">` : `<div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-lg flex-shrink-0">📧</div>`}
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold ${isSent ? 'text-blue-600' : 'text-green-600'}">${isSent ? '📤 SENT' : '📥 RECEIVED'}</span>
+                <span class="text-xs text-gray-400">${shortDate(e.created_at)}</span>
+                ${d.type ? `<span class="badge bg-gray-100 text-gray-500">${d.type.replace(/_/g,' ')}</span>` : ''}
+              </div>
+              <div class="font-medium text-gray-900 text-sm truncate">${esc(entry.full_name || '')} — ${esc(d.subject || '(no subject)')}</div>
+              <div class="text-xs text-gray-500 truncate">${isSent ? 'To: ' : 'From: '}${esc(d.to || d.from || entry.email || '')}</div>
+              ${d.body_preview ? `<div class="text-xs text-gray-400 truncate mt-0.5">${esc(d.body_preview)}</div>` : ''}
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  });
+}
+
+// --- GROUPS ---
+let allEmailGroups = [];
+
+function loadEmailGroups() {
+  api('email-groups').then(data => {
+    allEmailGroups = data.groups || [];
+    if (!allEmailGroups.length) {
+      document.getElementById('email-groups-grid').classList.add('hidden');
+      document.getElementById('email-groups-empty').classList.remove('hidden');
+      return;
+    }
+    document.getElementById('email-groups-grid').classList.remove('hidden');
+    document.getElementById('email-groups-empty').classList.add('hidden');
+    document.getElementById('email-groups-grid').innerHTML = allEmailGroups.map(g => `
+      <div class="bg-white rounded-xl border-2 border-gray-200 p-5 hover:shadow-md transition-shadow cursor-pointer" onclick="openGroupDetail('${g.id}')">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-4 h-4 rounded-full flex-shrink-0" style="background:${esc(g.color)}"></div>
+          <h3 class="font-bold text-gray-900">${esc(g.name)}</h3>
+        </div>
+        ${g.description ? `<p class="text-sm text-gray-500 mb-2">${esc(g.description)}</p>` : ''}
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-bold text-gray-900">${g.member_count} members</span>
+          ${g.auto_utm_campaign ? `<span class="badge bg-blue-100 text-blue-700">auto: ${esc(g.auto_utm_campaign)}</span>` : ''}
+        </div>
+        <div class="flex gap-2 mt-3">
+          <button onclick="event.stopPropagation(); openGroupModal(allEmailGroups.find(x=>x.id==='${g.id}'))" class="flex-1 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-medium hover:bg-gray-200">Edit</button>
+          <button onclick="event.stopPropagation(); deleteGroup('${g.id}','${esc(g.name)}')" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-medium hover:bg-red-100">Delete</button>
+        </div>
+      </div>
+    `).join('');
+  });
+}
+
+function openGroupModal(g) {
+  g = g || null;
+  document.getElementById('group-modal-title').textContent = g ? 'Edit Group' : 'New Email Group';
+  document.getElementById('group-id').value = g ? g.id : '';
+  document.getElementById('group-name').value = g ? g.name : '';
+  document.getElementById('group-desc').value = g ? g.description : '';
+  document.getElementById('group-color').value = g ? g.color : '#f97316';
+  document.getElementById('group-utm').value = g ? (g.auto_utm_campaign || '') : '';
+  // Populate campaign dropdown
+  const sel = document.getElementById('group-campaign');
+  sel.innerHTML = '<option value="">None</option>' + allCampaigns.map(c => `<option value="${c.id}" ${g && g.auto_campaign_id === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
+  document.getElementById('group-modal').classList.add('open');
+}
+
+function closeGroupModal() { document.getElementById('group-modal').classList.remove('open'); }
+document.getElementById('group-modal').addEventListener('click', e => { if (e.target.id === 'group-modal') closeGroupModal(); });
+
+function saveGroup() {
+  const id = document.getElementById('group-id').value;
+  const payload = {
+    name: document.getElementById('group-name').value,
+    description: document.getElementById('group-desc').value,
+    color: document.getElementById('group-color').value,
+    auto_utm_campaign: document.getElementById('group-utm').value,
+    auto_campaign_id: document.getElementById('group-campaign').value || null,
+  };
+  if (!payload.name) { showToast('Group name required'); return; }
+  if (id) payload.id = id;
+  const action = id ? 'update-email-group' : 'create-email-group';
+  const btn = document.getElementById('group-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  api(action, {}, 'POST', payload).then(data => {
+    btn.disabled = false; btn.textContent = 'Save Group';
+    if (data.success) { closeGroupModal(); showToast(id ? 'Group updated!' : 'Group created! 👥'); loadEmailGroups(); }
+  });
+}
+
+function deleteGroup(id, name) {
+  if (!confirm('Delete group "' + name + '"? Members will not be deleted.')) return;
+  api('delete-email-group', {}, 'POST', { id }).then(d => { if (d.success) { showToast('Group deleted'); loadEmailGroups(); } });
+}
+
+function openGroupDetail(id) {
+  api('email-group', { id }).then(data => {
+    if (!data.group) return;
+    const g = data.group;
+    const members = data.members || [];
+    document.getElementById('group-detail-title').textContent = g.name + ' (' + members.length + ' members)';
+    document.getElementById('group-detail-body').innerHTML = `
+      ${g.description ? `<p class="text-sm text-gray-500 mb-3">${esc(g.description)}</p>` : ''}
+      ${g.auto_utm_campaign ? `<div class="mb-3"><span class="badge bg-blue-100 text-blue-700">Auto-adds from: ${esc(g.auto_utm_campaign)}</span>
+        <button onclick="autoPopulateGroup('${g.id}','${esc(g.auto_utm_campaign)}')" class="ml-2 text-xs text-orange-500 hover:underline">Sync now</button></div>` : ''}
+      <div class="mb-3">
+        <button onclick="addAllPaidToGroup('${g.id}')" class="text-xs px-3 py-1.5 rounded-lg bg-green-50 text-green-700 font-medium hover:bg-green-100">+ Add all paid leads</button>
+      </div>
+      <div class="space-y-1 max-h-96 overflow-y-auto">
+        ${members.length ? members.map(m => {
+          const e = m.contest_entries || {};
+          return `<div class="flex items-center justify-between bg-gray-50 rounded-lg p-2.5">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="closeGroupDetailModal(); openEntry('${e.id}')">
+              ${e.photo_url ? `<img src="${e.photo_url}" class="w-7 h-7 rounded-full object-cover">` : '<div class="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-xs">🐾</div>'}
+              <div><div class="text-sm font-medium text-gray-900">${esc(e.full_name || '')}</div><div class="text-xs text-gray-500">${esc(e.email || '')}</div></div>
+            </div>
+            <button onclick="removeFromGroup('${g.id}','${e.id}')" class="text-xs text-red-400 hover:text-red-600">Remove</button>
+          </div>`;
+        }).join('') : '<p class="text-center text-gray-400 py-6">No members yet</p>'}
+      </div>`;
+    document.getElementById('group-detail-modal').classList.add('open');
+  });
+}
+
+function closeGroupDetailModal() { document.getElementById('group-detail-modal').classList.remove('open'); }
+document.getElementById('group-detail-modal').addEventListener('click', e => { if (e.target.id === 'group-detail-modal') closeGroupDetailModal(); });
+
+function removeFromGroup(groupId, entryId) {
+  api('remove-group-member', {}, 'POST', { group_id: groupId, entry_id: entryId }).then(d => {
+    if (d.success) { showToast('Removed'); openGroupDetail(groupId); }
+  });
+}
+
+function autoPopulateGroup(groupId, utm) {
+  api('auto-populate-group', {}, 'POST', { group_id: groupId, utm_campaign: utm }).then(d => {
+    if (d.success) { showToast('Synced ' + d.added + ' leads!'); openGroupDetail(groupId); }
+  });
+}
+
+function addAllPaidToGroup(groupId) {
+  api('entries', { payment: 'true', limit: 500 }).then(data => {
+    const ids = (data.entries || []).map(e => e.id);
+    if (!ids.length) { showToast('No paid leads found'); return; }
+    api('add-group-members', {}, 'POST', { group_id: groupId, entry_ids: ids }).then(d => {
+      if (d.success) { showToast('Added ' + d.added + ' leads!'); openGroupDetail(groupId); }
+    });
+  });
+}
+
+// --- EMAIL CAMPAIGNS (BLASTS) ---
+let allEmailBlasts = [];
+
+function loadEmailBlasts() {
+  api('email-campaigns').then(data => {
+    allEmailBlasts = data.campaigns || [];
+    if (!allEmailBlasts.length) {
+      document.getElementById('email-blasts-grid').classList.add('hidden');
+      document.getElementById('email-blasts-empty').classList.remove('hidden');
+      return;
+    }
+    document.getElementById('email-blasts-grid').classList.remove('hidden');
+    document.getElementById('email-blasts-empty').classList.add('hidden');
+    document.getElementById('email-blasts-grid').innerHTML = allEmailBlasts.map(c => {
+      const statusColor = { draft: 'bg-yellow-100 text-yellow-700', sent: 'bg-green-100 text-green-700', sending: 'bg-blue-100 text-blue-700' }[c.status] || 'bg-gray-100 text-gray-500';
+      const groupName = c.email_groups ? c.email_groups.name : 'No group';
+      return `
+        <div class="bg-white rounded-xl border-2 border-gray-200 p-5 hover:shadow-md transition-shadow">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="font-bold text-gray-900">${esc(c.name)}</h3>
+            <span class="badge ${statusColor}">${c.status}</span>
+          </div>
+          <div class="text-sm text-gray-600 mb-1">Subject: <strong>${esc(c.subject)}</strong></div>
+          <div class="text-xs text-gray-500 mb-2">Group: ${esc(groupName)} ${c.sent_count ? `• Sent to ${c.sent_count}/${c.total_recipients}` : ''} ${c.sent_at ? `• ${shortDate(c.sent_at)}` : ''}</div>
+          <div class="flex gap-2">
+            ${c.status === 'draft' ? `
+              <button onclick="openBlastModal(allEmailBlasts.find(x=>x.id==='${c.id}'))" class="flex-1 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-medium hover:bg-gray-200">Edit</button>
+              <button onclick="deleteBlast('${c.id}')" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-medium hover:bg-red-100">Delete</button>
+            ` : `<span class="text-xs text-gray-400">Sent ${c.sent_at ? shortDate(c.sent_at) : ''}</span>`}
+          </div>
+        </div>`;
+    }).join('');
+  });
+}
+
+function openBlastModal(c) {
+  c = c || null;
+  document.getElementById('blast-modal-title').textContent = c ? 'Edit Email Campaign' : 'New Email Campaign';
+  document.getElementById('blast-id').value = c ? c.id : '';
+  document.getElementById('blast-name').value = c ? c.name : '';
+  document.getElementById('blast-subject').value = c ? c.subject : '';
+  document.getElementById('blast-body').value = c ? c.body_text : '';
+  document.getElementById('blast-status-bar').classList.add('hidden');
+  // Populate group dropdown
+  const sel = document.getElementById('blast-group');
+  sel.innerHTML = '<option value="">Select a group...</option>' + allEmailGroups.map(g => `<option value="${g.id}" ${c && c.group_id === g.id ? 'selected' : ''}>${esc(g.name)} (${g.member_count})</option>`).join('');
+  // If no groups loaded, fetch them
+  if (!allEmailGroups.length) {
+    api('email-groups').then(data => {
+      allEmailGroups = data.groups || [];
+      sel.innerHTML = '<option value="">Select a group...</option>' + allEmailGroups.map(g => `<option value="${g.id}" ${c && c.group_id === g.id ? 'selected' : ''}>${esc(g.name)} (${g.member_count})</option>`).join('');
+    });
+  }
+  document.getElementById('blast-modal').classList.add('open');
+}
+
+function closeBlastModal() { document.getElementById('blast-modal').classList.remove('open'); }
+document.getElementById('blast-modal').addEventListener('click', e => { if (e.target.id === 'blast-modal') closeBlastModal(); });
+
+function saveBlast() {
+  const id = document.getElementById('blast-id').value;
+  const bodyText = document.getElementById('blast-body').value;
+  const bodyHtml = bodyText.split('\n').map(p => `<p style="font-size:15px;color:#374151;line-height:1.6;margin:0 0 12px;">${p}</p>`).join('');
+  const payload = {
+    name: document.getElementById('blast-name').value,
+    subject: document.getElementById('blast-subject').value,
+    body_text: bodyText,
+    body_html: bodyHtml,
+    group_id: document.getElementById('blast-group').value || null,
+  };
+  if (!payload.name || !payload.subject) { showToast('Name and subject required'); return; }
+  if (id) payload.id = id;
+  const action = id ? 'update-email-campaign' : 'create-email-campaign';
+  const btn = document.getElementById('blast-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  api(action, {}, 'POST', payload).then(d => {
+    btn.disabled = false; btn.textContent = 'Save Draft';
+    if (d.success) { showToast('Saved!'); loadEmailBlasts(); if (!id) { document.getElementById('blast-id').value = d.campaign.id; } }
+  });
+}
+
+function sendBlast() {
+  let id = document.getElementById('blast-id').value;
+  const group = document.getElementById('blast-group').value;
+  if (!group) { showToast('Select a group to send to'); return; }
+  if (!confirm('Send this email campaign to all members of the selected group? This cannot be undone.')) return;
+
+  // Save first if new
+  const bodyText = document.getElementById('blast-body').value;
+  const bodyHtml = bodyText.split('\n').map(p => `<p style="font-size:15px;color:#374151;line-height:1.6;margin:0 0 12px;">${p}</p>`).join('');
+  const payload = {
+    name: document.getElementById('blast-name').value,
+    subject: document.getElementById('blast-subject').value,
+    body_text: bodyText, body_html: bodyHtml, group_id: group,
+  };
+
+  const statusBar = document.getElementById('blast-status-bar');
+  const sendBtn = document.getElementById('blast-send-btn');
+  sendBtn.disabled = true; sendBtn.textContent = 'Sending...';
+  statusBar.classList.remove('hidden');
+  statusBar.textContent = 'Saving campaign...';
+
+  const doSend = (campId) => {
+    statusBar.textContent = 'Sending emails...';
+    api('send-email-campaign', {}, 'POST', { id: campId }).then(d => {
+      sendBtn.disabled = false; sendBtn.textContent = 'Send Now';
+      if (d.success) {
+        statusBar.innerHTML = `<strong>Sent!</strong> ${d.sent}/${d.total} emails delivered`;
+        showToast('Campaign sent! 📨');
+        loadEmailBlasts();
+      } else {
+        statusBar.className = statusBar.className.replace('bg-green-50 text-green-700', 'bg-red-50 text-red-700');
+        statusBar.textContent = 'Failed to send: ' + (d.error || 'Unknown error');
+      }
+    });
+  };
+
+  if (!id) {
+    api('create-email-campaign', {}, 'POST', payload).then(d => {
+      if (d.success) { document.getElementById('blast-id').value = d.campaign.id; doSend(d.campaign.id); }
+    });
+  } else {
+    payload.id = id;
+    api('update-email-campaign', {}, 'POST', payload).then(() => doSend(id));
+  }
+}
+
+function deleteBlast(id) {
+  if (!confirm('Delete this email campaign?')) return;
+  api('delete-email-campaign', {}, 'POST', { id }).then(d => { if (d.success) { showToast('Deleted'); loadEmailBlasts(); } });
 }
 
 // ===================== IMAGE LIGHTBOX =====================
