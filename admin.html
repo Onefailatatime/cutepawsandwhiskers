@@ -364,6 +364,64 @@
                 </div>
               </div>
             </div>
+            <!-- Koi Guide (collapsible) -->
+            <div id="koi-guide" class="border-t border-gray-100">
+              <button onclick="document.getElementById('koi-guide-body').classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="w-full px-5 py-2.5 flex items-center justify-between text-xs font-bold text-gray-400 uppercase tracking-wide hover:bg-gray-50 transition">
+                <span>How the Koi Meter works</span>
+                <svg class="w-3.5 h-3.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+              <div id="koi-guide-body" class="hidden px-5 pb-4 space-y-2">
+                <div id="koi-guide-current" class="rounded-xl p-3 text-sm space-y-1.5"></div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <div class="flex items-start gap-2 rounded-lg bg-blue-50 p-2.5">
+                    <img src="img/koi/tadpole.svg" class="w-8 h-8 flex-shrink-0">
+                    <div>
+                      <div class="font-bold text-blue-700">Tadpole <span class="font-normal text-blue-500">(0-49)</span></div>
+                      <div class="text-blue-600 mt-0.5">Spend &lt; $100 or &lt; 5 purchases</div>
+                      <div class="text-gray-500 mt-0.5">Too early to judge. Don't touch anything. Just log data and let the ad run.</div>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-2 rounded-lg bg-yellow-50 p-2.5">
+                    <img src="img/koi/cloudy-pond.svg" class="w-8 h-8 flex-shrink-0">
+                    <div>
+                      <div class="font-bold text-yellow-700">Cloudy Pond <span class="font-normal text-yellow-500">(50-59)</span></div>
+                      <div class="text-yellow-600 mt-0.5">Payback ratio &lt; 0.8x</div>
+                      <div class="text-gray-500 mt-0.5">Some interest but losing money. Change ONE thing (ad, page, or upsell), then retest with another $100.</div>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-2 rounded-lg bg-green-50 p-2.5">
+                    <img src="img/koi/healthy-koi.svg" class="w-8 h-8 flex-shrink-0">
+                    <div>
+                      <div class="font-bold text-green-700">Healthy Koi <span class="font-normal text-green-500">(60-79)</span></div>
+                      <div class="text-green-600 mt-0.5">Payback 0.8x - 1.2x</div>
+                      <div class="text-gray-500 mt-0.5">Close to breaking even! Keep running, improve upsells and creatives. No big changes.</div>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-2 rounded-lg bg-emerald-50 p-2.5">
+                    <img src="img/koi/apex-koi.svg" class="w-8 h-8 flex-shrink-0">
+                    <div>
+                      <div class="font-bold text-emerald-700">Apex Koi <span class="font-normal text-emerald-500">(80-100)</span></div>
+                      <div class="text-emerald-600 mt-0.5">Payback &ge; 1.2x</div>
+                      <div class="text-gray-500 mt-0.5">Winner! Pays for itself in 30 days. Scale budget 20-30% at a time. Add more creatives.</div>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-2 rounded-lg bg-red-50 p-2.5 sm:col-span-2">
+                    <img src="img/koi/dead-fish.svg" class="w-8 h-8 flex-shrink-0">
+                    <div>
+                      <div class="font-bold text-red-700">Dead Fish <span class="font-normal text-red-500">(10)</span></div>
+                      <div class="text-red-600 mt-0.5">$100+ spent with 0 purchases, CAC &gt; $40, or payback &lt; 0.5x</div>
+                      <div class="text-gray-500 mt-0.5">Clearly losing. Pause immediately. Rebuild the offer or creative before spending more.</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="rounded-lg bg-gray-50 p-3 text-xs text-gray-500 space-y-1">
+                  <div class="font-bold text-gray-600 text-[11px] uppercase tracking-wide">Key Formula</div>
+                  <div><strong>Payback Ratio</strong> = 30-day revenue per entry / (CAC + calendar cost)</div>
+                  <div><strong>Goal:</strong> Payback &ge; 1.0 = campaign pays for itself. &ge; 1.2 = scale it.</div>
+                  <div class="pt-1 border-t border-gray-200 mt-1"><strong>Your journey:</strong> Tadpole (learn) &rarr; Cloudy Pond (fix) &rarr; Healthy Koi (optimize) &rarr; Apex Koi (scale)</div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- 3. CAMPAIGN KANBAN -->
@@ -2435,6 +2493,62 @@ function renderKoiMeter() {
 
   // Logging streak
   renderLoggingStreak();
+
+  // Update koi guide "You are here" section
+  const guideEl = document.getElementById('koi-guide-current');
+  const guideColors = {
+    tadpole: 'bg-blue-50 border border-blue-200',
+    cloudy_pond: 'bg-yellow-50 border border-yellow-200',
+    healthy_koi: 'bg-green-50 border border-green-200',
+    apex_koi: 'bg-emerald-50 border border-emerald-200',
+    dead_fish: 'bg-red-50 border border-red-200',
+  };
+  const guideSteps = {
+    tadpole: [
+      'You\'re in the testing phase. The Koi Meter can\'t judge results yet.',
+      '<strong>Milestones to unlock judgment:</strong>',
+      '&bull; Spend at least <strong>$100</strong> on this campaign',
+      '&bull; Get at least <strong>5 purchases</strong>',
+      '&bull; Log your daily metrics from Facebook Ads Manager',
+      '<strong>What NOT to do:</strong> Don\'t change the ad, the page, or the offer. Let the data come in first.',
+    ],
+    cloudy_pond: [
+      'Your campaign has data but the math isn\'t profitable yet.',
+      '<strong>Your next step:</strong>',
+      '&bull; Look at the Health Check cards below — find the red one',
+      '&bull; If <strong>CTR</strong> is red: the ad creative isn\'t working. Try a new image/video.',
+      '&bull; If <strong>Purchase Rate</strong> is red: the landing page isn\'t converting. Fix the offer or page.',
+      '&bull; If both are OK: your upsells need work. Improve the post-purchase call.',
+      '&bull; Change <strong>ONE thing</strong>, then run another $100 test.',
+    ],
+    healthy_koi: [
+      'You\'re close to breaking even. Small tweaks can tip this into profit.',
+      '<strong>Your next step:</strong>',
+      '&bull; Focus on <strong>upsell revenue</strong> — every extra dollar per entry matters',
+      '&bull; Test 1-2 new ad creatives to find a better performer',
+      '&bull; Don\'t make big changes to the offer or page',
+      '&bull; Keep logging daily and watch payback ratio climb toward 1.2x',
+    ],
+    apex_koi: [
+      'This campaign is a proven winner. Time to grow it.',
+      '<strong>Your next step:</strong>',
+      '&bull; Increase budget by <strong>20-30%</strong> every 3-5 days',
+      '&bull; Add 2-3 new creatives (different angles, formats) to fight ad fatigue',
+      '&bull; Start a new campaign test on the side with a different audience',
+      '&bull; Archive this campaign when performance drops, then clone what worked',
+    ],
+    dead_fish: [
+      'This campaign is losing money. Continuing to spend won\'t fix it.',
+      '<strong>Your next step:</strong>',
+      '&bull; <strong>Pause the campaign</strong> in Facebook Ads Manager right now',
+      '&bull; Review: Was it the ad (low CTR)? The page (low purchase rate)? Or the offer?',
+      '&bull; Rebuild the weakest part, then start a brand new test with $100',
+      '&bull; Archive this campaign and log what you learned in Notes',
+    ],
+  };
+  const steps = guideSteps[koi.key] || [];
+  guideEl.className = 'rounded-xl p-3 text-sm space-y-1.5 ' + (guideColors[koi.key] || '');
+  guideEl.innerHTML = '<div class="font-bold text-xs uppercase tracking-wide text-gray-500 mb-1">You are here: ' + koi.status + '</div>' + steps.map(s => '<div class="text-gray-600">' + s + '</div>').join('');
 }
 
 function renderLoggingStreak() {
