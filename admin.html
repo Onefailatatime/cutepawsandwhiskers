@@ -2714,6 +2714,7 @@ function saveDailyMetric() {
   const spend = document.getElementById('dm-spend').value;
   if (!date || !spend) { showToast('Date and spend are required'); return; }
 
+  const existingId = document.getElementById('dm-id').value;
   const payload = {
     campaign_id: selectedPerfCampaign,
     metric_date: date,
@@ -2734,6 +2735,9 @@ function saveDailyMetric() {
     notes: document.getElementById('dm-notes').value,
   };
 
+  // Include id when editing existing metric
+  if (existingId) payload.id = existingId;
+
   // Auto-calc cost_per_lead and cost_per_purchase
   if (payload.leads > 0) payload.cost_per_lead = payload.spend / payload.leads;
   if (payload.purchases > 0) payload.cost_per_purchase = payload.spend / payload.purchases;
@@ -2745,11 +2749,16 @@ function saveDailyMetric() {
     btn.disabled = false; btn.textContent = 'Save Metrics';
     if (data.metric) {
       closeMetricModal();
-      showToast('Metrics saved! 📊');
+      showToast('Metrics saved!');
       openHub(selectedPerfCampaign);
     } else if (data.error) {
       showToast('Error: ' + data.error);
+    } else {
+      showToast('Error: Unexpected response');
     }
+  }).catch(err => {
+    btn.disabled = false; btn.textContent = 'Save Metrics';
+    showToast('Error: ' + err.message);
   });
 }
 

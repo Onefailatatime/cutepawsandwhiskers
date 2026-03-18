@@ -1093,11 +1093,27 @@ exports.handler = async function (event) {
         }
         row.updated_at = new Date().toISOString();
 
-        const { data, error } = await supabase
-          .from('ad_daily_metrics')
-          .upsert(row, { onConflict: 'campaign_id,metric_date' })
-          .select()
-          .single();
+        let data, error;
+        if (body.id) {
+          // Direct update by ID when editing existing metric
+          const result = await supabase
+            .from('ad_daily_metrics')
+            .update(row)
+            .eq('id', body.id)
+            .select()
+            .single();
+          data = result.data;
+          error = result.error;
+        } else {
+          // Upsert for new metrics
+          const result = await supabase
+            .from('ad_daily_metrics')
+            .upsert(row, { onConflict: 'campaign_id,metric_date' })
+            .select()
+            .single();
+          data = result.data;
+          error = result.error;
+        }
 
         if (error) return serverError(error);
         return ok({ metric: data });
