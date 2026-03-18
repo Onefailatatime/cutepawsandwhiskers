@@ -339,16 +339,16 @@
               </div>
             </summary>
             <div class="p-5 space-y-4">
-              <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3" id="perf-kpi-cards"></div>
+              <div id="perf-kpi-cards"></div>
               <div>
                 <h4 class="font-medium text-gray-700 text-sm mb-2">Health Check</h4>
-                <div class="grid grid-cols-2 md:grid-cols-5 gap-3" id="perf-health-cards"></div>
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3" id="perf-health-cards"></div>
               </div>
               <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                   <thead>
                     <tr class="bg-gray-50 text-left text-gray-500 text-xs uppercase">
-                      <th class="px-3 py-3">Date</th><th class="px-3 py-3">Spend</th><th class="px-3 py-3">Impr.</th><th class="px-3 py-3">Reach</th><th class="px-3 py-3">Clicks</th><th class="px-3 py-3">CTR</th><th class="px-3 py-3">CPC</th><th class="px-3 py-3">CPM</th><th class="px-3 py-3">Freq.</th><th class="px-3 py-3">Leads</th><th class="px-3 py-3">CPL</th><th class="px-3 py-3">Notes</th><th class="px-3 py-3">Actions</th>
+                      <th class="px-3 py-3">Date</th><th class="px-3 py-3">Spend</th><th class="px-3 py-3">Impr.</th><th class="px-3 py-3">Clicks</th><th class="px-3 py-3">CTR</th><th class="px-3 py-3">CPC</th><th class="px-3 py-3">CPM</th><th class="px-3 py-3">Sessions</th><th class="px-3 py-3">Leads</th><th class="px-3 py-3">Purchases</th><th class="px-3 py-3">Purch. Rate</th><th class="px-3 py-3">CAC</th><th class="px-3 py-3">Upsell $</th><th class="px-3 py-3">Notes</th><th class="px-3 py-3">Actions</th>
                     </tr>
                   </thead>
                   <tbody id="perf-metrics-body"></tbody>
@@ -830,6 +830,21 @@
           <div>
             <label class="text-xs text-gray-500 block mb-1">Purchases (paid)</label>
             <input id="dm-purchases" type="number" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0">
+          </div>
+          <div class="col-span-2 pt-2 border-t border-gray-100">
+            <span class="text-xs font-bold text-gray-600 uppercase tracking-wide">Funnel & Money</span>
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Landing Sessions</label>
+            <input id="dm-sessions" type="number" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Upsell Revenue ($)</label>
+            <input id="dm-upsell" type="number" step="0.01" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0.00">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Calendar Cost ($)</label>
+            <input id="dm-calcost" type="number" step="0.01" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="Avg print+ship per entry">
           </div>
           <div class="col-span-2">
             <label class="text-xs text-gray-500 block mb-1">Notes</label>
@@ -2242,30 +2257,74 @@ function renderPerfKPIs() {
   const totalImpressions = m.reduce((s, r) => s + (parseInt(r.impressions) || 0), 0);
   const totalLeads = m.reduce((s, r) => s + (parseInt(r.leads) || 0), 0);
   const totalPurchases = m.reduce((s, r) => s + (parseInt(r.purchases) || 0), 0);
+  const totalSessions = m.reduce((s, r) => s + (parseInt(r.landing_sessions) || 0), 0);
+  const totalUpsell = m.reduce((s, r) => s + (parseFloat(r.upsell_revenue) || 0), 0);
+  const avgCalCost = totalPurchases > 0 ? m.reduce((s, r) => s + (parseFloat(r.calendar_cost) || 0), 0) / m.filter(r => parseFloat(r.calendar_cost) > 0).length || 0 : 0;
   const avgCTR = m.length ? (m.reduce((s, r) => s + (parseFloat(r.ctr) || 0), 0) / m.length) : 0;
   const avgCPC = totalClicks > 0 ? totalSpend / totalClicks : 0;
+  const avgCPM = totalImpressions > 0 ? (totalSpend / totalImpressions) * 1000 : 0;
   const costPerLead = totalLeads > 0 ? totalSpend / totalLeads : 0;
-  const costPerPurchase = totalPurchases > 0 ? totalSpend / totalPurchases : 0;
-  const revenue = totalPurchases * 30; // $30 per entry
 
-  const kpis = [
-    { label: 'Total Spend', value: '$' + totalSpend.toFixed(2), color: 'text-red-500', icon: '💰' },
-    { label: 'Link Clicks', value: totalClicks.toLocaleString(), color: 'text-blue-600', icon: '🖱️' },
-    { label: 'Avg CTR', value: avgCTR.toFixed(2) + '%', color: avgCTR >= 1.0 ? 'text-green-600' : avgCTR >= 0.8 ? 'text-yellow-600' : 'text-red-500', icon: '📊' },
-    { label: 'Avg CPC', value: '$' + avgCPC.toFixed(2), color: avgCPC <= 2.0 ? 'text-green-600' : 'text-yellow-600', icon: '💵' },
-    { label: 'Leads', value: totalLeads, color: 'text-purple-600', icon: '👤' },
-    { label: 'Cost/Lead', value: costPerLead > 0 ? '$' + costPerLead.toFixed(2) : '—', color: costPerLead > 0 && costPerLead <= 25 ? 'text-green-600' : 'text-orange-500', icon: '🎯' },
+  // Money KPIs
+  const frontRevenue = totalPurchases * 30; // $30 per entry
+  const cacFront = totalPurchases > 0 ? totalSpend / totalPurchases : 0;
+  const purchaseRate = totalSessions > 0 ? (totalPurchases / totalSessions * 100) : 0;
+  const avgUpsellPerEntry = totalPurchases > 0 ? totalUpsell / totalPurchases : 0;
+  const r30 = totalPurchases > 0 ? (frontRevenue + totalUpsell) / totalPurchases : 0;
+  const calCost = avgCalCost || 8; // Default ~$8 print+ship if not set
+  const cacTotal = cacFront;
+  const paybackRatio = (cacTotal + calCost) > 0 && r30 > 0 ? r30 / (cacTotal + calCost) : 0;
+  const ltgpCac = cacTotal > 0 ? (r30 - calCost) / cacTotal : 0;
+
+  // Section A: Ads (top of funnel)
+  const adsKpis = [
+    { label: 'Total Spend', value: '$' + totalSpend.toFixed(2), color: 'text-red-500' },
+    { label: 'Impressions', value: totalImpressions.toLocaleString(), color: 'text-gray-700' },
+    { label: 'Link Clicks', value: totalClicks.toLocaleString(), color: 'text-blue-600' },
+    { label: 'Avg CTR', value: avgCTR.toFixed(2) + '%', color: avgCTR >= 1.0 ? 'text-green-600' : avgCTR >= 0.8 ? 'text-yellow-600' : 'text-red-500' },
+    { label: 'Avg CPC', value: '$' + avgCPC.toFixed(2), color: avgCPC <= 2.0 ? 'text-green-600' : 'text-yellow-600' },
+    { label: 'Avg CPM', value: '$' + avgCPM.toFixed(2), color: 'text-gray-700' },
   ];
 
-  document.getElementById('perf-kpi-cards').innerHTML = kpis.map(k => `
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-      <div class="flex items-center justify-between mb-1">
-        <span class="text-xs text-gray-500">${k.label}</span>
-        <span class="text-lg">${k.icon}</span>
-      </div>
-      <div class="text-xl font-bold ${k.color}">${k.value}</div>
-    </div>
-  `).join('');
+  // Section B: Funnel
+  const funnelKpis = [
+    { label: 'Sessions', value: totalSessions > 0 ? totalSessions.toLocaleString() : '—', color: 'text-blue-600' },
+    { label: 'Purchases', value: totalPurchases, color: 'text-green-600' },
+    { label: 'Purchase Rate', value: totalSessions > 0 ? purchaseRate.toFixed(1) + '%' : '—', color: purchaseRate >= 3 ? 'text-green-600' : purchaseRate >= 2 ? 'text-yellow-600' : 'text-red-500' },
+    { label: 'Leads', value: totalLeads, color: 'text-purple-600' },
+    { label: 'Cost/Lead', value: costPerLead > 0 ? '$' + costPerLead.toFixed(2) : '—', color: costPerLead > 0 && costPerLead <= 25 ? 'text-green-600' : 'text-orange-500' },
+  ];
+
+  // Section C: Money
+  const moneyKpis = [
+    { label: 'CAC (Front)', value: cacFront > 0 ? '$' + cacFront.toFixed(2) : '—', color: cacFront > 0 && cacFront <= 25 ? 'text-green-600' : cacFront > 25 ? 'text-red-500' : 'text-gray-400' },
+    { label: 'Front Revenue', value: '$' + frontRevenue.toFixed(0), color: 'text-green-600' },
+    { label: 'Upsell Revenue', value: totalUpsell > 0 ? '$' + totalUpsell.toFixed(0) : '—', color: 'text-emerald-600' },
+    { label: 'Avg Upsell/Entry', value: avgUpsellPerEntry > 0 ? '$' + avgUpsellPerEntry.toFixed(2) : '—', color: 'text-emerald-600' },
+    { label: 'R30/Entry', value: r30 > 0 ? '$' + r30.toFixed(2) : '—', color: 'text-indigo-600' },
+    { label: 'Payback Ratio', value: paybackRatio > 0 ? paybackRatio.toFixed(2) + 'x' : '—', color: paybackRatio >= 1 ? 'text-green-600' : paybackRatio > 0 ? 'text-red-500' : 'text-gray-400' },
+    { label: 'LTGP:CAC', value: ltgpCac > 0 ? ltgpCac.toFixed(2) + 'x' : '—', color: ltgpCac >= 3 ? 'text-green-600' : ltgpCac >= 1 ? 'text-yellow-600' : ltgpCac > 0 ? 'text-red-500' : 'text-gray-400' },
+  ];
+
+  function renderSection(title, kpis) {
+    return `
+      <div class="mb-3">
+        <h5 class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">${title}</h5>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-${Math.min(kpis.length, 7)} gap-2">
+          ${kpis.map(k => `
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-3">
+              <span class="text-[11px] text-gray-500 block mb-0.5">${k.label}</span>
+              <div class="text-lg font-bold ${k.color}">${k.value}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+  }
+
+  document.getElementById('perf-kpi-cards').innerHTML =
+    renderSection('Ads (Top of Funnel)', adsKpis) +
+    renderSection('Funnel (Site Performance)', funnelKpis) +
+    renderSection('Money (What Actually Matters)', moneyKpis);
 }
 
 function renderHealthCards() {
@@ -2277,13 +2336,19 @@ function renderHealthCards() {
 
   const totalSpend = m.reduce((s, r) => s + (parseFloat(r.spend) || 0), 0);
   const totalClicks = m.reduce((s, r) => s + (parseInt(r.link_clicks) || parseInt(r.clicks) || 0), 0);
-  const totalLeads = m.reduce((s, r) => s + (parseInt(r.leads) || 0), 0);
   const totalPurchases = m.reduce((s, r) => s + (parseInt(r.purchases) || 0), 0);
+  const totalSessions = m.reduce((s, r) => s + (parseInt(r.landing_sessions) || 0), 0);
+  const totalUpsell = m.reduce((s, r) => s + (parseFloat(r.upsell_revenue) || 0), 0);
+  const avgCalCost = m.filter(r => parseFloat(r.calendar_cost) > 0).length > 0
+    ? m.reduce((s, r) => s + (parseFloat(r.calendar_cost) || 0), 0) / m.filter(r => parseFloat(r.calendar_cost) > 0).length : 8;
   const avgCTR = m.reduce((s, r) => s + (parseFloat(r.ctr) || 0), 0) / m.length;
   const avgCPC = totalClicks > 0 ? totalSpend / totalClicks : 0;
   const cac = totalPurchases > 0 ? totalSpend / totalPurchases : 0;
-  // Purchase rate = purchases / clicks
-  const purchaseRate = totalClicks > 0 ? (totalPurchases / totalClicks * 100) : 0;
+  const purchaseRate = totalSessions > 0 ? (totalPurchases / totalSessions * 100) : 0;
+  const frontRevenue = totalPurchases * 30;
+  const r30 = totalPurchases > 0 ? (frontRevenue + totalUpsell) / totalPurchases : 0;
+  const paybackRatio = (cac + avgCalCost) > 0 && r30 > 0 ? r30 / (cac + avgCalCost) : 0;
+  const ltgpCac = cac > 0 ? (r30 - avgCalCost) / cac : 0;
 
   function status(val, green, yellow) {
     if (val >= green) return { color: 'bg-green-100 text-green-700 border-green-200', label: 'GREEN' };
@@ -2295,20 +2360,27 @@ function renderHealthCards() {
     if (val <= yellow) return { color: 'bg-yellow-100 text-yellow-700 border-yellow-200', label: 'YELLOW' };
     return { color: 'bg-red-100 text-red-700 border-red-200', label: 'RED' };
   }
+  function na() { return { color: 'bg-gray-100 text-gray-500 border-gray-200', label: 'N/A' }; }
 
   const checks = [
-    { label: 'CTR', value: avgCTR.toFixed(2) + '%', target: '>= 1.0%', ...status(avgCTR, 1.0, 0.8) },
-    { label: 'CPC', value: '$' + avgCPC.toFixed(2), target: '<= $2.00', ...statusLow(avgCPC, 2.0, 2.5) },
-    { label: 'Purchase Rate', value: purchaseRate.toFixed(1) + '%', target: '>= 3%', ...status(purchaseRate, 3, 2) },
-    { label: 'CAC (Front)', value: cac > 0 ? '$' + cac.toFixed(2) : '—', target: '<= $25', ...(cac > 0 ? statusLow(cac, 25, 30) : { color: 'bg-gray-100 text-gray-500 border-gray-200', label: 'N/A' }) },
-    { label: 'Days Logged', value: m.length, target: '$500 test', color: 'bg-blue-50 text-blue-700 border-blue-200', label: m.length + ' days' },
+    // A: Ad health
+    { label: 'CTR', value: avgCTR.toFixed(2) + '%', target: '>= 1.0%', hint: 'Ad problem if < 1%', ...status(avgCTR, 1.0, 0.8) },
+    { label: 'CPC', value: '$' + avgCPC.toFixed(2), target: '<= $2.00', hint: 'Cost per click', ...statusLow(avgCPC, 2.0, 2.5) },
+    // B: Funnel health
+    { label: 'Purchase Rate', value: totalSessions > 0 ? purchaseRate.toFixed(1) + '%' : '—', target: '>= 2-3%', hint: 'Page problem if < 2%', ...(totalSessions > 0 ? status(purchaseRate, 3, 2) : na()) },
+    // C: Money health
+    { label: 'CAC (Front)', value: cac > 0 ? '$' + cac.toFixed(2) : '—', target: '<= $25', hint: 'Spend / entries', ...(cac > 0 ? statusLow(cac, 25, 30) : na()) },
+    { label: 'Payback', value: paybackRatio > 0 ? paybackRatio.toFixed(2) + 'x' : '—', target: '>= 1.0x', hint: 'R30 / (CAC + cost)', ...(paybackRatio > 0 ? status(paybackRatio, 1.0, 0.7) : na()) },
+    { label: 'LTGP:CAC', value: ltgpCac > 0 ? ltgpCac.toFixed(2) + 'x' : '—', target: '>= 3.0x', hint: 'Can you scale?', ...(ltgpCac > 0 ? status(ltgpCac, 3.0, 1.0) : na()) },
+    { label: 'Days Logged', value: m.length, target: 'min 10 days', hint: 'For reliable data', color: m.length >= 10 ? 'bg-green-100 text-green-700 border-green-200' : 'bg-blue-50 text-blue-700 border-blue-200', label: m.length + ' days' },
   ];
 
   document.getElementById('perf-health-cards').innerHTML = checks.map(c => `
     <div class="rounded-xl border ${c.color} p-3 text-center">
-      <div class="text-xs font-medium opacity-70 mb-1">${c.label}</div>
+      <div class="text-xs font-medium opacity-70 mb-0.5">${c.label}</div>
       <div class="text-lg font-bold">${c.value}</div>
-      <div class="text-xs mt-1 opacity-60">Target: ${c.target}</div>
+      <div class="text-[10px] mt-0.5 opacity-50">${c.hint || ''}</div>
+      <div class="text-[10px] mt-0.5 opacity-60">Target: ${c.target}</div>
     </div>
   `).join('');
 }
@@ -2325,21 +2397,36 @@ function renderMetricsTable() {
   empty.classList.add('hidden');
 
   tbody.innerHTML = m.map(r => {
-    const ctrClass = parseFloat(r.ctr) >= 1.0 ? 'text-green-600' : parseFloat(r.ctr) >= 0.8 ? 'text-yellow-600' : 'text-red-500';
-    const cpcClass = parseFloat(r.cpc) <= 2.0 ? 'text-green-600' : 'text-yellow-600';
+    const spend = parseFloat(r.spend) || 0;
+    const clicks = parseInt(r.link_clicks) || parseInt(r.clicks) || 0;
+    const sessions = parseInt(r.landing_sessions) || 0;
+    const leads = parseInt(r.leads) || 0;
+    const purchases = parseInt(r.purchases) || 0;
+    const upsell = parseFloat(r.upsell_revenue) || 0;
+    const ctr = parseFloat(r.ctr) || 0;
+    const cpc = parseFloat(r.cpc) || 0;
+    const cpm = parseFloat(r.cpm) || 0;
+    const purchRate = sessions > 0 ? (purchases / sessions * 100) : 0;
+    const cac = purchases > 0 ? spend / purchases : 0;
+    const ctrClass = ctr >= 1.0 ? 'text-green-600' : ctr >= 0.8 ? 'text-yellow-600' : 'text-red-500';
+    const cpcClass = cpc <= 2.0 ? 'text-green-600' : 'text-yellow-600';
+    const prClass = purchRate >= 3 ? 'text-green-600' : purchRate >= 2 ? 'text-yellow-600' : sessions > 0 ? 'text-red-500' : 'text-gray-400';
+    const cacClass = cac > 0 && cac <= 25 ? 'text-green-600' : cac > 25 ? 'text-red-500' : 'text-gray-400';
     return `<tr class="border-t border-gray-100 hover:bg-gray-50">
-      <td class="px-3 py-2 font-medium">${r.metric_date}</td>
-      <td class="px-3 py-2 text-red-500 font-medium">$${(parseFloat(r.spend) || 0).toFixed(2)}</td>
+      <td class="px-3 py-2 font-medium whitespace-nowrap">${r.metric_date}</td>
+      <td class="px-3 py-2 text-red-500 font-medium">$${spend.toFixed(2)}</td>
       <td class="px-3 py-2">${(parseInt(r.impressions) || 0).toLocaleString()}</td>
-      <td class="px-3 py-2">${(parseInt(r.reach) || 0).toLocaleString()}</td>
-      <td class="px-3 py-2">${parseInt(r.link_clicks) || parseInt(r.clicks) || 0}</td>
-      <td class="px-3 py-2 font-medium ${ctrClass}">${(parseFloat(r.ctr) || 0).toFixed(2)}%</td>
-      <td class="px-3 py-2 font-medium ${cpcClass}">$${(parseFloat(r.cpc) || 0).toFixed(2)}</td>
-      <td class="px-3 py-2">$${(parseFloat(r.cpm) || 0).toFixed(2)}</td>
-      <td class="px-3 py-2">${(parseFloat(r.frequency) || 0).toFixed(1)}</td>
-      <td class="px-3 py-2 font-medium text-purple-600">${parseInt(r.leads) || 0}</td>
-      <td class="px-3 py-2">${r.cost_per_lead ? '$' + parseFloat(r.cost_per_lead).toFixed(2) : '—'}</td>
-      <td class="px-3 py-2 text-xs text-gray-400 max-w-[120px] truncate" title="${esc(r.notes || '')}">${esc(r.notes || '')}</td>
+      <td class="px-3 py-2">${clicks}</td>
+      <td class="px-3 py-2 font-medium ${ctrClass}">${ctr.toFixed(2)}%</td>
+      <td class="px-3 py-2 font-medium ${cpcClass}">$${cpc.toFixed(2)}</td>
+      <td class="px-3 py-2">$${cpm.toFixed(2)}</td>
+      <td class="px-3 py-2">${sessions > 0 ? sessions : '—'}</td>
+      <td class="px-3 py-2 font-medium text-purple-600">${leads}</td>
+      <td class="px-3 py-2 font-medium text-green-600">${purchases}</td>
+      <td class="px-3 py-2 font-medium ${prClass}">${sessions > 0 ? purchRate.toFixed(1) + '%' : '—'}</td>
+      <td class="px-3 py-2 font-medium ${cacClass}">${cac > 0 ? '$' + cac.toFixed(2) : '—'}</td>
+      <td class="px-3 py-2">${upsell > 0 ? '$' + upsell.toFixed(0) : '—'}</td>
+      <td class="px-3 py-2 text-xs text-gray-400 max-w-[100px] truncate" title="${esc(r.notes || '')}">${esc(r.notes || '')}</td>
       <td class="px-3 py-2">
         <div class="flex gap-1">
           <button onclick="editDailyMetric('${r.id}')" class="text-xs text-blue-500 hover:underline">Edit</button>
@@ -2387,6 +2474,9 @@ function openDailyMetricModal(metric = null) {
   document.getElementById('dm-frequency').value = metric ? metric.frequency : '';
   document.getElementById('dm-leads').value = metric ? metric.leads : '';
   document.getElementById('dm-purchases').value = metric ? metric.purchases : '';
+  document.getElementById('dm-sessions').value = metric ? metric.landing_sessions : '';
+  document.getElementById('dm-upsell').value = metric ? metric.upsell_revenue : '';
+  document.getElementById('dm-calcost').value = metric ? metric.calendar_cost : '';
   document.getElementById('dm-notes').value = metric ? metric.notes : '';
   document.getElementById('metric-modal').classList.add('open');
 }
@@ -2413,6 +2503,9 @@ function saveDailyMetric() {
     frequency: parseFloat(document.getElementById('dm-frequency').value) || 0,
     leads: parseInt(document.getElementById('dm-leads').value) || 0,
     purchases: parseInt(document.getElementById('dm-purchases').value) || 0,
+    landing_sessions: parseInt(document.getElementById('dm-sessions').value) || 0,
+    upsell_revenue: parseFloat(document.getElementById('dm-upsell').value) || 0,
+    calendar_cost: parseFloat(document.getElementById('dm-calcost').value) || 0,
     notes: document.getElementById('dm-notes').value,
   };
 
@@ -2428,7 +2521,7 @@ function saveDailyMetric() {
     if (data.metric) {
       closeMetricModal();
       showToast('Metrics saved! 📊');
-      loadPerfDashboard(selectedPerfCampaign);
+      openHub(selectedPerfCampaign);
     } else if (data.error) {
       showToast('Error: ' + data.error);
     }
@@ -2445,7 +2538,7 @@ function deleteDailyMetric(id, date) {
   api('delete-daily-metric', {}, 'POST', { id }).then(data => {
     if (data.success) {
       showToast('Metrics deleted');
-      loadPerfDashboard(selectedPerfCampaign);
+      openHub(selectedPerfCampaign);
     }
   });
 }
@@ -2460,7 +2553,7 @@ function syncFbMetrics() {
     btn.disabled = false; btn.textContent = 'Sync from Facebook';
     if (data.success) {
       showToast(`Synced ${data.synced} day${data.synced === 1 ? '' : 's'} from Facebook!`);
-      loadPerfDashboard(selectedPerfCampaign);
+      openHub(selectedPerfCampaign);
     } else if (data.error) {
       // Show helpful error
       showToast(data.error);

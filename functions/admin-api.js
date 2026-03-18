@@ -1084,7 +1084,8 @@ exports.handler = async function (event) {
           'campaign_id', 'metric_date', 'impressions', 'reach', 'clicks',
           'link_clicks', 'spend', 'cpm', 'cpc', 'ctr', 'frequency',
           'leads', 'purchases', 'cost_per_lead', 'cost_per_purchase',
-          'thumb_stop_ratio', 'video_views_3s', 'notes'
+          'thumb_stop_ratio', 'video_views_3s', 'notes',
+          'landing_sessions', 'upsell_revenue', 'calendar_cost'
         ];
         const row = {};
         for (const key of allowed) {
