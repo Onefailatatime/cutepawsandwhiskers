@@ -320,7 +320,30 @@
             </div>
           </div>
 
-          <!-- 2. CAMPAIGN KANBAN -->
+          <!-- 2. KOI METER -->
+          <div id="koi-meter-card" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="flex flex-col sm:flex-row items-center gap-5 p-5">
+              <div class="flex-shrink-0">
+                <img id="koi-meter-img" src="img/koi/tadpole.svg" alt="Koi Status" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-lg">
+              </div>
+              <div class="flex-1 text-center sm:text-left w-full">
+                <div class="flex items-center justify-center sm:justify-start gap-2 mb-1">
+                  <span id="koi-status-label" class="text-xl font-black tracking-tight text-gray-900">Tadpole</span>
+                  <span id="koi-score-badge" class="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">25</span>
+                </div>
+                <p id="koi-message" class="text-sm text-gray-500 mb-3">Too early to judge. Let it swim.</p>
+                <div class="w-full bg-gray-100 rounded-full h-3 mb-2 overflow-hidden">
+                  <div id="koi-score-bar" class="h-3 rounded-full transition-all duration-700 ease-out" style="width:25%; background: linear-gradient(90deg, #93c5fd, #3b82f6)"></div>
+                </div>
+                <div class="flex items-start gap-2 bg-gray-50 rounded-xl p-3">
+                  <span class="text-sm font-bold text-gray-400 mt-0.5">DO:</span>
+                  <p id="koi-action" class="text-sm font-medium text-gray-700">Keep running. Do not change anything yet.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. CAMPAIGN KANBAN -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
               <h3 class="font-bold text-gray-900">Leads Pipeline</h3>
@@ -329,7 +352,7 @@
             <div class="flex gap-3 p-4 overflow-x-auto min-h-[200px]" id="hub-kanban"></div>
           </div>
 
-          <!-- 3. AD PERFORMANCE (collapsible) -->
+          <!-- 4. AD PERFORMANCE (collapsible) -->
           <details open class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <summary class="px-5 py-3 border-b border-gray-100 font-bold text-gray-900 cursor-pointer hover:bg-gray-50 flex items-center justify-between">
               <span>Ad Performance</span>
@@ -1959,13 +1982,28 @@ function renderCampaignList(campaigns) {
     const platformIcon = { facebook: '📘', instagram: '📸', tiktok: '🎵', google: '🔍', other: '📣' }[c.platform] || '📣';
     const statusColor = { active: 'bg-green-100 text-green-700', paused: 'bg-yellow-100 text-yellow-700', ended: 'bg-gray-100 text-gray-500', draft: 'bg-blue-100 text-blue-700' }[c.status] || 'bg-gray-100 text-gray-500';
     const archivedClass = c.is_archived ? 'opacity-60' : '';
+    // Quick koi estimate from card data
+    const cardSpend = parseFloat(c.total_spend) || 0;
+    const cardPaid = parseInt(c.paid_entries) || 0;
+    let miniKoi = { key: 'tadpole', label: 'Tadpole' };
+    if (cardSpend >= 50 && cardPaid >= 3) {
+      const cardCac = cardPaid > 0 ? cardSpend / cardPaid : Infinity;
+      const cardR30 = 30; // front-end only estimate
+      const cardPayback = cardR30 / (cardCac + 8);
+      if (cardSpend >= 100 && (cardPaid === 0 || cardPayback < 0.5 || cardCac > 40)) miniKoi = { key: 'dead_fish', label: 'Dead Fish' };
+      else if (cardPayback < 0.8) miniKoi = { key: 'cloudy_pond', label: 'Cloudy Pond' };
+      else if (cardPayback < 1.2) miniKoi = { key: 'healthy_koi', label: 'Healthy Koi' };
+      else miniKoi = { key: 'apex_koi', label: 'Apex Koi' };
+    }
+    const koiImg = 'img/koi/' + miniKoi.key.replace('_', '-') + '.svg';
     return `
       <div class="bg-white rounded-xl border-2 border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer ${archivedClass}" onclick="openHub('${c.id}')">
         ${c.image_url ? `<img src="${esc(c.image_url)}" class="w-full h-36 object-cover" alt="Ad image">` : ''}
         <div class="p-5">
           <div class="flex items-center justify-between mb-3">
             <span class="text-2xl">${platformIcon}</span>
-            <div class="flex gap-1">
+            <div class="flex items-center gap-2">
+              <img src="${koiImg}" alt="${miniKoi.label}" class="w-7 h-7 drop-shadow" title="Koi Status: ${miniKoi.label}">
               ${c.is_archived ? '<span class="badge bg-gray-200 text-gray-500">Archived</span>' : ''}
               <span class="badge ${statusColor}">${c.status}</span>
             </div>
@@ -2031,6 +2069,8 @@ function openHub(id) {
     renderPerfKPIs();
     renderHealthCards();
     renderMetricsTable();
+    // Koi Meter
+    renderKoiMeter();
     // Creatives
     renderCreatives();
     // Notes
@@ -2247,6 +2287,109 @@ function unarchiveCampaign() {
   api('unarchive-campaign', {}, 'POST', { id: selectedPerfCampaign }).then(data => {
     if (data.success) { showToast('Campaign reactivated'); openHub(selectedPerfCampaign); }
   });
+}
+
+// ===== KOI METER =====
+const KOI_LEVELS = {
+  tadpole:     { img: 'img/koi/tadpole.svg',     gradient: 'linear-gradient(90deg, #93c5fd, #3b82f6)', badgeBg: 'bg-blue-100 text-blue-700' },
+  cloudy_pond: { img: 'img/koi/cloudy-pond.svg',  gradient: 'linear-gradient(90deg, #fcd34d, #f59e0b)', badgeBg: 'bg-yellow-100 text-yellow-700' },
+  healthy_koi: { img: 'img/koi/healthy-koi.svg',  gradient: 'linear-gradient(90deg, #6ee7b7, #10b981)', badgeBg: 'bg-green-100 text-green-700' },
+  apex_koi:    { img: 'img/koi/apex-koi.svg',     gradient: 'linear-gradient(90deg, #fbbf24, #059669)', badgeBg: 'bg-emerald-100 text-emerald-800' },
+  dead_fish:   { img: 'img/koi/dead-fish.svg',    gradient: 'linear-gradient(90deg, #d1d5db, #ef4444)', badgeBg: 'bg-red-100 text-red-700' },
+};
+
+function getKoiStatus(metrics, entries) {
+  const m = metrics || [];
+  const paidEntries = (entries || []).filter(e => e.payment_confirmed);
+
+  const spend = m.reduce((s, r) => s + (parseFloat(r.spend) || 0), 0);
+  const impressions = m.reduce((s, r) => s + (parseInt(r.impressions) || 0), 0);
+  const clicks = m.reduce((s, r) => s + (parseInt(r.link_clicks) || parseInt(r.clicks) || 0), 0);
+  const sessions = m.reduce((s, r) => s + (parseInt(r.landing_sessions) || 0), 0);
+  const purchases = paidEntries.length || m.reduce((s, r) => s + (parseInt(r.purchases) || 0), 0);
+  const frontRevenue = purchases * 30;
+  const upsellRevenue = m.reduce((s, r) => s + (parseFloat(r.upsell_revenue) || 0), 0);
+  const revenue30 = frontRevenue + upsellRevenue;
+  const calCostEntries = m.filter(r => parseFloat(r.calendar_cost) > 0);
+  const calendarCost = calCostEntries.length > 0
+    ? calCostEntries.reduce((s, r) => s + (parseFloat(r.calendar_cost) || 0), 0) / calCostEntries.length
+    : 8; // default ~$8 print+ship
+
+  // Tadpole — too early
+  if (spend < 50 || purchases < 3) {
+    return {
+      key: 'tadpole', status: 'Tadpole', score: 25,
+      message: 'Too early to judge. Let it swim until at least $100 spend and 5+ purchases.',
+      action: 'Keep running. Do not change anything yet.'
+    };
+  }
+
+  const ctr = impressions > 0 ? clicks / impressions : 0;
+  const cac = purchases > 0 ? spend / purchases : Infinity;
+  const R30 = purchases > 0 ? revenue30 / purchases : 0;
+  const payback = purchases > 0 ? R30 / (cac + calendarCost) : 0;
+
+  // Dead Fish — clearly losing
+  if (spend >= 100 && (purchases === 0 || payback < 0.5 || cac > 40)) {
+    const why = purchases === 0 ? 'Zero purchases after $' + spend.toFixed(0) + ' spent.'
+      : cac > 40 ? 'CAC is $' + cac.toFixed(2) + ' — way too high.'
+      : 'Payback ratio is only ' + payback.toFixed(2) + 'x — losing money fast.';
+    return {
+      key: 'dead_fish', status: 'Dead Fish', score: 10,
+      message: why,
+      action: 'Pause it. Rebuild the offer or creative before testing again.'
+    };
+  }
+
+  // Cloudy Pond — needs work
+  if (payback < 0.8) {
+    const weakLink = ctr < 0.01 ? 'CTR is low — the ad isn\'t grabbing attention.'
+      : (sessions > 0 && purchases / sessions < 0.02) ? 'Purchase rate is low — the landing page needs work.'
+      : 'Upsells are weak — add more value after purchase.';
+    return {
+      key: 'cloudy_pond', status: 'Cloudy Pond', score: 40,
+      message: 'Some interest, but the math doesn\'t work yet. ' + weakLink,
+      action: 'Identify the weakest link and change ONE thing in your next test.'
+    };
+  }
+
+  // Healthy Koi — close to working
+  if (payback < 1.2) {
+    return {
+      key: 'healthy_koi', status: 'Healthy Koi', score: 70,
+      message: 'Close to client-financed! Payback is ' + payback.toFixed(2) + 'x. Small improvements will tip it.',
+      action: 'Keep running. Focus on upsells and improving creative — no huge changes.'
+    };
+  }
+
+  // Apex Koi — clear winner
+  return {
+    key: 'apex_koi', status: 'Apex Koi', score: 90,
+    message: 'This campaign pays for itself within 30 days. Payback: ' + payback.toFixed(2) + 'x.',
+    action: 'Scale budget slowly (+20-30% at a time) and add more creatives around this winner.'
+  };
+}
+
+function renderKoiMeter() {
+  const koi = getKoiStatus(perfMetrics, hubEntries);
+  const level = KOI_LEVELS[koi.key];
+
+  document.getElementById('koi-meter-img').src = level.img;
+  document.getElementById('koi-status-label').textContent = koi.status;
+  document.getElementById('koi-score-badge').textContent = koi.score;
+  document.getElementById('koi-score-badge').className = 'text-xs font-bold px-2 py-0.5 rounded-full ' + level.badgeBg;
+  document.getElementById('koi-message').textContent = koi.message;
+  document.getElementById('koi-action').textContent = koi.action;
+
+  const bar = document.getElementById('koi-score-bar');
+  bar.style.width = koi.score + '%';
+  bar.style.background = level.gradient;
+}
+
+// Mini koi for campaign list cards
+function getKoiMini(campaignId) {
+  // Use global perfMetrics/hubEntries if available, otherwise return tadpole
+  return { key: 'tadpole', status: 'Tadpole', score: 25 };
 }
 
 function renderPerfKPIs() {
