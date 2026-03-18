@@ -2618,34 +2618,39 @@ function renderPerfKPIs() {
   const paybackRatio = (cacTotal + calCost) > 0 && r30 > 0 ? r30 / (cacTotal + calCost) : 0;
   const ltgpCac = cacTotal > 0 ? (r30 - calCost) / cacTotal : 0;
 
+  // Data gates for KPI colors — don't mislead with red/green on tiny samples
+  const earlyAd = totalSpend < 100 || totalClicks < 20;
+  const earlyFunnel = totalSessions < 20;
+  const earlyMoney = totalPurchases < 5;
+
   // Section A: Ads (top of funnel)
   const adsKpis = [
-    { label: 'Total Spend', value: '$' + totalSpend.toFixed(2), color: 'text-red-500' },
+    { label: 'Total Spend', value: '$' + totalSpend.toFixed(2), color: 'text-gray-700' },
     { label: 'Impressions', value: totalImpressions.toLocaleString(), color: 'text-gray-700' },
     { label: 'Link Clicks', value: totalClicks.toLocaleString(), color: 'text-blue-600' },
-    { label: 'Avg CTR', value: avgCTR.toFixed(2) + '%', color: avgCTR >= 1.0 ? 'text-green-600' : avgCTR >= 0.8 ? 'text-yellow-600' : 'text-red-500' },
-    { label: 'Avg CPC', value: '$' + avgCPC.toFixed(2), color: avgCPC <= 2.0 ? 'text-green-600' : 'text-yellow-600' },
+    { label: 'Avg CTR', value: avgCTR.toFixed(2) + '%', color: earlyAd ? 'text-blue-500' : avgCTR >= 1.0 ? 'text-green-600' : avgCTR >= 0.8 ? 'text-yellow-600' : 'text-red-500' },
+    { label: 'Avg CPC', value: totalClicks > 0 ? '$' + avgCPC.toFixed(2) : '—', color: earlyAd ? 'text-blue-500' : avgCPC <= 2.0 ? 'text-green-600' : 'text-yellow-600' },
     { label: 'Avg CPM', value: '$' + avgCPM.toFixed(2), color: 'text-gray-700' },
   ];
 
   // Section B: Funnel
   const funnelKpis = [
     { label: 'Website Views', value: totalSessions > 0 ? totalSessions.toLocaleString() : '—', color: 'text-blue-600' },
-    { label: 'Purchases', value: totalPurchases, color: 'text-green-600' },
-    { label: 'Purchase Rate', value: totalSessions > 0 ? purchaseRate.toFixed(1) + '%' : '—', color: purchaseRate >= 3 ? 'text-green-600' : purchaseRate >= 2 ? 'text-yellow-600' : 'text-red-500' },
+    { label: 'Purchases', value: totalPurchases, color: 'text-gray-700' },
+    { label: 'Purchase Rate', value: totalSessions > 0 ? purchaseRate.toFixed(1) + '%' : '—', color: earlyFunnel ? 'text-blue-500' : purchaseRate >= 3 ? 'text-green-600' : purchaseRate >= 2 ? 'text-yellow-600' : 'text-red-500' },
     { label: 'Leads', value: totalLeads, color: 'text-purple-600' },
-    { label: 'Cost/Lead', value: costPerLead > 0 ? '$' + costPerLead.toFixed(2) : '—', color: costPerLead > 0 && costPerLead <= 25 ? 'text-green-600' : 'text-orange-500' },
+    { label: 'Cost/Lead', value: costPerLead > 0 ? '$' + costPerLead.toFixed(2) : '—', color: earlyMoney ? 'text-blue-500' : costPerLead <= 25 ? 'text-green-600' : 'text-orange-500' },
   ];
 
   // Section C: Money
   const moneyKpis = [
-    { label: 'CAC (Front)', value: cacFront > 0 ? '$' + cacFront.toFixed(2) : '—', color: cacFront > 0 && cacFront <= 25 ? 'text-green-600' : cacFront > 25 ? 'text-red-500' : 'text-gray-400' },
-    { label: 'Front Revenue', value: '$' + frontRevenue.toFixed(0), color: 'text-green-600' },
+    { label: 'CAC (Front)', value: cacFront > 0 ? '$' + cacFront.toFixed(2) : '—', color: earlyMoney ? 'text-blue-500' : cacFront <= 25 ? 'text-green-600' : 'text-red-500' },
+    { label: 'Front Revenue', value: '$' + frontRevenue.toFixed(0), color: 'text-gray-700' },
     { label: 'Upsell Revenue', value: totalUpsell > 0 ? '$' + totalUpsell.toFixed(0) : '—', color: 'text-emerald-600' },
     { label: 'Avg Upsell/Entry', value: avgUpsellPerEntry > 0 ? '$' + avgUpsellPerEntry.toFixed(2) : '—', color: 'text-emerald-600' },
     { label: 'R30/Entry', value: r30 > 0 ? '$' + r30.toFixed(2) : '—', color: 'text-indigo-600' },
-    { label: 'Payback Ratio', value: paybackRatio > 0 ? paybackRatio.toFixed(2) + 'x' : '—', color: paybackRatio >= 1 ? 'text-green-600' : paybackRatio > 0 ? 'text-red-500' : 'text-gray-400' },
-    { label: 'LTGP:CAC', value: ltgpCac > 0 ? ltgpCac.toFixed(2) + 'x' : '—', color: ltgpCac >= 3 ? 'text-green-600' : ltgpCac >= 1 ? 'text-yellow-600' : ltgpCac > 0 ? 'text-red-500' : 'text-gray-400' },
+    { label: 'Payback Ratio', value: paybackRatio > 0 ? paybackRatio.toFixed(2) + 'x' : '—', color: earlyMoney ? 'text-blue-500' : paybackRatio >= 1 ? 'text-green-600' : 'text-red-500' },
+    { label: 'LTGP:CAC', value: ltgpCac > 0 ? ltgpCac.toFixed(2) + 'x' : '—', color: earlyMoney ? 'text-blue-500' : ltgpCac >= 3 ? 'text-green-600' : ltgpCac >= 1 ? 'text-yellow-600' : 'text-red-500' },
   ];
 
   function renderSection(title, kpis) {
@@ -2692,6 +2697,14 @@ function renderHealthCards() {
   const paybackRatio = (cac + avgCalCost) > 0 && r30 > 0 ? r30 / (cac + avgCalCost) : 0;
   const ltgpCac = cac > 0 ? (r30 - avgCalCost) / cac : 0;
 
+  // Data gates — don't show red/green until we have enough data to judge
+  const MIN_SPEND = 100;
+  const MIN_CLICKS = 20;
+  const MIN_PURCHASES = 5;
+  const tooEarly = totalSpend < MIN_SPEND;
+  const tooFewClicks = totalClicks < MIN_CLICKS;
+  const tooFewPurchases = totalPurchases < MIN_PURCHASES;
+
   function status(val, green, yellow) {
     if (val >= green) return { color: 'bg-green-100 text-green-700 border-green-200', label: 'GREEN' };
     if (val >= yellow) return { color: 'bg-yellow-100 text-yellow-700 border-yellow-200', label: 'YELLOW' };
@@ -2703,25 +2716,68 @@ function renderHealthCards() {
     return { color: 'bg-red-100 text-red-700 border-red-200', label: 'RED' };
   }
   function na() { return { color: 'bg-gray-100 text-gray-500 border-gray-200', label: 'N/A' }; }
+  function tadpole(hint) { return { color: 'bg-blue-50 text-blue-600 border-blue-200', label: 'TADPOLE', hint: hint || 'Too early to judge' }; }
 
   const checks = [
-    // A: Ad health
-    { label: 'CTR', value: avgCTR.toFixed(2) + '%', target: '>= 1.0%', hint: 'Ad problem if < 1%', ...status(avgCTR, 1.0, 0.8) },
-    { label: 'CPC', value: '$' + avgCPC.toFixed(2), target: '<= $2.00', hint: 'Cost per click', ...statusLow(avgCPC, 2.0, 2.5) },
-    // B: Funnel health
-    { label: 'Purchase Rate', value: totalSessions > 0 ? purchaseRate.toFixed(1) + '%' : '—', target: '>= 2-3%', hint: 'Page problem if < 2%', ...(totalSessions > 0 ? status(purchaseRate, 3, 2) : na()) },
-    // C: Money health
-    { label: 'CAC (Front)', value: cac > 0 ? '$' + cac.toFixed(2) : '—', target: '<= $25', hint: 'Spend / entries', ...(cac > 0 ? statusLow(cac, 25, 30) : na()) },
-    { label: 'Payback', value: paybackRatio > 0 ? paybackRatio.toFixed(2) + 'x' : '—', target: '>= 1.0x', hint: 'R30 / (CAC + cost)', ...(paybackRatio > 0 ? status(paybackRatio, 1.0, 0.7) : na()) },
-    { label: 'LTGP:CAC', value: ltgpCac > 0 ? ltgpCac.toFixed(2) + 'x' : '—', target: '>= 3.0x', hint: 'Can you scale?', ...(ltgpCac > 0 ? status(ltgpCac, 3.0, 1.0) : na()) },
-    { label: 'Days Logged', value: m.length, target: 'min 10 days', hint: 'For reliable data', color: m.length >= 10 ? 'bg-green-100 text-green-700 border-green-200' : 'bg-blue-50 text-blue-700 border-blue-200', label: m.length + ' days' },
+    // A: Ad health — gate until enough clicks/spend
+    { label: 'CTR', value: avgCTR.toFixed(2) + '%', target: '>= 1.0%',
+      ...(tooEarly && tooFewClicks ? tadpole('Need $100+ spend') : status(avgCTR, 1.0, 0.8)),
+      hint: tooEarly && tooFewClicks ? 'Need $100+ spend' : 'Ad problem if < 1%' },
+    { label: 'CPC', value: totalClicks > 0 ? '$' + avgCPC.toFixed(2) : '—', target: '<= $2.00',
+      ...(tooFewClicks ? tadpole('Need 20+ clicks') : statusLow(avgCPC, 2.0, 2.5)),
+      hint: tooFewClicks ? 'Need 20+ clicks' : 'Cost per click' },
+    // B: Funnel health — gate until enough sessions
+    { label: 'Purchase Rate', value: totalSessions > 0 ? purchaseRate.toFixed(1) + '%' : '—', target: '>= 2-3%',
+      ...(totalSessions < 20 ? tadpole('Need 20+ views') : status(purchaseRate, 3, 2)),
+      hint: totalSessions < 20 ? 'Need 20+ website views' : 'Page problem if < 2%' },
+    // C: Money health — gate until enough purchases
+    { label: 'CAC (Front)', value: cac > 0 ? '$' + cac.toFixed(2) : '—', target: '<= $25',
+      ...(tooFewPurchases ? tadpole('Need 5+ purchases') : statusLow(cac, 25, 30)),
+      hint: tooFewPurchases ? 'Need 5+ purchases' : 'Spend / entries' },
+    { label: 'Payback', value: paybackRatio > 0 ? paybackRatio.toFixed(2) + 'x' : '—', target: '>= 1.0x',
+      ...(tooFewPurchases ? tadpole('Need 5+ purchases') : status(paybackRatio, 1.0, 0.7)),
+      hint: tooFewPurchases ? 'Need 5+ purchases' : 'R30 / (CAC + cost)' },
+    { label: 'LTGP:CAC', value: ltgpCac > 0 ? ltgpCac.toFixed(2) + 'x' : '—', target: '>= 3.0x',
+      ...(tooFewPurchases ? tadpole('Need 5+ purchases') : status(ltgpCac, 3.0, 1.0)),
+      hint: tooFewPurchases ? 'Need 5+ purchases' : 'Can you scale?' },
+    { label: 'Days Logged', value: m.length + ' days', target: '10+ days', hint: 'For reliable data',
+      color: m.length >= 10 ? 'bg-green-100 text-green-700 border-green-200' : 'bg-blue-50 text-blue-600 border-blue-200' },
   ];
 
-  document.getElementById('perf-health-cards').innerHTML = checks.map(c => `
+  // Test progress bar at top
+  const spendPct = Math.min(totalSpend / MIN_SPEND, 1) * 100;
+  const purchPct = Math.min(totalPurchases / MIN_PURCHASES, 1) * 100;
+  const progressHtml = tooEarly || tooFewPurchases ? `
+    <div class="col-span-full mb-2 rounded-xl bg-blue-50 border border-blue-200 p-3">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-bold text-blue-700 uppercase tracking-wide">Test Progress</span>
+        <span class="text-xs text-blue-500">Health cards unlock at $100 spend + 5 purchases</span>
+      </div>
+      <div class="flex gap-3">
+        <div class="flex-1">
+          <div class="flex justify-between text-[11px] text-blue-600 mb-0.5">
+            <span>Spend</span><span>$${totalSpend.toFixed(0)} / $${MIN_SPEND}</span>
+          </div>
+          <div class="w-full bg-blue-100 rounded-full h-2.5 overflow-hidden">
+            <div class="h-2.5 rounded-full bg-blue-500 transition-all duration-700" style="width:${spendPct}%"></div>
+          </div>
+        </div>
+        <div class="flex-1">
+          <div class="flex justify-between text-[11px] text-blue-600 mb-0.5">
+            <span>Purchases</span><span>${totalPurchases} / ${MIN_PURCHASES}</span>
+          </div>
+          <div class="w-full bg-blue-100 rounded-full h-2.5 overflow-hidden">
+            <div class="h-2.5 rounded-full bg-purple-500 transition-all duration-700" style="width:${purchPct}%"></div>
+          </div>
+        </div>
+      </div>
+    </div>` : '';
+
+  document.getElementById('perf-health-cards').innerHTML = progressHtml + checks.map(c => `
     <div class="rounded-xl border ${c.color} p-3 text-center">
       <div class="text-xs font-medium opacity-70 mb-0.5">${c.label}</div>
       <div class="text-lg font-bold">${c.value}</div>
-      <div class="text-[10px] mt-0.5 opacity-50">${c.hint || ''}</div>
+      <div class="text-[10px] mt-0.5 opacity-60">${c.hint || ''}</div>
       <div class="text-[10px] mt-0.5 opacity-60">Target: ${c.target}</div>
     </div>
   `).join('');
@@ -2750,10 +2806,14 @@ function renderMetricsTable() {
     const cpm = parseFloat(r.cpm) || 0;
     const purchRate = sessions > 0 ? (purchases / sessions * 100) : 0;
     const cac = purchases > 0 ? spend / purchases : 0;
-    const ctrClass = ctr >= 1.0 ? 'text-green-600' : ctr >= 0.8 ? 'text-yellow-600' : 'text-red-500';
-    const cpcClass = cpc <= 2.0 ? 'text-green-600' : 'text-yellow-600';
-    const prClass = purchRate >= 3 ? 'text-green-600' : purchRate >= 2 ? 'text-yellow-600' : sessions > 0 ? 'text-red-500' : 'text-gray-400';
-    const cacClass = cac > 0 && cac <= 25 ? 'text-green-600' : cac > 25 ? 'text-red-500' : 'text-gray-400';
+    // Gate colors: don't show red/green on individual rows when in Tadpole phase
+    const totalCampSpend = perfMetrics.reduce((s, r) => s + (parseFloat(r.spend) || 0), 0);
+    const totalCampPurch = perfMetrics.reduce((s, r) => s + (parseInt(r.purchases) || 0), 0);
+    const earlyPhase = totalCampSpend < 100;
+    const ctrClass = earlyPhase ? 'text-blue-500' : ctr >= 1.0 ? 'text-green-600' : ctr >= 0.8 ? 'text-yellow-600' : 'text-red-500';
+    const cpcClass = earlyPhase ? 'text-blue-500' : cpc <= 2.0 ? 'text-green-600' : 'text-yellow-600';
+    const prClass = earlyPhase ? 'text-blue-500' : purchRate >= 3 ? 'text-green-600' : purchRate >= 2 ? 'text-yellow-600' : sessions > 0 ? 'text-red-500' : 'text-gray-400';
+    const cacClass = earlyPhase ? 'text-blue-500' : cac > 0 && cac <= 25 ? 'text-green-600' : cac > 25 ? 'text-red-500' : 'text-gray-400';
     return `<tr class="border-t border-gray-100 hover:bg-gray-50">
       <td class="px-3 py-2 font-medium whitespace-nowrap">${r.metric_date}</td>
       <td class="px-3 py-2 text-red-500 font-medium">$${spend.toFixed(2)}</td>
