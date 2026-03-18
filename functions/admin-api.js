@@ -1066,6 +1066,91 @@ exports.handler = async function (event) {
         return ok({ metric: data });
       }
 
+      if (action === 'sync-fb-metrics') {
+        if (!body.campaign_id) return badRequest('Missing campaign_id');
+
+        // Get campaign to find FB IDs
+        const { data: camp } = await supabase
+          .from('ad_campaigns')
+          .select('fb_campaign_id, fb_adset_id, fb_ad_id, start_date')
+          .eq('id', body.campaign_id)
+          .single();
+
+        if (!camp) return badRequest('Campaign not found');
+
+        // Determine which FB object to query (prefer ad > adset > campaign)
+        const fbId = camp.fb_ad_id || camp.fb_adset_id || camp.fb_campaign_id;
+        if (!fbId) return badRequest('No Facebook ID set on this campaign. Edit the campaign and add your FB Campaign/Ad Set/Ad ID.');
+
+        const FB_ACCESS_TOKEN = process.env.FB_ACCESS_TOKEN;
+        if (!FB_ACCESS_TOKEN) return serverError({ message: 'FB_ACCESS_TOKEN not configured' });
+
+        // Date range: from campaign start (or 30 days ago) to today
+        const since = body.since || camp.start_date || new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
+        const until = body.until || new Date().toISOString().split('T')[0];
+
+        const fields = 'impressions,reach,clicks,spend,cpm,cpc,ctr,frequency,actions';
+        const fbUrl = `https://graph.facebook.com/v21.0/${fbId}/insights?fields=${fields}&time_increment=1&time_range={"since":"${since}","until":"${until}"}&limit=90&access_token=${FB_ACCESS_TOKEN}`;
+
+        try {
+          const fbRes = await fetch(fbUrl);
+          const fbData = await fbRes.json();
+
+          if (fbData.error) {
+            const msg = fbData.error.message || 'Facebook API error';
+            const hint = fbData.error.code === 190 ? ' Your access token may need ads_read permission. Go to Facebook Business Settings > System Users to generate a new token with ads_read.' : '';
+            return ok({ success: false, error: msg + hint, fb_error: fbData.error });
+          }
+
+          const rows = fbData.data || [];
+          let synced = 0;
+
+          for (const day of rows) {
+            // Extract lead and purchase counts from actions array
+            const actions = day.actions || [];
+            const leads = actions.find(a => a.action_type === 'lead')?.value || 0;
+            const purchases = actions.find(a => a.action_type === 'purchase' || a.action_type === 'offsite_conversion.fb_pixel_purchase')?.value || 0;
+            const linkClicks = actions.find(a => a.action_type === 'link_click')?.value || 0;
+
+            const spend = parseFloat(day.spend) || 0;
+            const row = {
+              campaign_id: body.campaign_id,
+              metric_date: day.date_start,
+              impressions: parseInt(day.impressions) || 0,
+              reach: parseInt(day.reach) || 0,
+              clicks: parseInt(day.clicks) || 0,
+              link_clicks: parseInt(linkClicks) || 0,
+              spend,
+              cpm: parseFloat(day.cpm) || 0,
+              cpc: parseFloat(day.cpc) || 0,
+              ctr: parseFloat(day.ctr) || 0,
+              frequency: parseFloat(day.frequency) || 0,
+              leads: parseInt(leads) || 0,
+              purchases: parseInt(purchases) || 0,
+              cost_per_lead: parseInt(leads) > 0 ? spend / parseInt(leads) : null,
+              cost_per_purchase: parseInt(purchases) > 0 ? spend / parseInt(purchases) : null,
+              updated_at: new Date().toISOString(),
+            };
+
+            const { error } = await supabase
+              .from('ad_daily_metrics')
+              .upsert(row, { onConflict: 'campaign_id,metric_date' });
+
+            if (!error) synced++;
+          }
+
+          // Also update total_spend on the campaign
+          const totalSpend = rows.reduce((s, d) => s + (parseFloat(d.spend) || 0), 0);
+          if (totalSpend > 0) {
+            await supabase.from('ad_campaigns').update({ total_spend: totalSpend }).eq('id', body.campaign_id);
+          }
+
+          return ok({ success: true, synced, total_days: rows.length });
+        } catch (err) {
+          return serverError({ message: 'Failed to fetch from Facebook: ' + err.message });
+        }
+      }
+
       if (action === 'delete-daily-metric') {
         if (!body.id) return badRequest('Missing id');
         const { error } = await supabase

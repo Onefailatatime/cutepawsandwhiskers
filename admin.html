@@ -268,7 +268,8 @@
             </select>
           </div>
           <div class="flex gap-2">
-            <button onclick="openDailyMetricModal()" id="btn-log-metrics" class="hidden bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-600">+ Log Daily Metrics</button>
+            <button onclick="syncFbMetrics()" id="btn-sync-fb" class="hidden bg-green-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-green-700">Sync from Facebook</button>
+            <button onclick="openDailyMetricModal()" id="btn-log-metrics" class="hidden bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-600">+ Log Manually</button>
             <button onclick="openCampaignModal()" class="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-5 py-2 rounded-xl text-sm font-bold hover:opacity-90">+ New Campaign</button>
           </div>
         </div>
@@ -1830,12 +1831,14 @@ function onPerfCampaignChange() {
     document.getElementById('perf-dashboard').classList.add('hidden');
     document.getElementById('campaigns-grid').classList.remove('hidden');
     document.getElementById('btn-log-metrics').classList.add('hidden');
+    document.getElementById('btn-sync-fb').classList.add('hidden');
     return;
   }
   document.getElementById('campaigns-grid').classList.add('hidden');
   document.getElementById('campaigns-empty').classList.add('hidden');
   document.getElementById('perf-dashboard').classList.remove('hidden');
   document.getElementById('btn-log-metrics').classList.remove('hidden');
+  document.getElementById('btn-sync-fb').classList.remove('hidden');
   loadPerfDashboard(id);
 }
 
@@ -2069,6 +2072,31 @@ function deleteDailyMetric(id, date) {
       showToast('Metrics deleted');
       loadPerfDashboard(selectedPerfCampaign);
     }
+  });
+}
+
+// Sync from Facebook
+function syncFbMetrics() {
+  if (!selectedPerfCampaign) { showToast('Select a campaign first'); return; }
+  const btn = document.getElementById('btn-sync-fb');
+  btn.disabled = true; btn.textContent = 'Syncing...';
+
+  api('sync-fb-metrics', {}, 'POST', { campaign_id: selectedPerfCampaign }).then(data => {
+    btn.disabled = false; btn.textContent = 'Sync from Facebook';
+    if (data.success) {
+      showToast(`Synced ${data.synced} day${data.synced === 1 ? '' : 's'} from Facebook!`);
+      loadPerfDashboard(selectedPerfCampaign);
+    } else if (data.error) {
+      // Show helpful error
+      showToast(data.error);
+      console.error('FB Sync error:', data);
+    } else {
+      showToast('Sync failed — check console for details');
+      console.error('FB Sync response:', data);
+    }
+  }).catch(err => {
+    btn.disabled = false; btn.textContent = 'Sync from Facebook';
+    showToast('Sync error: ' + err.message);
   });
 }
 
