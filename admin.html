@@ -394,7 +394,7 @@
                 <table class="w-full text-sm">
                   <thead>
                     <tr class="bg-gray-50 text-left text-gray-500 text-xs uppercase">
-                      <th class="px-3 py-3">Date</th><th class="px-3 py-3">Spend</th><th class="px-3 py-3">Impr.</th><th class="px-3 py-3">Clicks</th><th class="px-3 py-3">CTR</th><th class="px-3 py-3">CPC</th><th class="px-3 py-3">CPM</th><th class="px-3 py-3">Sessions</th><th class="px-3 py-3">Leads</th><th class="px-3 py-3">Purchases</th><th class="px-3 py-3">Purch. Rate</th><th class="px-3 py-3">CAC</th><th class="px-3 py-3">Upsell $</th><th class="px-3 py-3">Notes</th><th class="px-3 py-3">Actions</th>
+                      <th class="px-3 py-3">Date</th><th class="px-3 py-3">Spend</th><th class="px-3 py-3">Impr.</th><th class="px-3 py-3">Clicks</th><th class="px-3 py-3">CTR</th><th class="px-3 py-3">CPC</th><th class="px-3 py-3">CPM</th><th class="px-3 py-3">Views</th><th class="px-3 py-3">Leads</th><th class="px-3 py-3">Purchases</th><th class="px-3 py-3">Purch. Rate</th><th class="px-3 py-3">CAC</th><th class="px-3 py-3">Upsell $</th><th class="px-3 py-3">Notes</th><th class="px-3 py-3">Actions</th>
                     </tr>
                   </thead>
                   <tbody id="perf-metrics-body"></tbody>
@@ -869,6 +869,13 @@
             <label class="text-xs text-gray-500 block mb-1">Frequency</label>
             <input id="dm-frequency" type="number" step="0.01" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0.00">
           </div>
+          <div class="col-span-2 pt-2 border-t border-gray-100">
+            <span class="text-xs font-bold text-gray-600 uppercase tracking-wide">Funnel</span>
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Website Views</label>
+            <input id="dm-sessions" type="number" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-orange-400" placeholder="0">
+          </div>
           <div>
             <label class="text-xs text-gray-500 block mb-1">Leads (sign-ups)</label>
             <input id="dm-leads" type="number" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0">
@@ -878,11 +885,7 @@
             <input id="dm-purchases" type="number" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0">
           </div>
           <div class="col-span-2 pt-2 border-t border-gray-100">
-            <span class="text-xs font-bold text-gray-600 uppercase tracking-wide">Funnel & Money</span>
-          </div>
-          <div>
-            <label class="text-xs text-gray-500 block mb-1">Landing Sessions</label>
-            <input id="dm-sessions" type="number" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0">
+            <span class="text-xs font-bold text-gray-600 uppercase tracking-wide">Money</span>
           </div>
           <div>
             <label class="text-xs text-gray-500 block mb-1">Upsell Revenue ($)</label>
@@ -2513,7 +2516,7 @@ function renderPerfKPIs() {
 
   // Section B: Funnel
   const funnelKpis = [
-    { label: 'Sessions', value: totalSessions > 0 ? totalSessions.toLocaleString() : '—', color: 'text-blue-600' },
+    { label: 'Website Views', value: totalSessions > 0 ? totalSessions.toLocaleString() : '—', color: 'text-blue-600' },
     { label: 'Purchases', value: totalPurchases, color: 'text-green-600' },
     { label: 'Purchase Rate', value: totalSessions > 0 ? purchaseRate.toFixed(1) + '%' : '—', color: purchaseRate >= 3 ? 'text-green-600' : purchaseRate >= 2 ? 'text-yellow-600' : 'text-red-500' },
     { label: 'Leads', value: totalLeads, color: 'text-purple-600' },
