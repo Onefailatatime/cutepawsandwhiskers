@@ -2618,37 +2618,34 @@ function renderPerfKPIs() {
   const paybackRatio = (cacTotal + calCost) > 0 && r30 > 0 ? r30 / (cacTotal + calCost) : 0;
   const ltgpCac = cacTotal > 0 ? (r30 - calCost) / cacTotal : 0;
 
-  // Tadpole gate for KPI colors — show neutral until enough data
-  const kpiTadpole = totalSpend < 100 || totalPurchases < 5;
-
   // Section A: Ads (top of funnel)
   const adsKpis = [
-    { label: 'Total Spend', value: '$' + totalSpend.toFixed(2), color: 'text-gray-700' },
+    { label: 'Total Spend', value: '$' + totalSpend.toFixed(2), color: 'text-red-500' },
     { label: 'Impressions', value: totalImpressions.toLocaleString(), color: 'text-gray-700' },
     { label: 'Link Clicks', value: totalClicks.toLocaleString(), color: 'text-blue-600' },
-    { label: 'Avg CTR', value: avgCTR.toFixed(2) + '%', color: kpiTadpole ? 'text-gray-700' : avgCTR >= 1.0 ? 'text-green-600' : avgCTR >= 0.8 ? 'text-yellow-600' : 'text-red-500' },
-    { label: 'Avg CPC', value: totalClicks > 0 ? '$' + avgCPC.toFixed(2) : '—', color: kpiTadpole ? 'text-gray-700' : avgCPC <= 2.0 ? 'text-green-600' : 'text-yellow-600' },
+    { label: 'Avg CTR', value: avgCTR.toFixed(2) + '%', color: avgCTR >= 1.0 ? 'text-green-600' : avgCTR >= 0.8 ? 'text-yellow-600' : 'text-red-500' },
+    { label: 'Avg CPC', value: '$' + avgCPC.toFixed(2), color: avgCPC <= 2.0 ? 'text-green-600' : 'text-yellow-600' },
     { label: 'Avg CPM', value: '$' + avgCPM.toFixed(2), color: 'text-gray-700' },
   ];
 
   // Section B: Funnel
   const funnelKpis = [
     { label: 'Website Views', value: totalSessions > 0 ? totalSessions.toLocaleString() : '—', color: 'text-blue-600' },
-    { label: 'Purchases', value: totalPurchases, color: 'text-gray-700' },
-    { label: 'Purchase Rate', value: totalSessions > 0 ? purchaseRate.toFixed(1) + '%' : '—', color: kpiTadpole ? 'text-gray-700' : purchaseRate >= 3 ? 'text-green-600' : purchaseRate >= 2 ? 'text-yellow-600' : 'text-red-500' },
+    { label: 'Purchases', value: totalPurchases, color: 'text-green-600' },
+    { label: 'Purchase Rate', value: totalSessions > 0 ? purchaseRate.toFixed(1) + '%' : '—', color: purchaseRate >= 3 ? 'text-green-600' : purchaseRate >= 2 ? 'text-yellow-600' : 'text-red-500' },
     { label: 'Leads', value: totalLeads, color: 'text-purple-600' },
-    { label: 'Cost/Lead', value: costPerLead > 0 ? '$' + costPerLead.toFixed(2) : '—', color: kpiTadpole ? 'text-gray-700' : costPerLead <= 25 ? 'text-green-600' : 'text-orange-500' },
+    { label: 'Cost/Lead', value: costPerLead > 0 ? '$' + costPerLead.toFixed(2) : '—', color: costPerLead > 0 && costPerLead <= 25 ? 'text-green-600' : 'text-orange-500' },
   ];
 
   // Section C: Money
   const moneyKpis = [
-    { label: 'CAC (Front)', value: cacFront > 0 ? '$' + cacFront.toFixed(2) : '—', color: kpiTadpole ? 'text-gray-700' : cacFront <= 25 ? 'text-green-600' : cacFront > 25 ? 'text-red-500' : 'text-gray-400' },
-    { label: 'Front Revenue', value: '$' + frontRevenue.toFixed(0), color: 'text-gray-700' },
+    { label: 'CAC (Front)', value: cacFront > 0 ? '$' + cacFront.toFixed(2) : '—', color: cacFront > 0 && cacFront <= 25 ? 'text-green-600' : cacFront > 25 ? 'text-red-500' : 'text-gray-400' },
+    { label: 'Front Revenue', value: '$' + frontRevenue.toFixed(0), color: 'text-green-600' },
     { label: 'Upsell Revenue', value: totalUpsell > 0 ? '$' + totalUpsell.toFixed(0) : '—', color: 'text-emerald-600' },
     { label: 'Avg Upsell/Entry', value: avgUpsellPerEntry > 0 ? '$' + avgUpsellPerEntry.toFixed(2) : '—', color: 'text-emerald-600' },
     { label: 'R30/Entry', value: r30 > 0 ? '$' + r30.toFixed(2) : '—', color: 'text-indigo-600' },
-    { label: 'Payback Ratio', value: paybackRatio > 0 ? paybackRatio.toFixed(2) + 'x' : '—', color: kpiTadpole ? 'text-gray-700' : paybackRatio >= 1 ? 'text-green-600' : paybackRatio > 0 ? 'text-red-500' : 'text-gray-400' },
-    { label: 'LTGP:CAC', value: ltgpCac > 0 ? ltgpCac.toFixed(2) + 'x' : '—', color: kpiTadpole ? 'text-gray-700' : ltgpCac >= 3 ? 'text-green-600' : ltgpCac >= 1 ? 'text-yellow-600' : ltgpCac > 0 ? 'text-red-500' : 'text-gray-400' },
+    { label: 'Payback Ratio', value: paybackRatio > 0 ? paybackRatio.toFixed(2) + 'x' : '—', color: paybackRatio >= 1 ? 'text-green-600' : paybackRatio > 0 ? 'text-red-500' : 'text-gray-400' },
+    { label: 'LTGP:CAC', value: ltgpCac > 0 ? ltgpCac.toFixed(2) + 'x' : '—', color: ltgpCac >= 3 ? 'text-green-600' : ltgpCac >= 1 ? 'text-yellow-600' : ltgpCac > 0 ? 'text-red-500' : 'text-gray-400' },
   ];
 
   function renderSection(title, kpis) {
@@ -2695,12 +2692,6 @@ function renderHealthCards() {
   const paybackRatio = (cac + avgCalCost) > 0 && r30 > 0 ? r30 / (cac + avgCalCost) : 0;
   const ltgpCac = cac > 0 ? (r30 - avgCalCost) / cac : 0;
 
-  // --- Tadpole gate: don't judge until enough data ---
-  const MIN_SPEND = 100;
-  const MIN_PURCHASES = 5;
-  const isTadpole = totalSpend < MIN_SPEND || totalPurchases < MIN_PURCHASES;
-
-  function tadpole() { return { color: 'bg-blue-50 text-blue-600 border-blue-200', label: 'TADPOLE' }; }
   function status(val, green, yellow) {
     if (val >= green) return { color: 'bg-green-100 text-green-700 border-green-200', label: 'GREEN' };
     if (val >= yellow) return { color: 'bg-yellow-100 text-yellow-700 border-yellow-200', label: 'YELLOW' };
@@ -2713,44 +2704,20 @@ function renderHealthCards() {
   }
   function na() { return { color: 'bg-gray-100 text-gray-500 border-gray-200', label: 'N/A' }; }
 
-  // Tadpole hint shown on all gated cards
-  const tadHint = 'Need $' + MIN_SPEND + '+ spend & ' + MIN_PURCHASES + '+ purchases';
-
   const checks = [
     // A: Ad health
-    { label: 'CTR', value: avgCTR.toFixed(2) + '%', target: '>= 1.0%', hint: isTadpole ? tadHint : 'Ad problem if < 1%', ...(isTadpole ? tadpole() : status(avgCTR, 1.0, 0.8)) },
-    { label: 'CPC', value: totalClicks > 0 ? '$' + avgCPC.toFixed(2) : '—', target: '<= $2.00', hint: isTadpole ? tadHint : 'Cost per click', ...(isTadpole ? tadpole() : statusLow(avgCPC, 2.0, 2.5)) },
+    { label: 'CTR', value: avgCTR.toFixed(2) + '%', target: '>= 1.0%', hint: 'Ad problem if < 1%', ...status(avgCTR, 1.0, 0.8) },
+    { label: 'CPC', value: '$' + avgCPC.toFixed(2), target: '<= $2.00', hint: 'Cost per click', ...statusLow(avgCPC, 2.0, 2.5) },
     // B: Funnel health
-    { label: 'Purchase Rate', value: totalSessions > 0 ? purchaseRate.toFixed(1) + '%' : '—', target: '>= 2-3%', hint: isTadpole ? tadHint : 'Page problem if < 2%', ...(isTadpole ? tadpole() : totalSessions > 0 ? status(purchaseRate, 3, 2) : na()) },
+    { label: 'Purchase Rate', value: totalSessions > 0 ? purchaseRate.toFixed(1) + '%' : '—', target: '>= 2-3%', hint: 'Page problem if < 2%', ...(totalSessions > 0 ? status(purchaseRate, 3, 2) : na()) },
     // C: Money health
-    { label: 'CAC (Front)', value: cac > 0 ? '$' + cac.toFixed(2) : '—', target: '<= $25', hint: isTadpole ? tadHint : 'Spend / entries', ...(isTadpole ? tadpole() : cac > 0 ? statusLow(cac, 25, 30) : na()) },
-    { label: 'Payback', value: paybackRatio > 0 ? paybackRatio.toFixed(2) + 'x' : '—', target: '>= 1.0x', hint: isTadpole ? tadHint : 'R30 / (CAC + cost)', ...(isTadpole ? tadpole() : paybackRatio > 0 ? status(paybackRatio, 1.0, 0.7) : na()) },
-    { label: 'LTGP:CAC', value: ltgpCac > 0 ? ltgpCac.toFixed(2) + 'x' : '—', target: '>= 3.0x', hint: isTadpole ? tadHint : 'Can you scale?', ...(isTadpole ? tadpole() : ltgpCac > 0 ? status(ltgpCac, 3.0, 1.0) : na()) },
-    { label: 'Days Logged', value: m.length, target: '10+ days', hint: 'For reliable data', color: m.length >= 10 ? 'bg-green-100 text-green-700 border-green-200' : 'bg-blue-50 text-blue-600 border-blue-200', label: m.length + ' days' },
+    { label: 'CAC (Front)', value: cac > 0 ? '$' + cac.toFixed(2) : '—', target: '<= $25', hint: 'Spend / entries', ...(cac > 0 ? statusLow(cac, 25, 30) : na()) },
+    { label: 'Payback', value: paybackRatio > 0 ? paybackRatio.toFixed(2) + 'x' : '—', target: '>= 1.0x', hint: 'R30 / (CAC + cost)', ...(paybackRatio > 0 ? status(paybackRatio, 1.0, 0.7) : na()) },
+    { label: 'LTGP:CAC', value: ltgpCac > 0 ? ltgpCac.toFixed(2) + 'x' : '—', target: '>= 3.0x', hint: 'Can you scale?', ...(ltgpCac > 0 ? status(ltgpCac, 3.0, 1.0) : na()) },
+    { label: 'Days Logged', value: m.length, target: 'min 10 days', hint: 'For reliable data', color: m.length >= 10 ? 'bg-green-100 text-green-700 border-green-200' : 'bg-blue-50 text-blue-700 border-blue-200', label: m.length + ' days' },
   ];
 
-  // Test progress strip (only when in Tadpole phase)
-  const spendPct = Math.min(totalSpend / MIN_SPEND, 1) * 100;
-  const purchPct = Math.min(totalPurchases / MIN_PURCHASES, 1) * 100;
-  const progressHtml = isTadpole ? `
-    <div class="col-span-full rounded-xl bg-blue-50 border border-blue-200 p-3 mb-1">
-      <div class="flex items-center justify-between mb-2">
-        <span class="text-xs font-bold text-blue-700">TEST PROGRESS</span>
-        <span class="text-[10px] text-blue-500">Health cards unlock at $${MIN_SPEND} spend + ${MIN_PURCHASES} purchases</span>
-      </div>
-      <div class="flex gap-4">
-        <div class="flex-1">
-          <div class="flex justify-between text-[11px] text-blue-600 mb-0.5"><span>Spend</span><span>$${totalSpend.toFixed(0)} / $${MIN_SPEND}</span></div>
-          <div class="w-full bg-blue-100 rounded-full h-2"><div class="h-2 rounded-full bg-blue-500" style="width:${spendPct}%"></div></div>
-        </div>
-        <div class="flex-1">
-          <div class="flex justify-between text-[11px] text-blue-600 mb-0.5"><span>Purchases</span><span>${totalPurchases} / ${MIN_PURCHASES}</span></div>
-          <div class="w-full bg-blue-100 rounded-full h-2"><div class="h-2 rounded-full bg-purple-500" style="width:${purchPct}%"></div></div>
-        </div>
-      </div>
-    </div>` : '';
-
-  document.getElementById('perf-health-cards').innerHTML = progressHtml + checks.map(c => `
+  document.getElementById('perf-health-cards').innerHTML = checks.map(c => `
     <div class="rounded-xl border ${c.color} p-3 text-center">
       <div class="text-xs font-medium opacity-70 mb-0.5">${c.label}</div>
       <div class="text-lg font-bold">${c.value}</div>
