@@ -102,6 +102,24 @@ exports.handler = async function (event) {
 
     if (error) throw error;
 
+    // Auto-link entry to campaign by UTM
+    if (row.utm_campaign) {
+      try {
+        const { data: camp } = await supabase
+          .from('ad_campaigns')
+          .select('id')
+          .eq('utm_campaign', row.utm_campaign)
+          .eq('is_archived', false)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        if (camp) {
+          await supabase.from('contest_entries').update({ campaign_id: camp.id }).eq('id', row.id);
+          row.campaign_id = camp.id;
+        }
+      } catch (e) { /* no matching campaign, ok */ }
+    }
+
     // Fire Facebook Conversions API — Lead event
     const eventId = `Lead_${row.id}`;
     sendEvent({

@@ -118,7 +118,7 @@
         <button class="tab-btn active px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all" data-tab="dashboard">Dashboard</button>
         <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="entries">All Entries</button>
         <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="calls">Upsell Calls</button>
-        <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="ads">Ad Performance</button>
+        <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="ads">Campaigns</button>
         <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="winners">Winners</button>
         <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="email">Email</button>
         <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="kanban">Board</button>
@@ -257,83 +257,145 @@
         </div>
       </div>
 
-      <!-- ===== ADS TAB ===== -->
+      <!-- ===== CAMPAIGNS TAB ===== -->
       <div class="tab-content" id="tab-ads">
-        <!-- Campaign selector + actions bar -->
+
+        <!-- TOP BAR: always visible -->
         <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
-          <div class="flex items-center gap-3">
-            <h2 class="text-xl font-bold text-gray-900">📣 Ad Performance</h2>
-            <select id="perf-campaign-select" onchange="onPerfCampaignChange()" class="px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-orange-400 min-w-[200px]">
-              <option value="">Select Campaign...</option>
-            </select>
+          <div class="flex items-center gap-3 flex-wrap">
+            <h2 class="text-xl font-bold text-gray-900" id="hub-title">Campaigns</h2>
+            <div id="hub-back-btn" class="hidden">
+              <button onclick="closeHub()" class="text-sm text-gray-500 hover:text-orange-500">← All Campaigns</button>
+            </div>
           </div>
-          <div class="flex gap-2">
+          <div class="flex gap-2 flex-wrap" id="hub-actions">
             <button onclick="syncFbMetrics()" id="btn-sync-fb" class="hidden bg-green-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-green-700">Sync from Facebook</button>
             <button onclick="openDailyMetricModal()" id="btn-log-metrics" class="hidden bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-600">+ Log Manually</button>
-            <button onclick="openCampaignModal()" class="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-5 py-2 rounded-xl text-sm font-bold hover:opacity-90">+ New Campaign</button>
+            <button onclick="openCampaignModal()" id="btn-new-campaign" class="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-5 py-2 rounded-xl text-sm font-bold hover:opacity-90">+ New Campaign</button>
           </div>
         </div>
 
-        <!-- Campaign cards (shown when no campaign selected) -->
-        <div id="campaigns-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-        <div id="campaigns-empty" class="hidden bg-white rounded-2xl p-12 text-center text-gray-400">
-          <div class="text-4xl mb-3">📣</div>
-          <p>No campaigns yet. Click "+ New Campaign" to create your first ad.</p>
+        <!-- CAMPAIGN LIST (shown when no hub open) -->
+        <div id="campaign-list-view">
+          <div class="flex gap-2 mb-4">
+            <button onclick="filterCampaignList('active')" id="cl-filter-active" class="px-4 py-1.5 rounded-lg text-sm font-medium bg-orange-500 text-white">Active</button>
+            <button onclick="filterCampaignList('archived')" id="cl-filter-archived" class="px-4 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200">Archived</button>
+          </div>
+          <div id="campaigns-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+          <div id="campaigns-empty" class="hidden bg-white rounded-2xl p-12 text-center text-gray-400">
+            <div class="text-4xl mb-3">📣</div>
+            <p>No campaigns yet. Click "+ New Campaign" to get started!</p>
+          </div>
         </div>
 
-        <!-- Performance dashboard (shown when campaign selected) -->
-        <div id="perf-dashboard" class="hidden space-y-6">
+        <!-- CAMPAIGN HUB (shown when a campaign is selected) -->
+        <div id="campaign-hub" class="hidden space-y-5">
 
-          <!-- KPI Cards row -->
-          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3" id="perf-kpi-cards"></div>
-
-          <!-- Health scorecard -->
+          <!-- 1. HEADER + GOAL -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-            <h3 class="font-bold text-gray-900 mb-3">Health Check (from your metrics playbook)</h3>
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-3" id="perf-health-cards"></div>
+            <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
+              <div>
+                <div class="flex items-center gap-2 mb-1">
+                  <h3 class="text-lg font-bold text-gray-900" id="hub-camp-name"></h3>
+                  <span id="hub-camp-status" class="badge text-xs"></span>
+                  <span id="hub-archived-badge" class="hidden badge bg-gray-200 text-gray-500 text-xs">Archived</span>
+                </div>
+                <p class="text-sm text-gray-400" id="hub-camp-dates"></p>
+              </div>
+              <div class="flex gap-2" id="hub-header-actions">
+                <button onclick="openCampaignDetail(selectedPerfCampaign)" class="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-medium hover:bg-gray-200">Edit</button>
+                <button onclick="archiveCampaign()" id="btn-archive" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-medium hover:bg-red-100">Archive</button>
+                <button onclick="unarchiveCampaign()" id="btn-unarchive" class="hidden px-3 py-1.5 rounded-lg bg-green-50 text-green-600 text-xs font-medium hover:bg-green-100">Reactivate</button>
+              </div>
+            </div>
+            <!-- Goal progress bar -->
+            <div id="hub-goal-section">
+              <div class="flex items-center justify-between text-sm mb-1">
+                <span class="text-gray-500">Goal: <strong id="hub-goal-label" class="text-gray-900"></strong></span>
+                <span class="font-bold" id="hub-goal-progress-text"></span>
+              </div>
+              <div class="w-full bg-gray-100 rounded-full h-3">
+                <div id="hub-goal-bar" class="h-3 rounded-full bg-gradient-to-r from-orange-400 to-pink-500 transition-all" style="width:0%"></div>
+              </div>
+            </div>
           </div>
 
-          <!-- Daily Metrics Table -->
+          <!-- 2. CAMPAIGN KANBAN -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 class="font-bold text-gray-900">Daily Breakdown</h3>
-              <span class="text-xs text-gray-400" id="perf-metric-count"></span>
+            <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+              <h3 class="font-bold text-gray-900">Leads Pipeline</h3>
+              <span class="text-xs text-gray-400" id="hub-leads-count"></span>
             </div>
-            <div class="overflow-x-auto">
-              <table class="w-full text-sm">
-                <thead>
-                  <tr class="bg-gray-50 text-left text-gray-500 text-xs uppercase">
-                    <th class="px-3 py-3">Date</th>
-                    <th class="px-3 py-3">Spend</th>
-                    <th class="px-3 py-3">Impr.</th>
-                    <th class="px-3 py-3">Reach</th>
-                    <th class="px-3 py-3">Clicks</th>
-                    <th class="px-3 py-3">CTR</th>
-                    <th class="px-3 py-3">CPC</th>
-                    <th class="px-3 py-3">CPM</th>
-                    <th class="px-3 py-3">Freq.</th>
-                    <th class="px-3 py-3">Leads</th>
-                    <th class="px-3 py-3">CPL</th>
-                    <th class="px-3 py-3">Notes</th>
-                    <th class="px-3 py-3">Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="perf-metrics-body"></tbody>
-              </table>
+            <div class="flex gap-3 p-4 overflow-x-auto min-h-[200px]" id="hub-kanban"></div>
+          </div>
+
+          <!-- 3. AD PERFORMANCE (collapsible) -->
+          <details open class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <summary class="px-5 py-3 border-b border-gray-100 font-bold text-gray-900 cursor-pointer hover:bg-gray-50 flex items-center justify-between">
+              <span>Ad Performance</span>
+              <div class="flex gap-2">
+                <button onclick="event.stopPropagation(); syncFbMetrics()" class="px-3 py-1 rounded-lg bg-green-600 text-white text-xs font-medium hover:bg-green-700">Sync FB</button>
+                <button onclick="event.stopPropagation(); openDailyMetricModal()" class="px-3 py-1 rounded-lg bg-blue-500 text-white text-xs font-medium hover:bg-blue-600">+ Log</button>
+              </div>
+            </summary>
+            <div class="p-5 space-y-4">
+              <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3" id="perf-kpi-cards"></div>
+              <div>
+                <h4 class="font-medium text-gray-700 text-sm mb-2">Health Check</h4>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-3" id="perf-health-cards"></div>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr class="bg-gray-50 text-left text-gray-500 text-xs uppercase">
+                      <th class="px-3 py-3">Date</th><th class="px-3 py-3">Spend</th><th class="px-3 py-3">Impr.</th><th class="px-3 py-3">Reach</th><th class="px-3 py-3">Clicks</th><th class="px-3 py-3">CTR</th><th class="px-3 py-3">CPC</th><th class="px-3 py-3">CPM</th><th class="px-3 py-3">Freq.</th><th class="px-3 py-3">Leads</th><th class="px-3 py-3">CPL</th><th class="px-3 py-3">Notes</th><th class="px-3 py-3">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="perf-metrics-body"></tbody>
+                </table>
+              </div>
+              <div id="perf-metrics-empty" class="hidden p-6 text-center text-gray-400 text-sm">No daily metrics yet. Sync from Facebook or log manually.</div>
             </div>
-            <div id="perf-metrics-empty" class="hidden p-8 text-center text-gray-400 text-sm">
-              No daily metrics logged yet. Click "+ Log Daily Metrics" to add today's numbers from Facebook Ads Manager.
+          </details>
+
+          <!-- 4. ADS USED / CREATIVES -->
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+              <h3 class="font-bold text-gray-900">Ads Used</h3>
+              <button onclick="openCreativeModal()" id="btn-add-creative" class="px-3 py-1.5 rounded-lg bg-purple-500 text-white text-xs font-medium hover:bg-purple-600">+ Add Creative</button>
+            </div>
+            <div id="hub-creatives-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-3 p-4"></div>
+            <div id="hub-creatives-empty" class="hidden p-6 text-center text-gray-400 text-sm">No creatives yet. Add your ad variations to track which ones perform best.</div>
+          </div>
+
+          <!-- 5. NOTES JOURNAL -->
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-5 py-3 border-b border-gray-100">
+              <h3 class="font-bold text-gray-900">Campaign Journal</h3>
+            </div>
+            <div class="p-4">
+              <div class="flex gap-2 mb-4" id="hub-note-form">
+                <input id="hub-note-input" type="text" class="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-orange-400" placeholder="Log a note... (targeting change, results, ideas)">
+                <select id="hub-note-type" class="px-2 py-2 rounded-lg border border-gray-200 text-xs outline-none">
+                  <option value="general">General</option>
+                  <option value="strategy">Strategy</option>
+                  <option value="change">Change</option>
+                  <option value="learning">Learning</option>
+                  <option value="result">Result</option>
+                </select>
+                <button onclick="addCampaignNote()" class="px-4 py-2 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600">Add</button>
+              </div>
+              <div id="hub-notes-list" class="space-y-2"></div>
+              <div id="hub-notes-empty" class="hidden text-center text-gray-400 text-sm py-4">No notes yet. Start journaling your campaign decisions!</div>
             </div>
           </div>
 
-          <!-- Campaign info card -->
-          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="font-bold text-gray-900">Campaign Details</h3>
-              <button onclick="openCampaignDetail(selectedPerfCampaign)" class="text-sm text-orange-500 hover:underline">Edit Campaign</button>
-            </div>
-            <div id="perf-campaign-info" class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm"></div>
-          </div>
+          <!-- 6. CAMPAIGN DETAILS (collapsible) -->
+          <details class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <summary class="px-5 py-3 font-bold text-gray-900 cursor-pointer hover:bg-gray-50">Campaign Details</summary>
+            <div id="hub-campaign-info" class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm p-5"></div>
+          </details>
+
         </div>
       </div>
 
@@ -616,6 +678,19 @@
             <input id="camp-spend" type="number" step="0.01" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0.00">
           </div>
           <div>
+            <label class="text-xs text-gray-500 block mb-1">Goal Type</label>
+            <select id="camp-goal-type" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none">
+              <option value="sign_ups">Sign-ups</option>
+              <option value="revenue">Revenue ($)</option>
+              <option value="budget">Budget Cap ($)</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Goal Target</label>
+            <input id="camp-goal-target" type="number" step="1" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="e.g. 50">
+          </div>
+          <div>
             <label class="text-xs text-gray-500 block mb-1">Target Audience</label>
             <input id="camp-audience" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="e.g. Dog owners 25-55, US">
           </div>
@@ -764,6 +839,69 @@
         <div class="flex gap-3 pt-2">
           <button onclick="closeMetricModal()" class="flex-1 py-3 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50">Cancel</button>
           <button onclick="saveDailyMetric()" id="dm-save-btn" class="flex-1 py-3 rounded-xl bg-blue-500 text-white text-sm font-bold hover:bg-blue-600">Save Metrics</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CREATIVE MODAL ===== -->
+  <div id="creative-modal" class="modal-bg fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-8 pb-8 overflow-y-auto opacity-0 pointer-events-none">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white rounded-t-2xl z-10">
+        <h2 class="font-bold text-gray-900 text-lg" id="creative-modal-title">Add Creative</h2>
+        <button onclick="closeCreativeModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <input type="hidden" id="cr-id">
+        <div class="grid grid-cols-2 gap-3">
+          <div class="col-span-2">
+            <label class="text-xs text-gray-500 block mb-1">Label / Name *</label>
+            <input id="cr-label" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="e.g. Video A - Dog playing">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Type</label>
+            <select id="cr-type" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none">
+              <option value="image">Image</option>
+              <option value="video">Video</option>
+              <option value="carousel">Carousel</option>
+              <option value="text">Text Only</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">utm_content</label>
+            <input id="cr-utm" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="e.g. video_a">
+          </div>
+          <div class="col-span-2">
+            <label class="text-xs text-gray-500 block mb-1">Image URL</label>
+            <input id="cr-image" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="https://...">
+          </div>
+          <div class="col-span-2">
+            <label class="text-xs text-gray-500 block mb-1">Headline</label>
+            <input id="cr-headline" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="Ad headline">
+          </div>
+          <div class="col-span-2">
+            <label class="text-xs text-gray-500 block mb-1">Body Text</label>
+            <textarea id="cr-body" rows="3" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none resize-none" placeholder="Ad copy text..."></textarea>
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">FB Ad ID</label>
+            <input id="cr-fb-ad" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="120...">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Status</label>
+            <select id="cr-active" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none">
+              <option value="true">Active</option>
+              <option value="false">Paused</option>
+            </select>
+          </div>
+          <div class="col-span-2">
+            <label class="text-xs text-gray-500 block mb-1">Notes</label>
+            <input id="cr-notes" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="Internal notes about this creative">
+          </div>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button onclick="closeCreativeModal()" class="flex-1 py-3 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50">Cancel</button>
+          <button onclick="saveCreative()" id="cr-save-btn" class="flex-1 py-3 rounded-xl bg-purple-500 text-white text-sm font-bold hover:bg-purple-600">Save Creative</button>
         </div>
       </div>
     </div>
@@ -1678,6 +1816,8 @@ function openCampaignModal(c = null) {
   document.getElementById('camp-status').value = c ? c.status : 'draft';
   document.getElementById('camp-budget').value = c ? c.daily_budget : '';
   document.getElementById('camp-spend').value = c ? c.total_spend : '';
+  document.getElementById('camp-goal-type').value = c ? c.goal_type : 'sign_ups';
+  document.getElementById('camp-goal-target').value = c ? c.goal_target : '';
   document.getElementById('camp-audience').value = c ? c.target_audience : '';
   document.getElementById('camp-start').value = c && c.start_date ? c.start_date : '';
   document.getElementById('camp-end').value = c && c.end_date ? c.end_date : '';
@@ -1715,6 +1855,8 @@ function saveCampaign() {
     status: document.getElementById('camp-status').value,
     daily_budget: parseFloat(document.getElementById('camp-budget').value) || 0,
     total_spend: parseFloat(document.getElementById('camp-spend').value) || 0,
+    goal_type: document.getElementById('camp-goal-type').value,
+    goal_target: parseFloat(document.getElementById('camp-goal-target').value) || 0,
     target_audience: document.getElementById('camp-audience').value,
     start_date: document.getElementById('camp-start').value || null,
     end_date: document.getElementById('camp-end').value || null,
@@ -1745,7 +1887,6 @@ function saveCampaign() {
     if (data.success) {
       closeCampaignModal();
       showToast(id ? 'Campaign updated!' : 'Campaign created! 📣');
-      loadCampaigns();
       loadCampaignsList();
 
       // Auto-link entries by UTM if creating new campaign with utm_campaign set
@@ -1754,105 +1895,342 @@ function saveCampaign() {
           if (r.linked > 0) showToast(`Auto-linked ${r.linked} entries by UTM!`);
         });
       }
+
+      // Open the hub for this campaign
+      const campId = id || (data.campaign && data.campaign.id);
+      if (campId) openHub(campId);
+      else loadCampaigns();
     }
   });
 }
 
-// ===================== AD PERFORMANCE =====================
+// ===================== CAMPAIGN HUB =====================
 let selectedPerfCampaign = '';
 let perfMetrics = [];
 let perfCampaignData = null;
+let hubEntries = [];
+let hubCreatives = [];
+let hubNotes = [];
+let campaignListFilter = 'active';
 
 function loadCampaigns() {
   api('campaigns').then(data => {
     const campaigns = data.campaigns || [];
-    // Populate the campaign selector dropdown
-    const sel = document.getElementById('perf-campaign-select');
-    sel.innerHTML = '<option value="">Select Campaign...</option>' + campaigns.map(c => {
-      const icon = { facebook: '📘', instagram: '📸', tiktok: '🎵', google: '🔍' }[c.platform] || '📣';
-      return `<option value="${c.id}">${icon} ${esc(c.name)} (${c.status})</option>`;
-    }).join('');
 
-    // Restore selection if one was active
+    // If hub is open, reload hub data
     if (selectedPerfCampaign) {
-      sel.value = selectedPerfCampaign;
-      loadPerfDashboard(selectedPerfCampaign);
-    }
-
-    // Show campaign cards
-    if (!campaigns.length) {
-      document.getElementById('campaigns-grid').classList.add('hidden');
-      document.getElementById('campaigns-empty').classList.remove('hidden');
+      openHub(selectedPerfCampaign);
       return;
     }
 
-    if (!selectedPerfCampaign) {
-      document.getElementById('campaigns-grid').classList.remove('hidden');
-      document.getElementById('campaigns-empty').classList.add('hidden');
-      document.getElementById('perf-dashboard').classList.add('hidden');
-    }
-
-    document.getElementById('campaigns-grid').innerHTML = campaigns.map(c => {
-      const platformIcon = { facebook: '📘', instagram: '📸', tiktok: '🎵', google: '🔍', other: '📣' }[c.platform] || '📣';
-      const statusColor = { active: 'bg-green-100 text-green-700', paused: 'bg-yellow-100 text-yellow-700', ended: 'bg-gray-100 text-gray-500', draft: 'bg-blue-100 text-blue-700' }[c.status] || 'bg-gray-100 text-gray-500';
-      return `
-        <div class="bg-white rounded-xl border-2 border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer" onclick="selectPerfCampaign('${c.id}')">
-          ${c.image_url ? `<img src="${esc(c.image_url)}" class="w-full h-36 object-cover" alt="Ad image">` : ''}
-          <div class="p-5">
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-2xl">${platformIcon}</span>
-              <span class="badge ${statusColor}">${c.status}</span>
-            </div>
-            <h3 class="font-bold text-gray-900 mb-2">${esc(c.name)}</h3>
-            <div class="grid grid-cols-2 gap-2 text-xs text-gray-500">
-              <div>Entries: <strong class="text-gray-900">${c.total_entries || 0}</strong></div>
-              <div>Paid: <strong class="text-gray-900">${c.paid_entries || 0}</strong></div>
-              <div>Revenue: <strong class="text-green-600">$${(parseFloat(c.revenue) || 0).toFixed(2)}</strong></div>
-              <div>Spend: <strong class="text-red-500">$${(parseFloat(c.total_spend) || 0).toFixed(2)}</strong></div>
-              <div>CPA: <strong class="text-gray-900">$${(parseFloat(c.cost_per_acquisition) || 0).toFixed(2)}</strong></div>
-              <div>ROAS: <strong class="text-gray-900">${(parseFloat(c.roas) || 0).toFixed(1)}x</strong></div>
-            </div>
-          </div>
-        </div>`;
-    }).join('');
+    renderCampaignList(campaigns);
   });
 }
 
-function selectPerfCampaign(id) {
-  selectedPerfCampaign = id;
-  document.getElementById('perf-campaign-select').value = id;
-  onPerfCampaignChange();
-}
+function renderCampaignList(campaigns) {
+  const filtered = campaigns.filter(c => campaignListFilter === 'archived' ? c.is_archived : !c.is_archived);
 
-function onPerfCampaignChange() {
-  const id = document.getElementById('perf-campaign-select').value;
-  selectedPerfCampaign = id;
-  if (!id) {
-    document.getElementById('perf-dashboard').classList.add('hidden');
-    document.getElementById('campaigns-grid').classList.remove('hidden');
-    document.getElementById('btn-log-metrics').classList.add('hidden');
-    document.getElementById('btn-sync-fb').classList.add('hidden');
+  if (!filtered.length) {
+    document.getElementById('campaigns-grid').classList.add('hidden');
+    document.getElementById('campaigns-empty').classList.remove('hidden');
+    document.getElementById('campaigns-empty').querySelector('p').textContent =
+      campaignListFilter === 'archived' ? 'No archived campaigns.' : 'No campaigns yet. Click "+ New Campaign" to get started!';
     return;
   }
-  document.getElementById('campaigns-grid').classList.add('hidden');
+  document.getElementById('campaigns-grid').classList.remove('hidden');
   document.getElementById('campaigns-empty').classList.add('hidden');
-  document.getElementById('perf-dashboard').classList.remove('hidden');
-  document.getElementById('btn-log-metrics').classList.remove('hidden');
-  document.getElementById('btn-sync-fb').classList.remove('hidden');
-  loadPerfDashboard(id);
+
+  document.getElementById('campaigns-grid').innerHTML = filtered.map(c => {
+    const platformIcon = { facebook: '📘', instagram: '📸', tiktok: '🎵', google: '🔍', other: '📣' }[c.platform] || '📣';
+    const statusColor = { active: 'bg-green-100 text-green-700', paused: 'bg-yellow-100 text-yellow-700', ended: 'bg-gray-100 text-gray-500', draft: 'bg-blue-100 text-blue-700' }[c.status] || 'bg-gray-100 text-gray-500';
+    const archivedClass = c.is_archived ? 'opacity-60' : '';
+    return `
+      <div class="bg-white rounded-xl border-2 border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer ${archivedClass}" onclick="openHub('${c.id}')">
+        ${c.image_url ? `<img src="${esc(c.image_url)}" class="w-full h-36 object-cover" alt="Ad image">` : ''}
+        <div class="p-5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-2xl">${platformIcon}</span>
+            <div class="flex gap-1">
+              ${c.is_archived ? '<span class="badge bg-gray-200 text-gray-500">Archived</span>' : ''}
+              <span class="badge ${statusColor}">${c.status}</span>
+            </div>
+          </div>
+          <h3 class="font-bold text-gray-900 mb-2">${esc(c.name)}</h3>
+          <div class="grid grid-cols-2 gap-2 text-xs text-gray-500">
+            <div>Entries: <strong class="text-gray-900">${c.total_entries || 0}</strong></div>
+            <div>Paid: <strong class="text-gray-900">${c.paid_entries || 0}</strong></div>
+            <div>Revenue: <strong class="text-green-600">$${(parseFloat(c.revenue) || 0).toFixed(2)}</strong></div>
+            <div>Spend: <strong class="text-red-500">$${(parseFloat(c.total_spend) || 0).toFixed(2)}</strong></div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
 }
 
-function loadPerfDashboard(campaignId) {
-  Promise.all([
-    api('campaign', { id: campaignId }),
-    api('daily-metrics', { campaign_id: campaignId })
-  ]).then(([campData, metricsData]) => {
-    perfCampaignData = campData.campaign;
-    perfMetrics = metricsData.metrics || [];
+function filterCampaignList(filter) {
+  campaignListFilter = filter;
+  document.getElementById('cl-filter-active').className = filter === 'active' ? 'px-4 py-1.5 rounded-lg text-sm font-medium bg-orange-500 text-white' : 'px-4 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200';
+  document.getElementById('cl-filter-archived').className = filter === 'archived' ? 'px-4 py-1.5 rounded-lg text-sm font-medium bg-orange-500 text-white' : 'px-4 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200';
+  api('campaigns').then(data => renderCampaignList(data.campaigns || []));
+}
+
+// Open campaign hub
+function openHub(id) {
+  selectedPerfCampaign = id;
+  document.getElementById('campaign-list-view').classList.add('hidden');
+  document.getElementById('campaign-hub').classList.remove('hidden');
+  document.getElementById('hub-back-btn').classList.remove('hidden');
+  document.getElementById('hub-title').textContent = 'Campaign Hub';
+  document.getElementById('btn-sync-fb').classList.remove('hidden');
+  document.getElementById('btn-log-metrics').classList.remove('hidden');
+
+  api('campaign-hub', { id }).then(data => {
+    perfCampaignData = data.campaign;
+    hubEntries = data.entries || [];
+    hubCreatives = data.creatives || [];
+    hubNotes = data.notes || [];
+    perfMetrics = data.metrics || [];
+
+    const c = perfCampaignData;
+    const isArchived = c.is_archived;
+
+    // Header
+    document.getElementById('hub-camp-name').textContent = c.name;
+    const statusColor = { active: 'bg-green-100 text-green-700', paused: 'bg-yellow-100 text-yellow-700', ended: 'bg-gray-100 text-gray-500', draft: 'bg-blue-100 text-blue-700' }[c.status] || 'bg-gray-100 text-gray-500';
+    document.getElementById('hub-camp-status').className = 'badge text-xs ' + statusColor;
+    document.getElementById('hub-camp-status').textContent = c.status;
+    document.getElementById('hub-archived-badge').classList.toggle('hidden', !isArchived);
+    document.getElementById('hub-camp-dates').textContent = (c.start_date || '?') + ' → ' + (c.end_date || 'ongoing');
+
+    // Archive buttons
+    document.getElementById('btn-archive').classList.toggle('hidden', isArchived);
+    document.getElementById('btn-unarchive').classList.toggle('hidden', !isArchived);
+    document.getElementById('hub-note-form').classList.toggle('hidden', isArchived);
+    document.getElementById('btn-add-creative').classList.toggle('hidden', isArchived);
+
+    // Goal
+    renderGoalProgress();
+    // Kanban
+    renderHubKanban();
+    // Performance
     renderPerfKPIs();
     renderHealthCards();
     renderMetricsTable();
+    // Creatives
+    renderCreatives();
+    // Notes
+    renderNotes();
+    // Campaign info
     renderCampaignInfo();
+  });
+}
+
+function closeHub() {
+  selectedPerfCampaign = '';
+  document.getElementById('campaign-hub').classList.add('hidden');
+  document.getElementById('campaign-list-view').classList.remove('hidden');
+  document.getElementById('hub-back-btn').classList.add('hidden');
+  document.getElementById('hub-title').textContent = 'Campaigns';
+  document.getElementById('btn-sync-fb').classList.add('hidden');
+  document.getElementById('btn-log-metrics').classList.add('hidden');
+  api('campaigns').then(data => renderCampaignList(data.campaigns || []));
+}
+
+// Goal progress
+function renderGoalProgress() {
+  const c = perfCampaignData;
+  const paidEntries = hubEntries.filter(e => e.payment_confirmed);
+  const totalRevenue = paidEntries.reduce((s, e) => s + (parseFloat(e.total_price) || 0), 0);
+  const totalSpend = perfMetrics.reduce((s, r) => s + (parseFloat(r.spend) || 0), 0);
+
+  let current = 0, target = parseFloat(c.goal_target) || 0, label = '';
+  if (c.goal_type === 'sign_ups') { current = paidEntries.length; label = current + ' / ' + target + ' sign-ups'; }
+  else if (c.goal_type === 'revenue') { current = totalRevenue; label = '$' + current.toFixed(0) + ' / $' + target.toFixed(0) + ' revenue'; }
+  else if (c.goal_type === 'budget') { current = totalSpend; label = '$' + current.toFixed(0) + ' / $' + target.toFixed(0) + ' budget'; }
+  else { current = paidEntries.length; label = (c.goal_label || 'Custom') + ': ' + current + ' / ' + target; }
+
+  const pct = target > 0 ? Math.min(100, (current / target) * 100) : 0;
+  document.getElementById('hub-goal-label').textContent = { sign_ups: 'Sign-ups', revenue: 'Revenue', budget: 'Budget', custom: c.goal_label || 'Custom' }[c.goal_type] || 'Sign-ups';
+  document.getElementById('hub-goal-progress-text').textContent = label;
+  document.getElementById('hub-goal-bar').style.width = pct + '%';
+  document.getElementById('hub-goal-section').classList.toggle('hidden', target <= 0);
+}
+
+// Campaign Kanban
+const HUB_KANBAN_COLS = [
+  { id: 'new_lead', label: 'New Lead', color: '#6366f1', filter: e => !e.payment_confirmed },
+  { id: 'paid', label: 'Paid', color: '#f59e0b', filter: e => e.payment_confirmed && (!e.call_status || e.call_status === 'not_called') },
+  { id: 'called', label: 'Called', color: '#8b5cf6', filter: e => e.payment_confirmed && e.call_status && e.call_status !== 'not_called' && !e.photo_url },
+  { id: 'photo_in', label: 'Photo In', color: '#10b981', filter: e => e.payment_confirmed && e.photo_url },
+  { id: 'complete', label: 'Complete', color: '#059669', filter: e => e.shipping_status === 'shipped' || e.shipping_status === 'delivered' },
+];
+
+function renderHubKanban() {
+  const container = document.getElementById('hub-kanban');
+  const entries = hubEntries;
+  document.getElementById('hub-leads-count').textContent = entries.length + ' lead' + (entries.length === 1 ? '' : 's');
+
+  container.innerHTML = HUB_KANBAN_COLS.map(col => {
+    const colEntries = entries.filter(col.filter);
+    return `
+      <div class="flex-shrink-0 w-52 bg-gray-50 rounded-xl p-2">
+        <div class="flex items-center gap-2 mb-2 px-1">
+          <div class="w-2 h-2 rounded-full" style="background:${col.color}"></div>
+          <span class="text-xs font-bold text-gray-700">${col.label}</span>
+          <span class="text-xs text-gray-400 ml-auto">${colEntries.length}</span>
+        </div>
+        <div class="space-y-1.5 min-h-[80px]">
+          ${colEntries.map(e => `
+            <div class="bg-white rounded-lg p-2.5 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow" onclick="openEntryModal('${e.id}')">
+              <div class="font-medium text-xs text-gray-900 truncate">${esc(e.full_name || e.first_name || 'Unknown')}</div>
+              <div class="text-[10px] text-gray-400 truncate">${esc(e.pet_name || '')} ${e.pet_type ? '(' + e.pet_type + ')' : ''}</div>
+              ${e.total_price ? '<div class="text-[10px] font-medium text-green-600 mt-0.5">$' + parseFloat(e.total_price).toFixed(0) + '</div>' : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// Creatives
+function renderCreatives() {
+  const grid = document.getElementById('hub-creatives-grid');
+  const empty = document.getElementById('hub-creatives-empty');
+  if (!hubCreatives.length) { grid.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+
+  // Count entries per creative by utm_content match
+  const entryCounts = {};
+  hubEntries.forEach(e => { if (e.utm_content) entryCounts[e.utm_content] = (entryCounts[e.utm_content] || 0) + 1; });
+
+  grid.innerHTML = hubCreatives.map(cr => {
+    const count = cr.utm_content ? (entryCounts[cr.utm_content] || 0) : 0;
+    const typeIcon = { image: '🖼️', video: '🎬', carousel: '🎠', text: '📝' }[cr.creative_type] || '📣';
+    return `
+      <div class="border border-gray-200 rounded-xl overflow-hidden">
+        ${cr.image_url ? `<img src="${esc(cr.image_url)}" class="w-full h-28 object-cover" alt="">` : `<div class="w-full h-16 bg-gray-100 flex items-center justify-center text-2xl">${typeIcon}</div>`}
+        <div class="p-3">
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-medium text-sm text-gray-900 truncate">${esc(cr.label)}</span>
+            <span class="badge text-[10px] ${cr.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">${cr.is_active ? 'Active' : 'Paused'}</span>
+          </div>
+          ${cr.utm_content ? `<div class="text-[10px] text-gray-400">utm_content: ${esc(cr.utm_content)} · ${count} entries</div>` : ''}
+          ${cr.headline ? `<div class="text-xs text-gray-600 mt-1 truncate">${esc(cr.headline)}</div>` : ''}
+          <div class="flex gap-1 mt-2">
+            <button onclick="editCreative('${cr.id}')" class="text-xs text-blue-500 hover:underline">Edit</button>
+            <button onclick="deleteCreative('${cr.id}')" class="text-xs text-red-400 hover:underline">Delete</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// Notes
+function renderNotes() {
+  const list = document.getElementById('hub-notes-list');
+  const empty = document.getElementById('hub-notes-empty');
+  if (!hubNotes.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+
+  const typeColors = { general: 'bg-gray-100 text-gray-600', strategy: 'bg-blue-100 text-blue-700', change: 'bg-yellow-100 text-yellow-700', learning: 'bg-green-100 text-green-700', result: 'bg-purple-100 text-purple-700' };
+
+  list.innerHTML = hubNotes.map(n => {
+    const date = new Date(n.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    return `
+      <div class="flex items-start gap-3 py-2 border-b border-gray-50">
+        <div class="flex-shrink-0">
+          <span class="badge text-[10px] ${typeColors[n.note_type] || typeColors.general}">${n.note_type}</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm text-gray-900">${esc(n.note_text)}</p>
+          <span class="text-[10px] text-gray-400">${date}</span>
+        </div>
+        <button onclick="deleteCampaignNote('${n.id}')" class="text-xs text-red-300 hover:text-red-500 flex-shrink-0">×</button>
+      </div>`;
+  }).join('');
+}
+
+function addCampaignNote() {
+  const text = document.getElementById('hub-note-input').value.trim();
+  if (!text) return;
+  const type = document.getElementById('hub-note-type').value;
+  api('add-campaign-note', {}, 'POST', { campaign_id: selectedPerfCampaign, note_text: text, note_type: type }).then(data => {
+    if (data.success) {
+      document.getElementById('hub-note-input').value = '';
+      hubNotes.unshift(data.note);
+      renderNotes();
+      showToast('Note added');
+    }
+  });
+}
+
+function deleteCampaignNote(id) {
+  api('delete-campaign-note', {}, 'POST', { id }).then(data => {
+    if (data.success) { hubNotes = hubNotes.filter(n => n.id !== id); renderNotes(); }
+  });
+}
+
+// Creative modal
+function openCreativeModal(cr = null) {
+  document.getElementById('creative-modal-title').textContent = cr ? 'Edit Creative' : 'Add Creative';
+  document.getElementById('cr-id').value = cr ? cr.id : '';
+  document.getElementById('cr-label').value = cr ? cr.label : '';
+  document.getElementById('cr-type').value = cr ? cr.creative_type : 'image';
+  document.getElementById('cr-utm').value = cr ? cr.utm_content : '';
+  document.getElementById('cr-image').value = cr ? cr.image_url : '';
+  document.getElementById('cr-headline').value = cr ? cr.headline : '';
+  document.getElementById('cr-body').value = cr ? cr.body_text : '';
+  document.getElementById('cr-fb-ad').value = cr ? cr.fb_ad_id : '';
+  document.getElementById('cr-active').value = cr ? String(cr.is_active) : 'true';
+  document.getElementById('cr-notes').value = cr ? cr.notes : '';
+  document.getElementById('creative-modal').classList.add('open');
+}
+function closeCreativeModal() { document.getElementById('creative-modal').classList.remove('open'); }
+document.getElementById('creative-modal').addEventListener('click', e => { if (e.target.id === 'creative-modal') closeCreativeModal(); });
+
+function saveCreative() {
+  const label = document.getElementById('cr-label').value.trim();
+  if (!label) { showToast('Label is required'); return; }
+  const id = document.getElementById('cr-id').value;
+  const payload = {
+    campaign_id: selectedPerfCampaign,
+    label,
+    creative_type: document.getElementById('cr-type').value,
+    utm_content: document.getElementById('cr-utm').value,
+    image_url: document.getElementById('cr-image').value,
+    headline: document.getElementById('cr-headline').value,
+    body_text: document.getElementById('cr-body').value,
+    fb_ad_id: document.getElementById('cr-fb-ad').value,
+    is_active: document.getElementById('cr-active').value === 'true',
+    notes: document.getElementById('cr-notes').value,
+  };
+  if (id) payload.id = id;
+  const btn = document.getElementById('cr-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  api('save-campaign-creative', {}, 'POST', payload).then(data => {
+    btn.disabled = false; btn.textContent = 'Save Creative';
+    if (data.success) { closeCreativeModal(); showToast('Creative saved!'); openHub(selectedPerfCampaign); }
+  });
+}
+
+function editCreative(id) { const cr = hubCreatives.find(c => c.id === id); if (cr) openCreativeModal(cr); }
+function deleteCreative(id) {
+  if (!confirm('Delete this creative?')) return;
+  api('delete-campaign-creative', {}, 'POST', { id }).then(data => {
+    if (data.success) { hubCreatives = hubCreatives.filter(c => c.id !== id); renderCreatives(); showToast('Creative deleted'); }
+  });
+}
+
+// Archive
+function archiveCampaign() {
+  if (!confirm('Archive this campaign? It will be marked as ended.')) return;
+  api('archive-campaign', {}, 'POST', { id: selectedPerfCampaign }).then(data => {
+    if (data.success) { showToast('Campaign archived'); openHub(selectedPerfCampaign); }
+  });
+}
+function unarchiveCampaign() {
+  api('unarchive-campaign', {}, 'POST', { id: selectedPerfCampaign }).then(data => {
+    if (data.success) { showToast('Campaign reactivated'); openHub(selectedPerfCampaign); }
   });
 }
 
@@ -1939,16 +2317,12 @@ function renderMetricsTable() {
   const m = perfMetrics;
   const tbody = document.getElementById('perf-metrics-body');
   const empty = document.getElementById('perf-metrics-empty');
-  const count = document.getElementById('perf-metric-count');
-
   if (!m.length) {
     tbody.innerHTML = '';
     empty.classList.remove('hidden');
-    count.textContent = '';
     return;
   }
   empty.classList.add('hidden');
-  count.textContent = m.length + ' day' + (m.length === 1 ? '' : 's') + ' logged';
 
   tbody.innerHTML = m.map(r => {
     const ctrClass = parseFloat(r.ctr) >= 1.0 ? 'text-green-600' : parseFloat(r.ctr) >= 0.8 ? 'text-yellow-600' : 'text-red-500';
@@ -1987,9 +2361,10 @@ function renderCampaignInfo() {
     { label: 'Start Date', value: c.start_date || '—' },
     { label: 'Audience', value: c.target_audience || '—' },
     { label: 'UTM Campaign', value: c.utm_campaign || '—' },
-    { label: 'Entries Linked', value: c.total_entries || 0 },
+    { label: 'Entries Linked', value: hubEntries.length || 0 },
   ];
-  document.getElementById('perf-campaign-info').innerHTML = info.map(i => `
+  const el = document.getElementById('hub-campaign-info');
+  if (el) el.innerHTML = info.map(i => `
     <div>
       <span class="text-xs text-gray-400">${i.label}</span>
       <div class="font-medium text-gray-900 text-sm">${esc(String(i.value))}</div>

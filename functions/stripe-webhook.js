@@ -352,6 +352,24 @@ exports.handler = async function (event) {
         return { statusCode: 200, body: 'DB error but 200 to prevent retry' };
       }
 
+      // Auto-link entry to campaign by UTM if not already linked
+      if (entry.utm_campaign && !entry.campaign_id) {
+        try {
+          const { data: camp } = await supabase
+            .from('ad_campaigns')
+            .select('id')
+            .eq('utm_campaign', entry.utm_campaign)
+            .eq('is_archived', false)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          if (camp) {
+            await supabase.from('contest_entries').update({ campaign_id: camp.id }).eq('id', entryId);
+            entry.campaign_id = camp.id;
+          }
+        } catch (e) { console.log('Auto-link campaign skip:', e.message); }
+      }
+
       // Fire Facebook Conversions API — Purchase event with real amount
       sendEvent({
         event_name: 'Purchase',

@@ -266,6 +266,37 @@ exports.handler = async function (event) {
         return ok({ campaigns: data || [] });
       }
 
+      // ===== CAMPAIGN HUB =====
+      if (action === 'campaign-hub') {
+        if (!params.id) return badRequest('Missing id');
+        const [campRes, entriesRes, creativesRes, notesRes, metricsRes] = await Promise.all([
+          supabase.from('ad_campaigns').select('*').eq('id', params.id).single(),
+          supabase.from('contest_entries').select('*').eq('campaign_id', params.id).order('created_at', { ascending: false }),
+          supabase.from('campaign_creatives').select('*').eq('campaign_id', params.id).order('created_at', { ascending: false }),
+          supabase.from('campaign_notes').select('*').eq('campaign_id', params.id).order('created_at', { ascending: false }),
+          supabase.from('ad_daily_metrics').select('*').eq('campaign_id', params.id).order('metric_date', { ascending: true }),
+        ]);
+        return ok({
+          campaign: campRes.data,
+          entries: entriesRes.data || [],
+          creatives: creativesRes.data || [],
+          notes: notesRes.data || [],
+          metrics: metricsRes.data || [],
+        });
+      }
+
+      if (action === 'campaign-creatives') {
+        if (!params.campaign_id) return badRequest('Missing campaign_id');
+        const { data } = await supabase.from('campaign_creatives').select('*').eq('campaign_id', params.campaign_id).order('created_at', { ascending: false });
+        return ok({ creatives: data || [] });
+      }
+
+      if (action === 'campaign-notes') {
+        if (!params.campaign_id) return badRequest('Missing campaign_id');
+        const { data } = await supabase.from('campaign_notes').select('*').eq('campaign_id', params.campaign_id).order('created_at', { ascending: false });
+        return ok({ notes: data || [] });
+      }
+
       // ===== AD PERFORMANCE =====
       if (action === 'campaign-performance') {
         const { data } = await supabase
@@ -516,6 +547,10 @@ exports.handler = async function (event) {
             notes: body.notes || '',
             start_date: body.start_date || null,
             end_date: body.end_date || null,
+            goal_type: body.goal_type || 'sign_ups',
+            goal_target: body.goal_target || 0,
+            goal_label: body.goal_label || '',
+            hub_notes: body.hub_notes || '',
           })
           .select()
           .single();
@@ -531,7 +566,8 @@ exports.handler = async function (event) {
           'cta_text', 'image_url', 'target_audience', 'daily_budget', 'total_spend',
           'utm_campaign', 'utm_source', 'utm_medium', 'utm_content',
           'fb_ad_id', 'fb_adset_id', 'fb_campaign_id', 'notes',
-          'start_date', 'end_date'
+          'start_date', 'end_date',
+          'goal_type', 'goal_target', 'goal_label', 'hub_notes'
         ];
         const updates = { updated_at: new Date().toISOString() };
         for (const key of allowed) {
@@ -1158,6 +1194,67 @@ exports.handler = async function (event) {
           .delete()
           .eq('id', body.id);
 
+        if (error) return serverError(error);
+        return ok({ success: true });
+      }
+
+      // ===== CAMPAIGN HUB POST =====
+      if (action === 'add-campaign-note') {
+        if (!body.campaign_id || !body.note_text) return badRequest('Missing campaign_id or note_text');
+        const { data, error } = await supabase.from('campaign_notes').insert({
+          campaign_id: body.campaign_id,
+          note_text: body.note_text,
+          note_type: body.note_type || 'general',
+        }).select().single();
+        if (error) return serverError(error);
+        return ok({ success: true, note: data });
+      }
+
+      if (action === 'delete-campaign-note') {
+        if (!body.id) return badRequest('Missing id');
+        const { error } = await supabase.from('campaign_notes').delete().eq('id', body.id);
+        if (error) return serverError(error);
+        return ok({ success: true });
+      }
+
+      if (action === 'save-campaign-creative') {
+        if (!body.campaign_id && !body.id) return badRequest('Missing campaign_id or id');
+        const allowed = ['campaign_id', 'label', 'creative_type', 'image_url', 'video_url', 'headline', 'body_text', 'cta_text', 'utm_content', 'fb_ad_id', 'is_active', 'notes'];
+        const row = {};
+        for (const key of allowed) { if (body[key] !== undefined) row[key] = body[key]; }
+
+        if (body.id) {
+          const { data, error } = await supabase.from('campaign_creatives').update(row).eq('id', body.id).select().single();
+          if (error) return serverError(error);
+          return ok({ success: true, creative: data });
+        } else {
+          const { data, error } = await supabase.from('campaign_creatives').insert(row).select().single();
+          if (error) return serverError(error);
+          return ok({ success: true, creative: data });
+        }
+      }
+
+      if (action === 'delete-campaign-creative') {
+        if (!body.id) return badRequest('Missing id');
+        const { error } = await supabase.from('campaign_creatives').delete().eq('id', body.id);
+        if (error) return serverError(error);
+        return ok({ success: true });
+      }
+
+      if (action === 'archive-campaign') {
+        if (!body.id) return badRequest('Missing id');
+        const { error } = await supabase.from('ad_campaigns').update({
+          is_archived: true, archived_at: new Date().toISOString(), status: 'ended'
+        }).eq('id', body.id);
+        if (error) return serverError(error);
+        return ok({ success: true });
+      }
+
+      if (action === 'unarchive-campaign') {
+        if (!body.id) return badRequest('Missing id');
+        const { error } = await supabase.from('ad_campaigns').update({
+          is_archived: false, archived_at: null, status: 'paused'
+        }).eq('id', body.id);
         if (error) return serverError(error);
         return ok({ success: true });
       }
