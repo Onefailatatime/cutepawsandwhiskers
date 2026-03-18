@@ -1287,6 +1287,124 @@ exports.handler = async function (event) {
         return ok({ success: true });
       }
 
+      // ===== TEST RUNS (EXPERIMENTS) =====
+      if (action === 'test-runs') {
+        if (method === 'GET') {
+          const cid = params.get('campaign_id');
+          if (!cid) return badRequest('Missing campaign_id');
+          const { data, error } = await supabase
+            .from('test_runs')
+            .select('*')
+            .eq('campaign_id', cid)
+            .order('created_at', { ascending: false });
+          if (error) return serverError(error);
+          return ok({ test_runs: data });
+        }
+      }
+
+      if (action === 'test-run-detail') {
+        if (method === 'GET') {
+          const id = params.get('id');
+          if (!id) return badRequest('Missing id');
+          const { data: run, error: e1 } = await supabase
+            .from('test_runs').select('*').eq('id', id).single();
+          if (e1) return serverError(e1);
+          const { data: results, error: e2 } = await supabase
+            .from('ad_results').select('*').eq('test_run_id', id).order('created_at');
+          if (e2) return serverError(e2);
+          return ok({ test_run: run, ad_results: results });
+        }
+      }
+
+      if (action === 'save-test-run') {
+        const allowed = [
+          'campaign_id', 'test_id', 'name', 'channel', 'objective',
+          'audience', 'start_date', 'end_date', 'notes',
+          'decision', 'decision_why', 'is_finished'
+        ];
+        const row = {};
+        for (const key of allowed) {
+          if (body[key] !== undefined) row[key] = body[key];
+        }
+        if (!row.campaign_id || !row.test_id || !row.name) {
+          return badRequest('Missing campaign_id, test_id, or name');
+        }
+
+        let data, error;
+        if (body.id) {
+          const result = await supabase
+            .from('test_runs').update(row).eq('id', body.id).select().single();
+          data = result.data; error = result.error;
+        } else {
+          const result = await supabase
+            .from('test_runs').insert(row).select().single();
+          data = result.data; error = result.error;
+        }
+        if (error) return serverError(error);
+        return ok({ test_run: data });
+      }
+
+      if (action === 'finish-test-run') {
+        if (!body.id || !body.decision) return badRequest('Missing id or decision');
+        const { data, error } = await supabase
+          .from('test_runs')
+          .update({
+            is_finished: true,
+            decision: body.decision,
+            decision_why: body.decision_why || '',
+            end_date: body.end_date || new Date().toISOString().split('T')[0]
+          })
+          .eq('id', body.id)
+          .select().single();
+        if (error) return serverError(error);
+        return ok({ test_run: data });
+      }
+
+      if (action === 'delete-test-run') {
+        if (!body.id) return badRequest('Missing id');
+        const { error } = await supabase.from('test_runs').delete().eq('id', body.id);
+        if (error) return serverError(error);
+        return ok({ success: true });
+      }
+
+      // ===== AD RESULTS =====
+      if (action === 'save-ad-result') {
+        const allowed = [
+          'test_run_id', 'fb_ad_id', 'utm_content', 'spend',
+          'impressions', 'clicks', 'ctr', 'purchases', 'cac_front',
+          'upsell_revenue', 'r30', 'payback_ratio', 'status', 'notes'
+        ];
+        const row = {};
+        for (const key of allowed) {
+          if (body[key] !== undefined) row[key] = body[key];
+        }
+        if (!row.test_run_id) return badRequest('Missing test_run_id');
+
+        // Auto-calc CTR and CAC if not provided
+        if (row.impressions > 0 && !row.ctr) row.ctr = (row.clicks || 0) / row.impressions * 100;
+        if (row.purchases > 0 && row.spend > 0 && !row.cac_front) row.cac_front = row.spend / row.purchases;
+
+        let data, error;
+        if (body.id) {
+          const result = await supabase
+            .from('ad_results').update(row).eq('id', body.id).select().single();
+          data = result.data; error = result.error;
+        } else {
+          const result = await supabase
+            .from('ad_results').insert(row).select().single();
+          data = result.data; error = result.error;
+        }
+        if (error) return serverError(error);
+        return ok({ ad_result: data });
+      }
+
+      if (action === 'delete-ad-result') {
+        if (!body.id) return badRequest('Missing id');
+        const { error } = await supabase.from('ad_results').delete().eq('id', body.id);
+        if (error) return serverError(error);
+        return ok({ success: true });
+      }
+
       return badRequest('Unknown action');
     }
 
