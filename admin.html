@@ -118,7 +118,7 @@
         <button class="tab-btn active px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all" data-tab="dashboard">Dashboard</button>
         <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="entries">All Entries</button>
         <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="calls">Upsell Calls</button>
-        <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="ads">Ad Campaigns</button>
+        <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="ads">Ad Performance</button>
         <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="winners">Winners</button>
         <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="email">Email</button>
         <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-all" data-tab="kanban">Board</button>
@@ -259,14 +259,80 @@
 
       <!-- ===== ADS TAB ===== -->
       <div class="tab-content" id="tab-ads">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-xl font-bold text-gray-900">📣 Ad Campaigns</h2>
-          <button onclick="openCampaignModal()" class="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-5 py-2 rounded-xl text-sm font-bold hover:opacity-90">+ New Campaign</button>
+        <!-- Campaign selector + actions bar -->
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <div class="flex items-center gap-3">
+            <h2 class="text-xl font-bold text-gray-900">📣 Ad Performance</h2>
+            <select id="perf-campaign-select" onchange="onPerfCampaignChange()" class="px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-orange-400 min-w-[200px]">
+              <option value="">Select Campaign...</option>
+            </select>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="openDailyMetricModal()" id="btn-log-metrics" class="hidden bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-600">+ Log Daily Metrics</button>
+            <button onclick="openCampaignModal()" class="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-5 py-2 rounded-xl text-sm font-bold hover:opacity-90">+ New Campaign</button>
+          </div>
         </div>
+
+        <!-- Campaign cards (shown when no campaign selected) -->
         <div id="campaigns-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
         <div id="campaigns-empty" class="hidden bg-white rounded-2xl p-12 text-center text-gray-400">
           <div class="text-4xl mb-3">📣</div>
           <p>No campaigns yet. Click "+ New Campaign" to create your first ad.</p>
+        </div>
+
+        <!-- Performance dashboard (shown when campaign selected) -->
+        <div id="perf-dashboard" class="hidden space-y-6">
+
+          <!-- KPI Cards row -->
+          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3" id="perf-kpi-cards"></div>
+
+          <!-- Health scorecard -->
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+            <h3 class="font-bold text-gray-900 mb-3">Health Check (from your metrics playbook)</h3>
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3" id="perf-health-cards"></div>
+          </div>
+
+          <!-- Daily Metrics Table -->
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 class="font-bold text-gray-900">Daily Breakdown</h3>
+              <span class="text-xs text-gray-400" id="perf-metric-count"></span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="bg-gray-50 text-left text-gray-500 text-xs uppercase">
+                    <th class="px-3 py-3">Date</th>
+                    <th class="px-3 py-3">Spend</th>
+                    <th class="px-3 py-3">Impr.</th>
+                    <th class="px-3 py-3">Reach</th>
+                    <th class="px-3 py-3">Clicks</th>
+                    <th class="px-3 py-3">CTR</th>
+                    <th class="px-3 py-3">CPC</th>
+                    <th class="px-3 py-3">CPM</th>
+                    <th class="px-3 py-3">Freq.</th>
+                    <th class="px-3 py-3">Leads</th>
+                    <th class="px-3 py-3">CPL</th>
+                    <th class="px-3 py-3">Notes</th>
+                    <th class="px-3 py-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="perf-metrics-body"></tbody>
+              </table>
+            </div>
+            <div id="perf-metrics-empty" class="hidden p-8 text-center text-gray-400 text-sm">
+              No daily metrics logged yet. Click "+ Log Daily Metrics" to add today's numbers from Facebook Ads Manager.
+            </div>
+          </div>
+
+          <!-- Campaign info card -->
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-bold text-gray-900">Campaign Details</h3>
+              <button onclick="openCampaignDetail(selectedPerfCampaign)" class="text-sm text-orange-500 hover:underline">Edit Campaign</button>
+            </div>
+            <div id="perf-campaign-info" class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm"></div>
+          </div>
         </div>
       </div>
 
@@ -625,6 +691,78 @@
         <div class="flex gap-3 pt-2">
           <button onclick="closeCampaignModal()" class="flex-1 py-3 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50">Cancel</button>
           <button onclick="saveCampaign()" id="camp-save-btn" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 text-white text-sm font-bold hover:opacity-90">Save Campaign</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DAILY METRICS MODAL ===== -->
+  <div id="metric-modal" class="modal-bg fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-8 pb-8 overflow-y-auto opacity-0 pointer-events-none">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white rounded-t-2xl z-10">
+        <h2 class="font-bold text-gray-900 text-lg">Log Daily Metrics</h2>
+        <button onclick="closeMetricModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <p class="text-xs text-gray-500 bg-blue-50 rounded-lg p-3">Copy these numbers from <strong>Facebook Ads Manager</strong> for each day your ad runs. This builds your performance history.</p>
+        <input type="hidden" id="dm-id">
+        <div class="grid grid-cols-2 gap-3">
+          <div class="col-span-2">
+            <label class="text-xs text-gray-500 block mb-1">Date *</label>
+            <input id="dm-date" type="date" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-orange-400">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Amount Spent ($) *</label>
+            <input id="dm-spend" type="number" step="0.01" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0.00">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Impressions</label>
+            <input id="dm-impressions" type="number" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Reach</label>
+            <input id="dm-reach" type="number" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Link Clicks</label>
+            <input id="dm-link-clicks" type="number" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">All Clicks</label>
+            <input id="dm-clicks" type="number" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">CTR (%)</label>
+            <input id="dm-ctr" type="number" step="0.01" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0.00">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">CPC ($)</label>
+            <input id="dm-cpc" type="number" step="0.01" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0.00">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">CPM ($)</label>
+            <input id="dm-cpm" type="number" step="0.01" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0.00">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Frequency</label>
+            <input id="dm-frequency" type="number" step="0.01" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0.00">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Leads (sign-ups)</label>
+            <input id="dm-leads" type="number" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Purchases (paid)</label>
+            <input id="dm-purchases" type="number" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0">
+          </div>
+          <div class="col-span-2">
+            <label class="text-xs text-gray-500 block mb-1">Notes</label>
+            <input id="dm-notes" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="e.g. Changed targeting at 3pm">
+          </div>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button onclick="closeMetricModal()" class="flex-1 py-3 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50">Cancel</button>
+          <button onclick="saveDailyMetric()" id="dm-save-btn" class="flex-1 py-3 rounded-xl bg-blue-500 text-white text-sm font-bold hover:bg-blue-600">Save Metrics</button>
         </div>
       </div>
     </div>
@@ -1524,43 +1662,6 @@ function loadCallQueue() {
 }
 
 // ===================== CAMPAIGNS =====================
-function loadCampaigns() {
-  api('campaigns').then(data => {
-    const campaigns = data.campaigns || [];
-    if (!campaigns.length) {
-      document.getElementById('campaigns-grid').classList.add('hidden');
-      document.getElementById('campaigns-empty').classList.remove('hidden');
-      return;
-    }
-    document.getElementById('campaigns-grid').classList.remove('hidden');
-    document.getElementById('campaigns-empty').classList.add('hidden');
-
-    document.getElementById('campaigns-grid').innerHTML = campaigns.map(c => {
-      const platformIcon = { facebook: '📘', instagram: '📸', tiktok: '🎵', google: '🔍', other: '📣' }[c.platform] || '📣';
-      const statusColor = { active: 'bg-green-100 text-green-700', paused: 'bg-yellow-100 text-yellow-700', ended: 'bg-gray-100 text-gray-500', draft: 'bg-blue-100 text-blue-700' }[c.status] || 'bg-gray-100 text-gray-500';
-      return `
-        <div class="bg-white rounded-xl border-2 border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer" onclick="openCampaignDetail('${c.id}')">
-          ${c.image_url ? `<img src="${esc(c.image_url)}" class="w-full h-36 object-cover" alt="Ad image">` : ''}
-          <div class="p-5">
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-2xl">${platformIcon}</span>
-              <span class="badge ${statusColor}">${c.status}</span>
-            </div>
-            <h3 class="font-bold text-gray-900 mb-2">${esc(c.name)}</h3>
-            <div class="grid grid-cols-2 gap-2 text-xs text-gray-500">
-              <div>Entries: <strong class="text-gray-900">${c.total_entries || 0}</strong></div>
-              <div>Paid: <strong class="text-gray-900">${c.paid_entries || 0}</strong></div>
-              <div>Revenue: <strong class="text-green-600">$${(parseFloat(c.revenue) || 0).toFixed(2)}</strong></div>
-              <div>Spend: <strong class="text-red-500">$${(parseFloat(c.total_spend) || 0).toFixed(2)}</strong></div>
-              <div>CPA: <strong class="text-gray-900">$${(parseFloat(c.cost_per_acquisition) || 0).toFixed(2)}</strong></div>
-              <div>ROAS: <strong class="text-gray-900">${(parseFloat(c.roas) || 0).toFixed(1)}x</strong></div>
-            </div>
-          </div>
-        </div>`;
-    }).join('');
-  });
-}
-
 function openCampaignDetail(id) {
   api('campaign', { id }).then(data => {
     if (!data.campaign) return;
@@ -1652,6 +1753,321 @@ function saveCampaign() {
           if (r.linked > 0) showToast(`Auto-linked ${r.linked} entries by UTM!`);
         });
       }
+    }
+  });
+}
+
+// ===================== AD PERFORMANCE =====================
+let selectedPerfCampaign = '';
+let perfMetrics = [];
+let perfCampaignData = null;
+
+function loadCampaigns() {
+  api('campaigns').then(data => {
+    const campaigns = data.campaigns || [];
+    // Populate the campaign selector dropdown
+    const sel = document.getElementById('perf-campaign-select');
+    sel.innerHTML = '<option value="">Select Campaign...</option>' + campaigns.map(c => {
+      const icon = { facebook: '📘', instagram: '📸', tiktok: '🎵', google: '🔍' }[c.platform] || '📣';
+      return `<option value="${c.id}">${icon} ${esc(c.name)} (${c.status})</option>`;
+    }).join('');
+
+    // Restore selection if one was active
+    if (selectedPerfCampaign) {
+      sel.value = selectedPerfCampaign;
+      loadPerfDashboard(selectedPerfCampaign);
+    }
+
+    // Show campaign cards
+    if (!campaigns.length) {
+      document.getElementById('campaigns-grid').classList.add('hidden');
+      document.getElementById('campaigns-empty').classList.remove('hidden');
+      return;
+    }
+
+    if (!selectedPerfCampaign) {
+      document.getElementById('campaigns-grid').classList.remove('hidden');
+      document.getElementById('campaigns-empty').classList.add('hidden');
+      document.getElementById('perf-dashboard').classList.add('hidden');
+    }
+
+    document.getElementById('campaigns-grid').innerHTML = campaigns.map(c => {
+      const platformIcon = { facebook: '📘', instagram: '📸', tiktok: '🎵', google: '🔍', other: '📣' }[c.platform] || '📣';
+      const statusColor = { active: 'bg-green-100 text-green-700', paused: 'bg-yellow-100 text-yellow-700', ended: 'bg-gray-100 text-gray-500', draft: 'bg-blue-100 text-blue-700' }[c.status] || 'bg-gray-100 text-gray-500';
+      return `
+        <div class="bg-white rounded-xl border-2 border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer" onclick="selectPerfCampaign('${c.id}')">
+          ${c.image_url ? `<img src="${esc(c.image_url)}" class="w-full h-36 object-cover" alt="Ad image">` : ''}
+          <div class="p-5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-2xl">${platformIcon}</span>
+              <span class="badge ${statusColor}">${c.status}</span>
+            </div>
+            <h3 class="font-bold text-gray-900 mb-2">${esc(c.name)}</h3>
+            <div class="grid grid-cols-2 gap-2 text-xs text-gray-500">
+              <div>Entries: <strong class="text-gray-900">${c.total_entries || 0}</strong></div>
+              <div>Paid: <strong class="text-gray-900">${c.paid_entries || 0}</strong></div>
+              <div>Revenue: <strong class="text-green-600">$${(parseFloat(c.revenue) || 0).toFixed(2)}</strong></div>
+              <div>Spend: <strong class="text-red-500">$${(parseFloat(c.total_spend) || 0).toFixed(2)}</strong></div>
+              <div>CPA: <strong class="text-gray-900">$${(parseFloat(c.cost_per_acquisition) || 0).toFixed(2)}</strong></div>
+              <div>ROAS: <strong class="text-gray-900">${(parseFloat(c.roas) || 0).toFixed(1)}x</strong></div>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  });
+}
+
+function selectPerfCampaign(id) {
+  selectedPerfCampaign = id;
+  document.getElementById('perf-campaign-select').value = id;
+  onPerfCampaignChange();
+}
+
+function onPerfCampaignChange() {
+  const id = document.getElementById('perf-campaign-select').value;
+  selectedPerfCampaign = id;
+  if (!id) {
+    document.getElementById('perf-dashboard').classList.add('hidden');
+    document.getElementById('campaigns-grid').classList.remove('hidden');
+    document.getElementById('btn-log-metrics').classList.add('hidden');
+    return;
+  }
+  document.getElementById('campaigns-grid').classList.add('hidden');
+  document.getElementById('campaigns-empty').classList.add('hidden');
+  document.getElementById('perf-dashboard').classList.remove('hidden');
+  document.getElementById('btn-log-metrics').classList.remove('hidden');
+  loadPerfDashboard(id);
+}
+
+function loadPerfDashboard(campaignId) {
+  Promise.all([
+    api('campaign', { id: campaignId }),
+    api('daily-metrics', { campaign_id: campaignId })
+  ]).then(([campData, metricsData]) => {
+    perfCampaignData = campData.campaign;
+    perfMetrics = metricsData.metrics || [];
+    renderPerfKPIs();
+    renderHealthCards();
+    renderMetricsTable();
+    renderCampaignInfo();
+  });
+}
+
+function renderPerfKPIs() {
+  const m = perfMetrics;
+  const c = perfCampaignData;
+  const totalSpend = m.reduce((s, r) => s + (parseFloat(r.spend) || 0), 0);
+  const totalClicks = m.reduce((s, r) => s + (parseInt(r.link_clicks) || parseInt(r.clicks) || 0), 0);
+  const totalImpressions = m.reduce((s, r) => s + (parseInt(r.impressions) || 0), 0);
+  const totalLeads = m.reduce((s, r) => s + (parseInt(r.leads) || 0), 0);
+  const totalPurchases = m.reduce((s, r) => s + (parseInt(r.purchases) || 0), 0);
+  const avgCTR = m.length ? (m.reduce((s, r) => s + (parseFloat(r.ctr) || 0), 0) / m.length) : 0;
+  const avgCPC = totalClicks > 0 ? totalSpend / totalClicks : 0;
+  const costPerLead = totalLeads > 0 ? totalSpend / totalLeads : 0;
+  const costPerPurchase = totalPurchases > 0 ? totalSpend / totalPurchases : 0;
+  const revenue = totalPurchases * 30; // $30 per entry
+
+  const kpis = [
+    { label: 'Total Spend', value: '$' + totalSpend.toFixed(2), color: 'text-red-500', icon: '💰' },
+    { label: 'Link Clicks', value: totalClicks.toLocaleString(), color: 'text-blue-600', icon: '🖱️' },
+    { label: 'Avg CTR', value: avgCTR.toFixed(2) + '%', color: avgCTR >= 1.0 ? 'text-green-600' : avgCTR >= 0.8 ? 'text-yellow-600' : 'text-red-500', icon: '📊' },
+    { label: 'Avg CPC', value: '$' + avgCPC.toFixed(2), color: avgCPC <= 2.0 ? 'text-green-600' : 'text-yellow-600', icon: '💵' },
+    { label: 'Leads', value: totalLeads, color: 'text-purple-600', icon: '👤' },
+    { label: 'Cost/Lead', value: costPerLead > 0 ? '$' + costPerLead.toFixed(2) : '—', color: costPerLead > 0 && costPerLead <= 25 ? 'text-green-600' : 'text-orange-500', icon: '🎯' },
+  ];
+
+  document.getElementById('perf-kpi-cards').innerHTML = kpis.map(k => `
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+      <div class="flex items-center justify-between mb-1">
+        <span class="text-xs text-gray-500">${k.label}</span>
+        <span class="text-lg">${k.icon}</span>
+      </div>
+      <div class="text-xl font-bold ${k.color}">${k.value}</div>
+    </div>
+  `).join('');
+}
+
+function renderHealthCards() {
+  const m = perfMetrics;
+  if (!m.length) {
+    document.getElementById('perf-health-cards').innerHTML = '<p class="col-span-full text-sm text-gray-400">Log daily metrics to see your health check.</p>';
+    return;
+  }
+
+  const totalSpend = m.reduce((s, r) => s + (parseFloat(r.spend) || 0), 0);
+  const totalClicks = m.reduce((s, r) => s + (parseInt(r.link_clicks) || parseInt(r.clicks) || 0), 0);
+  const totalLeads = m.reduce((s, r) => s + (parseInt(r.leads) || 0), 0);
+  const totalPurchases = m.reduce((s, r) => s + (parseInt(r.purchases) || 0), 0);
+  const avgCTR = m.reduce((s, r) => s + (parseFloat(r.ctr) || 0), 0) / m.length;
+  const avgCPC = totalClicks > 0 ? totalSpend / totalClicks : 0;
+  const cac = totalPurchases > 0 ? totalSpend / totalPurchases : 0;
+  // Purchase rate = purchases / clicks
+  const purchaseRate = totalClicks > 0 ? (totalPurchases / totalClicks * 100) : 0;
+
+  function status(val, green, yellow) {
+    if (val >= green) return { color: 'bg-green-100 text-green-700 border-green-200', label: 'GREEN' };
+    if (val >= yellow) return { color: 'bg-yellow-100 text-yellow-700 border-yellow-200', label: 'YELLOW' };
+    return { color: 'bg-red-100 text-red-700 border-red-200', label: 'RED' };
+  }
+  function statusLow(val, green, yellow) {
+    if (val <= green) return { color: 'bg-green-100 text-green-700 border-green-200', label: 'GREEN' };
+    if (val <= yellow) return { color: 'bg-yellow-100 text-yellow-700 border-yellow-200', label: 'YELLOW' };
+    return { color: 'bg-red-100 text-red-700 border-red-200', label: 'RED' };
+  }
+
+  const checks = [
+    { label: 'CTR', value: avgCTR.toFixed(2) + '%', target: '>= 1.0%', ...status(avgCTR, 1.0, 0.8) },
+    { label: 'CPC', value: '$' + avgCPC.toFixed(2), target: '<= $2.00', ...statusLow(avgCPC, 2.0, 2.5) },
+    { label: 'Purchase Rate', value: purchaseRate.toFixed(1) + '%', target: '>= 3%', ...status(purchaseRate, 3, 2) },
+    { label: 'CAC (Front)', value: cac > 0 ? '$' + cac.toFixed(2) : '—', target: '<= $25', ...(cac > 0 ? statusLow(cac, 25, 30) : { color: 'bg-gray-100 text-gray-500 border-gray-200', label: 'N/A' }) },
+    { label: 'Days Logged', value: m.length, target: '$500 test', color: 'bg-blue-50 text-blue-700 border-blue-200', label: m.length + ' days' },
+  ];
+
+  document.getElementById('perf-health-cards').innerHTML = checks.map(c => `
+    <div class="rounded-xl border ${c.color} p-3 text-center">
+      <div class="text-xs font-medium opacity-70 mb-1">${c.label}</div>
+      <div class="text-lg font-bold">${c.value}</div>
+      <div class="text-xs mt-1 opacity-60">Target: ${c.target}</div>
+    </div>
+  `).join('');
+}
+
+function renderMetricsTable() {
+  const m = perfMetrics;
+  const tbody = document.getElementById('perf-metrics-body');
+  const empty = document.getElementById('perf-metrics-empty');
+  const count = document.getElementById('perf-metric-count');
+
+  if (!m.length) {
+    tbody.innerHTML = '';
+    empty.classList.remove('hidden');
+    count.textContent = '';
+    return;
+  }
+  empty.classList.add('hidden');
+  count.textContent = m.length + ' day' + (m.length === 1 ? '' : 's') + ' logged';
+
+  tbody.innerHTML = m.map(r => {
+    const ctrClass = parseFloat(r.ctr) >= 1.0 ? 'text-green-600' : parseFloat(r.ctr) >= 0.8 ? 'text-yellow-600' : 'text-red-500';
+    const cpcClass = parseFloat(r.cpc) <= 2.0 ? 'text-green-600' : 'text-yellow-600';
+    return `<tr class="border-t border-gray-100 hover:bg-gray-50">
+      <td class="px-3 py-2 font-medium">${r.metric_date}</td>
+      <td class="px-3 py-2 text-red-500 font-medium">$${(parseFloat(r.spend) || 0).toFixed(2)}</td>
+      <td class="px-3 py-2">${(parseInt(r.impressions) || 0).toLocaleString()}</td>
+      <td class="px-3 py-2">${(parseInt(r.reach) || 0).toLocaleString()}</td>
+      <td class="px-3 py-2">${parseInt(r.link_clicks) || parseInt(r.clicks) || 0}</td>
+      <td class="px-3 py-2 font-medium ${ctrClass}">${(parseFloat(r.ctr) || 0).toFixed(2)}%</td>
+      <td class="px-3 py-2 font-medium ${cpcClass}">$${(parseFloat(r.cpc) || 0).toFixed(2)}</td>
+      <td class="px-3 py-2">$${(parseFloat(r.cpm) || 0).toFixed(2)}</td>
+      <td class="px-3 py-2">${(parseFloat(r.frequency) || 0).toFixed(1)}</td>
+      <td class="px-3 py-2 font-medium text-purple-600">${parseInt(r.leads) || 0}</td>
+      <td class="px-3 py-2">${r.cost_per_lead ? '$' + parseFloat(r.cost_per_lead).toFixed(2) : '—'}</td>
+      <td class="px-3 py-2 text-xs text-gray-400 max-w-[120px] truncate" title="${esc(r.notes || '')}">${esc(r.notes || '')}</td>
+      <td class="px-3 py-2">
+        <div class="flex gap-1">
+          <button onclick="editDailyMetric('${r.id}')" class="text-xs text-blue-500 hover:underline">Edit</button>
+          <button onclick="deleteDailyMetric('${r.id}','${r.metric_date}')" class="text-xs text-red-400 hover:underline">Del</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderCampaignInfo() {
+  const c = perfCampaignData;
+  if (!c) return;
+  const info = [
+    { label: 'Platform', value: c.platform },
+    { label: 'Status', value: c.status },
+    { label: 'Daily Budget', value: '$' + (parseFloat(c.daily_budget) || 0).toFixed(2) },
+    { label: 'Total Spend', value: '$' + (parseFloat(c.total_spend) || 0).toFixed(2) },
+    { label: 'Start Date', value: c.start_date || '—' },
+    { label: 'Audience', value: c.target_audience || '—' },
+    { label: 'UTM Campaign', value: c.utm_campaign || '—' },
+    { label: 'Entries Linked', value: c.total_entries || 0 },
+  ];
+  document.getElementById('perf-campaign-info').innerHTML = info.map(i => `
+    <div>
+      <span class="text-xs text-gray-400">${i.label}</span>
+      <div class="font-medium text-gray-900 text-sm">${esc(String(i.value))}</div>
+    </div>
+  `).join('');
+}
+
+// Daily Metric Modal
+function openDailyMetricModal(metric = null) {
+  document.getElementById('dm-id').value = metric ? metric.id : '';
+  document.getElementById('dm-date').value = metric ? metric.metric_date : new Date().toISOString().split('T')[0];
+  document.getElementById('dm-spend').value = metric ? metric.spend : '';
+  document.getElementById('dm-impressions').value = metric ? metric.impressions : '';
+  document.getElementById('dm-reach').value = metric ? metric.reach : '';
+  document.getElementById('dm-link-clicks').value = metric ? metric.link_clicks : '';
+  document.getElementById('dm-clicks').value = metric ? metric.clicks : '';
+  document.getElementById('dm-ctr').value = metric ? metric.ctr : '';
+  document.getElementById('dm-cpc').value = metric ? metric.cpc : '';
+  document.getElementById('dm-cpm').value = metric ? metric.cpm : '';
+  document.getElementById('dm-frequency').value = metric ? metric.frequency : '';
+  document.getElementById('dm-leads').value = metric ? metric.leads : '';
+  document.getElementById('dm-purchases').value = metric ? metric.purchases : '';
+  document.getElementById('dm-notes').value = metric ? metric.notes : '';
+  document.getElementById('metric-modal').classList.add('open');
+}
+
+function closeMetricModal() { document.getElementById('metric-modal').classList.remove('open'); }
+document.getElementById('metric-modal').addEventListener('click', e => { if (e.target.id === 'metric-modal') closeMetricModal(); });
+
+function saveDailyMetric() {
+  const date = document.getElementById('dm-date').value;
+  const spend = document.getElementById('dm-spend').value;
+  if (!date || !spend) { showToast('Date and spend are required'); return; }
+
+  const payload = {
+    campaign_id: selectedPerfCampaign,
+    metric_date: date,
+    spend: parseFloat(spend) || 0,
+    impressions: parseInt(document.getElementById('dm-impressions').value) || 0,
+    reach: parseInt(document.getElementById('dm-reach').value) || 0,
+    link_clicks: parseInt(document.getElementById('dm-link-clicks').value) || 0,
+    clicks: parseInt(document.getElementById('dm-clicks').value) || 0,
+    ctr: parseFloat(document.getElementById('dm-ctr').value) || 0,
+    cpc: parseFloat(document.getElementById('dm-cpc').value) || 0,
+    cpm: parseFloat(document.getElementById('dm-cpm').value) || 0,
+    frequency: parseFloat(document.getElementById('dm-frequency').value) || 0,
+    leads: parseInt(document.getElementById('dm-leads').value) || 0,
+    purchases: parseInt(document.getElementById('dm-purchases').value) || 0,
+    notes: document.getElementById('dm-notes').value,
+  };
+
+  // Auto-calc cost_per_lead and cost_per_purchase
+  if (payload.leads > 0) payload.cost_per_lead = payload.spend / payload.leads;
+  if (payload.purchases > 0) payload.cost_per_purchase = payload.spend / payload.purchases;
+
+  const btn = document.getElementById('dm-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+
+  api('save-daily-metric', {}, 'POST', payload).then(data => {
+    btn.disabled = false; btn.textContent = 'Save Metrics';
+    if (data.metric) {
+      closeMetricModal();
+      showToast('Metrics saved! 📊');
+      loadPerfDashboard(selectedPerfCampaign);
+    } else if (data.error) {
+      showToast('Error: ' + data.error);
+    }
+  });
+}
+
+function editDailyMetric(id) {
+  const metric = perfMetrics.find(m => m.id === id);
+  if (metric) openDailyMetricModal(metric);
+}
+
+function deleteDailyMetric(id, date) {
+  if (!confirm('Delete metrics for ' + date + '?')) return;
+  api('delete-daily-metric', {}, 'POST', { id }).then(data => {
+    if (data.success) {
+      showToast('Metrics deleted');
+      loadPerfDashboard(selectedPerfCampaign);
     }
   });
 }

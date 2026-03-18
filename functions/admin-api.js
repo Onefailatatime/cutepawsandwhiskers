@@ -266,6 +266,24 @@ exports.handler = async function (event) {
         return ok({ campaigns: data || [] });
       }
 
+      // ===== AD PERFORMANCE =====
+      if (action === 'campaign-performance') {
+        const { data } = await supabase
+          .from('campaign_performance')
+          .select('*');
+        return ok({ campaigns: data || [] });
+      }
+
+      if (action === 'daily-metrics') {
+        if (!params.campaign_id) return badRequest('Missing campaign_id');
+        const { data } = await supabase
+          .from('ad_daily_metrics')
+          .select('*')
+          .eq('campaign_id', params.campaign_id)
+          .order('metric_date', { ascending: true });
+        return ok({ metrics: data || [] });
+      }
+
       // Upsell products list
       if (action === 'upsell-products') {
         const { data } = await supabase
@@ -1021,6 +1039,42 @@ exports.handler = async function (event) {
 
         if (error) return serverError(error);
         return ok({ success: true, product: data });
+      }
+
+      // ===== AD DAILY METRICS =====
+      if (action === 'save-daily-metric') {
+        if (!body.campaign_id || !body.metric_date) return badRequest('Missing campaign_id or metric_date');
+        const allowed = [
+          'campaign_id', 'metric_date', 'impressions', 'reach', 'clicks',
+          'link_clicks', 'spend', 'cpm', 'cpc', 'ctr', 'frequency',
+          'leads', 'purchases', 'cost_per_lead', 'cost_per_purchase',
+          'thumb_stop_ratio', 'video_views_3s', 'notes'
+        ];
+        const row = {};
+        for (const key of allowed) {
+          if (body[key] !== undefined) row[key] = body[key];
+        }
+        row.updated_at = new Date().toISOString();
+
+        const { data, error } = await supabase
+          .from('ad_daily_metrics')
+          .upsert(row, { onConflict: 'campaign_id,metric_date' })
+          .select()
+          .single();
+
+        if (error) return serverError(error);
+        return ok({ metric: data });
+      }
+
+      if (action === 'delete-daily-metric') {
+        if (!body.id) return badRequest('Missing id');
+        const { error } = await supabase
+          .from('ad_daily_metrics')
+          .delete()
+          .eq('id', body.id);
+
+        if (error) return serverError(error);
+        return ok({ success: true });
       }
 
       if (action === 'delete-upsell-product') {
