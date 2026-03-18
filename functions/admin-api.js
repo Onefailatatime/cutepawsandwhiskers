@@ -1081,7 +1081,7 @@ exports.handler = async function (event) {
       if (action === 'save-daily-metric') {
         if (!body.campaign_id || !body.metric_date) return badRequest('Missing campaign_id or metric_date');
         const allowed = [
-          'campaign_id', 'metric_date', 'impressions', 'reach', 'clicks',
+          'campaign_id', 'metric_date', 'creative_id', 'impressions', 'reach', 'clicks',
           'link_clicks', 'spend', 'cpm', 'cpc', 'ctr', 'frequency',
           'leads', 'purchases', 'cost_per_lead', 'cost_per_purchase',
           'thumb_stop_ratio', 'video_views_3s', 'notes',
@@ -1236,7 +1236,7 @@ exports.handler = async function (event) {
 
       if (action === 'save-campaign-creative') {
         if (!body.campaign_id && !body.id) return badRequest('Missing campaign_id or id');
-        const allowed = ['campaign_id', 'label', 'creative_type', 'image_url', 'video_url', 'headline', 'body_text', 'cta_text', 'utm_content', 'fb_ad_id', 'is_active', 'notes'];
+        const allowed = ['campaign_id', 'label', 'creative_type', 'image_url', 'video_url', 'headline', 'body_text', 'cta_text', 'utm_content', 'fb_ad_id', 'is_active', 'notes', 'decision', 'decision_why', 'stopped_at'];
         const row = {};
         for (const key of allowed) { if (body[key] !== undefined) row[key] = body[key]; }
 

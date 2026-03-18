@@ -462,61 +462,7 @@
             </div>
           </details>
 
-          <!-- 4. EXPERIMENTS / TEST RUNS -->
-          <details class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <summary class="px-5 py-3 border-b border-gray-100 font-bold text-gray-900 cursor-pointer hover:bg-gray-50 flex items-center justify-between">
-              <span>Experiments</span>
-              <div class="flex items-center gap-3">
-                <span id="exp-completed-count" class="text-xs text-gray-400 font-normal"></span>
-                <button onclick="event.stopPropagation(); openTestRunModal()" class="px-3 py-1 rounded-lg bg-indigo-500 text-white text-xs font-medium hover:bg-indigo-600">+ New Test</button>
-              </div>
-            </summary>
-            <div class="p-5">
-              <!-- Test runs list -->
-              <div id="exp-list" class="space-y-3"></div>
-              <div id="exp-empty" class="hidden text-center text-gray-400 text-sm py-6">No experiments yet. Start your first test run to track which ad ideas work.</div>
-              <!-- Expanded test detail (shown when a test is clicked) -->
-              <div id="exp-detail" class="hidden mt-4">
-                <div class="border-t border-gray-100 pt-4">
-                  <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
-                    <div>
-                      <div class="flex items-center gap-2 mb-1">
-                        <span class="text-xs font-mono text-gray-400" id="exp-d-test-id"></span>
-                        <h4 class="font-bold text-gray-900" id="exp-d-name"></h4>
-                        <span id="exp-d-decision-badge" class="hidden text-xs font-bold px-2 py-0.5 rounded-full"></span>
-                      </div>
-                      <p class="text-xs text-gray-400" id="exp-d-meta"></p>
-                    </div>
-                    <div class="flex gap-2">
-                      <button onclick="openTestRunModal(currentTestRun)" class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-xs font-medium hover:bg-blue-100 border border-blue-200">Edit Test</button>
-                      <button onclick="openFinishTestModal()" id="btn-finish-test" class="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-xs font-medium hover:bg-amber-100 border border-amber-200">Finish Test</button>
-                      <button onclick="openAdResultModal()" class="px-3 py-1.5 rounded-lg bg-purple-50 text-purple-600 text-xs font-medium hover:bg-purple-100 border border-purple-200">+ Ad Result</button>
-                    </div>
-                  </div>
-                  <!-- Test summary KPIs -->
-                  <div id="exp-d-summary" class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4"></div>
-                  <!-- Notes / hypothesis -->
-                  <div id="exp-d-notes" class="hidden bg-gray-50 rounded-xl p-3 text-sm text-gray-600 mb-4"></div>
-                  <!-- Decision / why -->
-                  <div id="exp-d-decision" class="hidden rounded-xl p-3 text-sm mb-4"></div>
-                  <!-- Ad Results table -->
-                  <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                      <thead>
-                        <tr class="bg-gray-50 text-left text-gray-500 text-xs uppercase">
-                          <th class="px-3 py-2">Ad / UTM</th><th class="px-3 py-2">Spend</th><th class="px-3 py-2">Impr.</th><th class="px-3 py-2">Clicks</th><th class="px-3 py-2">CTR</th><th class="px-3 py-2">Purch.</th><th class="px-3 py-2">CAC</th><th class="px-3 py-2">Status</th><th class="px-3 py-2">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody id="exp-d-results-body"></tbody>
-                    </table>
-                    <div id="exp-d-results-empty" class="hidden text-center text-gray-400 text-sm py-4">No ad results yet. Snapshot each ad's performance when you're done.</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </details>
-
-          <!-- 5. ADS USED / CREATIVES -->
+          <!-- 4. ADS / CREATIVES -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
               <h3 class="font-bold text-gray-900">Ads Used</h3>
@@ -941,9 +887,15 @@
         <p class="text-xs text-gray-500 bg-blue-50 rounded-lg p-3">Copy these numbers from <strong>Facebook Ads Manager</strong> for each day your ad runs. This builds your performance history.</p>
         <input type="hidden" id="dm-id">
         <div class="grid grid-cols-2 gap-3">
-          <div class="col-span-2">
+          <div>
             <label class="text-xs text-gray-500 block mb-1">Date *</label>
             <input id="dm-date" type="date" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-orange-400">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Which Ad? *</label>
+            <select id="dm-creative" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-orange-400">
+              <option value="">— Select ad —</option>
+            </select>
           </div>
           <div>
             <label class="text-xs text-gray-500 block mb-1">Amount Spent ($) *</label>
@@ -1078,167 +1030,6 @@
         <div class="flex gap-3 pt-2">
           <button onclick="closeCreativeModal()" class="flex-1 py-3 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50">Cancel</button>
           <button onclick="saveCreative()" id="cr-save-btn" class="flex-1 py-3 rounded-xl bg-purple-500 text-white text-sm font-bold hover:bg-purple-600">Save Creative</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== TEST RUN MODAL ===== -->
-  <div id="testrun-modal" class="modal-bg fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-8 pb-8 overflow-y-auto opacity-0 pointer-events-none">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4">
-      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-        <h2 class="font-bold text-gray-900 text-lg" id="testrun-modal-title">New Test Run</h2>
-        <button onclick="closeTestRunModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
-      </div>
-      <div class="p-6 space-y-4">
-        <input type="hidden" id="tr-id">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-xs text-gray-500 block mb-1">Test ID *</label>
-            <input id="tr-test-id" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-indigo-400" placeholder="PW2027_T1_AD1">
-          </div>
-          <div>
-            <label class="text-xs text-gray-500 block mb-1">Name *</label>
-            <input id="tr-name" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="Test 1 - First FB image ad">
-          </div>
-          <div>
-            <label class="text-xs text-gray-500 block mb-1">Channel</label>
-            <input id="tr-channel" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" value="Facebook">
-          </div>
-          <div>
-            <label class="text-xs text-gray-500 block mb-1">Objective</label>
-            <input id="tr-objective" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="Cold purchase - $30 entry">
-          </div>
-          <div class="col-span-2">
-            <label class="text-xs text-gray-500 block mb-1">Audience</label>
-            <input id="tr-audience" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="US women 50+, pet interests">
-          </div>
-          <div>
-            <label class="text-xs text-gray-500 block mb-1">Start Date</label>
-            <input id="tr-start" type="date" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none">
-          </div>
-          <div>
-            <label class="text-xs text-gray-500 block mb-1">End Date</label>
-            <input id="tr-end" type="date" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none">
-          </div>
-          <div class="col-span-2">
-            <label class="text-xs text-gray-500 block mb-1">Notes / Hypothesis</label>
-            <textarea id="tr-notes" rows="3" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none resize-none" placeholder="What are you testing? e.g. Grandma holding calendar + dog image, long benefits copy."></textarea>
-          </div>
-        </div>
-        <div class="flex gap-3 pt-2">
-          <button onclick="closeTestRunModal()" class="flex-1 py-3 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50">Cancel</button>
-          <button onclick="saveTestRun()" id="tr-save-btn" class="flex-1 py-3 rounded-xl bg-indigo-500 text-white text-sm font-bold hover:bg-indigo-600">Save Test Run</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== FINISH TEST MODAL ===== -->
-  <div id="finish-test-modal" class="modal-bg fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-8 pb-8 overflow-y-auto opacity-0 pointer-events-none">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4">
-      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-        <h2 class="font-bold text-gray-900 text-lg">Finish Test Run</h2>
-        <button onclick="closeFinishTestModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
-      </div>
-      <div class="p-6 space-y-4">
-        <div>
-          <label class="text-xs text-gray-500 block mb-2">Decision *</label>
-          <div class="flex gap-2">
-            <label class="flex-1 cursor-pointer">
-              <input type="radio" name="ft-decision" value="kill" class="peer hidden">
-              <div class="peer-checked:bg-red-500 peer-checked:text-white peer-checked:border-red-500 rounded-xl border-2 border-gray-200 p-3 text-center text-sm font-bold text-gray-600 hover:border-red-300 transition">Kill</div>
-            </label>
-            <label class="flex-1 cursor-pointer">
-              <input type="radio" name="ft-decision" value="iterate" class="peer hidden">
-              <div class="peer-checked:bg-amber-500 peer-checked:text-white peer-checked:border-amber-500 rounded-xl border-2 border-gray-200 p-3 text-center text-sm font-bold text-gray-600 hover:border-amber-300 transition">Iterate</div>
-            </label>
-            <label class="flex-1 cursor-pointer">
-              <input type="radio" name="ft-decision" value="scale" class="peer hidden">
-              <div class="peer-checked:bg-green-500 peer-checked:text-white peer-checked:border-green-500 rounded-xl border-2 border-gray-200 p-3 text-center text-sm font-bold text-gray-600 hover:border-green-300 transition">Scale</div>
-            </label>
-          </div>
-        </div>
-        <div>
-          <label class="text-xs text-gray-500 block mb-1">Why? *</label>
-          <textarea id="ft-why" rows="3" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none resize-none" placeholder="e.g. ~560 impressions, 0.36% CTR, 0 purchases. Ad problem, killed."></textarea>
-        </div>
-        <div>
-          <label class="text-xs text-gray-500 block mb-1">End Date</label>
-          <input id="ft-end-date" type="date" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none">
-        </div>
-        <div class="flex gap-3 pt-2">
-          <button onclick="closeFinishTestModal()" class="flex-1 py-3 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50">Cancel</button>
-          <button onclick="finishTestRun()" id="ft-save-btn" class="flex-1 py-3 rounded-xl bg-amber-500 text-white text-sm font-bold hover:bg-amber-600">Mark as Finished</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== AD RESULT MODAL ===== -->
-  <div id="adresult-modal" class="modal-bg fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-8 pb-8 overflow-y-auto opacity-0 pointer-events-none">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4">
-      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-        <h2 class="font-bold text-gray-900 text-lg" id="adresult-modal-title">Add Ad Result</h2>
-        <button onclick="closeAdResultModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
-      </div>
-      <div class="p-6 space-y-4">
-        <input type="hidden" id="ar-id">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-xs text-gray-500 block mb-1">UTM Content / Label *</label>
-            <input id="ar-utm" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-purple-400" placeholder="image_grandma_dog_v1">
-          </div>
-          <div>
-            <label class="text-xs text-gray-500 block mb-1">FB Ad ID</label>
-            <input id="ar-fbid" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="120242...">
-          </div>
-          <div class="col-span-2 pt-1 border-t border-gray-100">
-            <span class="text-xs font-bold text-gray-500 uppercase tracking-wide">Final Numbers</span>
-          </div>
-          <div>
-            <label class="text-xs text-gray-500 block mb-1">Spend ($)</label>
-            <input id="ar-spend" type="number" step="0.01" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0.00">
-          </div>
-          <div>
-            <label class="text-xs text-gray-500 block mb-1">Impressions</label>
-            <input id="ar-impressions" type="number" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0">
-          </div>
-          <div>
-            <label class="text-xs text-gray-500 block mb-1">Clicks</label>
-            <input id="ar-clicks" type="number" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0">
-          </div>
-          <div>
-            <label class="text-xs text-gray-500 block mb-1">Purchases</label>
-            <input id="ar-purchases" type="number" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0">
-          </div>
-          <div class="col-span-2 pt-1 border-t border-gray-100">
-            <span class="text-xs font-bold text-gray-500 uppercase tracking-wide">Optional (when you have it)</span>
-          </div>
-          <div>
-            <label class="text-xs text-gray-500 block mb-1">Upsell Revenue ($)</label>
-            <input id="ar-upsell" type="number" step="0.01" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0.00">
-          </div>
-          <div>
-            <label class="text-xs text-gray-500 block mb-1">R30 / Entry ($)</label>
-            <input id="ar-r30" type="number" step="0.01" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0.00">
-          </div>
-          <div>
-            <label class="text-xs text-gray-500 block mb-1">Status</label>
-            <select id="ar-status" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none">
-              <option value="needs_data">Needs More Data</option>
-              <option value="winner">Winner - Keep/Scale</option>
-              <option value="loser">Loser - Killed</option>
-            </select>
-          </div>
-          <div>
-            <label class="text-xs text-gray-500 block mb-1">Notes</label>
-            <input id="ar-notes" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="Internal notes">
-          </div>
-        </div>
-        <div class="flex gap-3 pt-2">
-          <button onclick="closeAdResultModal()" class="flex-1 py-3 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50">Cancel</button>
-          <button onclick="saveAdResult()" id="ar-save-btn" class="flex-1 py-3 rounded-xl bg-purple-500 text-white text-sm font-bold hover:bg-purple-600">Save Ad Result</button>
         </div>
       </div>
     </div>
@@ -2376,8 +2167,7 @@ function openHub(id) {
     renderNotes();
     // Campaign info
     renderCampaignInfo();
-    // Experiments
-    loadTestRuns();
+    // (Experiments removed — per-ad tracking is now in Creatives)
   });
 }
 
@@ -2449,36 +2239,88 @@ function renderHubKanban() {
 }
 
 // Creatives
+function getCreativeMetrics(creativeId) {
+  const m = (perfMetrics || []).filter(r => r.creative_id === creativeId);
+  const spend = m.reduce((s, r) => s + (parseFloat(r.spend) || 0), 0);
+  const impressions = m.reduce((s, r) => s + (parseInt(r.impressions) || 0), 0);
+  const clicks = m.reduce((s, r) => s + (parseInt(r.link_clicks) || parseInt(r.clicks) || 0), 0);
+  const purchases = m.reduce((s, r) => s + (parseInt(r.purchases) || 0), 0);
+  const sessions = m.reduce((s, r) => s + (parseInt(r.landing_sessions) || 0), 0);
+  const ctr = impressions > 0 ? (clicks / impressions * 100) : 0;
+  const cpc = clicks > 0 ? spend / clicks : 0;
+  const cac = purchases > 0 ? spend / purchases : 0;
+  const days = m.length;
+  return { spend, impressions, clicks, purchases, sessions, ctr, cpc, cac, days };
+}
+
 function renderCreatives() {
   const grid = document.getElementById('hub-creatives-grid');
   const empty = document.getElementById('hub-creatives-empty');
   if (!hubCreatives.length) { grid.innerHTML = ''; empty.classList.remove('hidden'); return; }
   empty.classList.add('hidden');
 
-  // Count entries per creative by utm_content match
   const entryCounts = {};
   hubEntries.forEach(e => { if (e.utm_content) entryCounts[e.utm_content] = (entryCounts[e.utm_content] || 0) + 1; });
 
+  const decColors = { kill: 'bg-red-100 text-red-700 border-red-200', iterate: 'bg-amber-100 text-amber-700 border-amber-200', scale: 'bg-green-100 text-green-700 border-green-200' };
+  const decLabels = { kill: 'Killed', iterate: 'Iterating', scale: 'Scaling' };
+
   grid.innerHTML = hubCreatives.map(cr => {
     const count = cr.utm_content ? (entryCounts[cr.utm_content] || 0) : 0;
-    const typeIcon = { image: '🖼️', video: '🎬', carousel: '🎠', text: '📝' }[cr.creative_type] || '📣';
+    const typeIcon = { image: '', video: '', carousel: '', text: '' }[cr.creative_type] || '';
+    const met = getCreativeMetrics(cr.id);
+    const isStopped = cr.decision && cr.stopped_at;
+    const isActive = cr.is_active && !isStopped;
+    const borderColor = isStopped ? (cr.decision === 'kill' ? 'border-red-300' : cr.decision === 'scale' ? 'border-green-300' : 'border-amber-300') : isActive ? 'border-indigo-300' : 'border-gray-200';
+
     return `
-      <div class="border border-gray-200 rounded-xl overflow-hidden">
-        ${cr.image_url ? `<img src="${esc(cr.image_url)}" class="w-full h-28 object-cover" alt="">` : `<div class="w-full h-16 bg-gray-100 flex items-center justify-center text-2xl">${typeIcon}</div>`}
-        <div class="p-3">
-          <div class="flex items-center justify-between mb-1">
-            <span class="font-medium text-sm text-gray-900 truncate">${esc(cr.label)}</span>
-            <span class="badge text-[10px] ${cr.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">${cr.is_active ? 'Active' : 'Paused'}</span>
+      <div class="border-2 ${borderColor} rounded-xl overflow-hidden ${isStopped ? 'opacity-80' : ''}">
+        ${cr.image_url ? `<img src="${esc(cr.image_url)}" class="w-full h-28 object-cover" alt="">` : `<div class="w-full h-12 bg-gray-100 flex items-center justify-center text-lg text-gray-400">${typeIcon || cr.creative_type || 'Ad'}</div>`}
+        <div class="p-3 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-sm text-gray-900 truncate">${esc(cr.label)}</span>
+            ${isStopped ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${decColors[cr.decision] || ''}">${decLabels[cr.decision] || ''}</span>` : isActive ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">Running</span>' : '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Paused</span>'}
           </div>
-          ${cr.utm_content ? `<div class="text-[10px] text-gray-400">utm_content: ${esc(cr.utm_content)} · ${count} entries</div>` : ''}
-          ${cr.headline ? `<div class="text-xs text-gray-600 mt-1 truncate">${esc(cr.headline)}</div>` : ''}
-          <div class="flex gap-1 mt-2">
+          ${cr.utm_content ? `<div class="text-[10px] text-gray-400">${esc(cr.utm_content)} · ${count} entries</div>` : ''}
+          <!-- Per-ad metrics -->
+          <div class="grid grid-cols-4 gap-1 bg-gray-50 rounded-lg p-2">
+            <div class="text-center"><div class="text-[9px] text-gray-400">Spend</div><div class="text-xs font-bold text-gray-700">$${met.spend.toFixed(0)}</div></div>
+            <div class="text-center"><div class="text-[9px] text-gray-400">Clicks</div><div class="text-xs font-bold text-gray-700">${met.clicks}</div></div>
+            <div class="text-center"><div class="text-[9px] text-gray-400">CTR</div><div class="text-xs font-bold text-gray-700">${met.ctr > 0 ? met.ctr.toFixed(1) + '%' : '—'}</div></div>
+            <div class="text-center"><div class="text-[9px] text-gray-400">Purch.</div><div class="text-xs font-bold text-gray-700">${met.purchases}</div></div>
+          </div>
+          ${met.days > 0 ? `<div class="text-[10px] text-gray-400">${met.days} days logged · ${met.impressions.toLocaleString()} impressions</div>` : '<div class="text-[10px] text-gray-400">No metrics logged yet</div>'}
+          ${isStopped && cr.decision_why ? `<div class="text-[10px] text-gray-500 bg-gray-50 rounded p-1.5">${esc(cr.decision_why)}</div>` : ''}
+          <div class="flex gap-1 pt-1 border-t border-gray-100">
             <button onclick="editCreative('${cr.id}')" class="text-xs text-blue-500 hover:underline">Edit</button>
+            ${!isStopped && isActive ? `<button onclick="stopCreative('${cr.id}')" class="text-xs text-amber-600 hover:underline">Stop Ad</button>` : ''}
             <button onclick="deleteCreative('${cr.id}')" class="text-xs text-red-400 hover:underline">Delete</button>
           </div>
         </div>
       </div>`;
   }).join('');
+}
+
+function stopCreative(id) {
+  const cr = hubCreatives.find(c => c.id === id);
+  if (!cr) return;
+  const decision = prompt('What happened with "' + cr.label + '"?\\n\\nType: kill, iterate, or scale');
+  if (!decision || !['kill', 'iterate', 'scale'].includes(decision.toLowerCase())) { showToast('Enter: kill, iterate, or scale'); return; }
+  const why = prompt('Why? (short explanation)');
+  if (!why) return;
+
+  api('save-campaign-creative', {}, 'POST', {
+    id: cr.id,
+    is_active: false,
+    decision: decision.toLowerCase(),
+    decision_why: why,
+    stopped_at: new Date().toISOString().split('T')[0],
+  }).then(data => {
+    if (data.success) {
+      showToast('Ad stopped: ' + decision);
+      openHub(selectedPerfCampaign);
+    }
+  });
 }
 
 // Notes
@@ -2678,8 +2520,15 @@ function getKoiStatus(metrics, entries) {
   };
 }
 
+function getActiveCreative() {
+  return (hubCreatives || []).find(c => c.is_active && !c.decision);
+}
+
 function renderKoiMeter() {
-  const koi = getKoiStatus(perfMetrics, hubEntries);
+  // Filter to active creative's metrics for Koi judgment
+  const activeCr = getActiveCreative();
+  const activeMetrics = activeCr ? (perfMetrics || []).filter(m => m.creative_id === activeCr.id) : perfMetrics;
+  const koi = getKoiStatus(activeMetrics, hubEntries);
   const level = KOI_LEVELS[koi.key];
 
   document.getElementById('koi-meter-img').src = level.img;
@@ -3018,332 +2867,9 @@ function renderCampaignInfo() {
   `).join('');
 }
 
-// ===== EXPERIMENTS / TEST RUNS =====
-let hubTestRuns = [];
-let currentTestRun = null;
-let currentAdResults = [];
+// (Test Runs JS removed — replaced by per-creative metrics tracking)
 
-function loadTestRuns() {
-  if (!selectedPerfCampaign) return;
-  api('test-runs', { campaign_id: selectedPerfCampaign }).then(data => {
-    hubTestRuns = data.test_runs || [];
-    renderTestRunsList();
-  });
-}
-
-function renderTestRunsList() {
-  const list = document.getElementById('exp-list');
-  const empty = document.getElementById('exp-empty');
-  const detail = document.getElementById('exp-detail');
-  const completed = hubTestRuns.filter(t => t.is_finished).length;
-  document.getElementById('exp-completed-count').textContent = completed > 0 ? completed + ' completed' : '';
-
-  if (!hubTestRuns.length) {
-    list.innerHTML = '';
-    empty.classList.remove('hidden');
-    detail.classList.add('hidden');
-    return;
-  }
-  empty.classList.add('hidden');
-
-  const decColors = { kill: 'bg-red-100 text-red-700', iterate: 'bg-amber-100 text-amber-700', scale: 'bg-green-100 text-green-700' };
-  const decLabels = { kill: 'Kill', iterate: 'Iterate', scale: 'Scale' };
-
-  list.innerHTML = hubTestRuns.map(t => `
-    <div onclick="openTestRunDetail('${t.id}')" class="flex items-center justify-between gap-3 p-3 rounded-xl border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50/30 cursor-pointer transition group ${currentTestRun && currentTestRun.id === t.id ? 'border-indigo-300 bg-indigo-50/50' : ''}">
-      <div class="flex-1 min-w-0">
-        <div class="flex items-center gap-2">
-          <span class="text-xs font-mono text-gray-400">${esc(t.test_id)}</span>
-          <span class="text-sm font-bold text-gray-900 truncate">${esc(t.name)}</span>
-          ${t.is_finished && t.decision ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${decColors[t.decision] || ''}">${decLabels[t.decision] || t.decision}</span>` : t.is_finished ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Done</span>' : '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">Running</span>'}
-        </div>
-        <div class="text-xs text-gray-400 mt-0.5">${esc(t.channel || '')} &middot; ${t.start_date || '?'} → ${t.end_date || 'ongoing'}</div>
-      </div>
-      <button onclick="event.stopPropagation(); deleteTestRun('${t.id}','${esc(t.name)}')" class="text-xs text-red-400 opacity-0 group-hover:opacity-100 hover:underline">Del</button>
-    </div>
-  `).join('');
-}
-
-function openTestRunDetail(id) {
-  api('test-run-detail', { id }).then(data => {
-    currentTestRun = data.test_run;
-    currentAdResults = data.ad_results || [];
-    renderTestRunDetail();
-    renderTestRunsList(); // Re-render to highlight active
-  });
-}
-
-function renderTestRunDetail() {
-  const d = document.getElementById('exp-detail');
-  if (!currentTestRun) { d.classList.add('hidden'); return; }
-  d.classList.remove('hidden');
-  const t = currentTestRun;
-
-  document.getElementById('exp-d-test-id').textContent = t.test_id;
-  document.getElementById('exp-d-name').textContent = t.name;
-  document.getElementById('exp-d-meta').textContent = [t.channel, t.objective, t.audience].filter(Boolean).join(' · ') + (t.start_date ? ' · ' + t.start_date + ' → ' + (t.end_date || 'ongoing') : '');
-
-  // Decision badge
-  const badge = document.getElementById('exp-d-decision-badge');
-  const decColors = { kill: 'bg-red-100 text-red-700', iterate: 'bg-amber-100 text-amber-700', scale: 'bg-green-100 text-green-700' };
-  const decLabels = { kill: 'Kill', iterate: 'Iterate', scale: 'Scale' };
-  if (t.is_finished && t.decision) {
-    badge.className = 'text-xs font-bold px-2 py-0.5 rounded-full ' + (decColors[t.decision] || '');
-    badge.textContent = decLabels[t.decision] || t.decision;
-    badge.classList.remove('hidden');
-  } else { badge.classList.add('hidden'); }
-
-  // Finish button visibility
-  document.getElementById('btn-finish-test').classList.toggle('hidden', !!t.is_finished);
-
-  // Notes
-  const notesEl = document.getElementById('exp-d-notes');
-  if (t.notes) { notesEl.innerHTML = '<div class="text-xs font-bold text-gray-400 uppercase mb-1">Hypothesis / Notes</div>' + esc(t.notes); notesEl.classList.remove('hidden'); }
-  else { notesEl.classList.add('hidden'); }
-
-  // Decision why
-  const decEl = document.getElementById('exp-d-decision');
-  if (t.is_finished && t.decision_why) {
-    const bg = t.decision === 'kill' ? 'bg-red-50 border border-red-200' : t.decision === 'scale' ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200';
-    decEl.className = 'rounded-xl p-3 text-sm mb-4 ' + bg;
-    decEl.innerHTML = '<div class="text-xs font-bold text-gray-500 uppercase mb-1">Decision: ' + (decLabels[t.decision] || '') + '</div>' + esc(t.decision_why);
-    decEl.classList.remove('hidden');
-  } else { decEl.classList.add('hidden'); }
-
-  // Summary KPIs from ad results
-  const totalSpend = currentAdResults.reduce((s, r) => s + (parseFloat(r.spend) || 0), 0);
-  const totalPurch = currentAdResults.reduce((s, r) => s + (parseInt(r.purchases) || 0), 0);
-  const totalImpr = currentAdResults.reduce((s, r) => s + (parseInt(r.impressions) || 0), 0);
-  const totalClicks = currentAdResults.reduce((s, r) => s + (parseInt(r.clicks) || 0), 0);
-  const overallCAC = totalPurch > 0 ? totalSpend / totalPurch : 0;
-  const summaryEl = document.getElementById('exp-d-summary');
-  summaryEl.innerHTML = [
-    { label: 'Total Spend', value: '$' + totalSpend.toFixed(2) },
-    { label: 'Impressions', value: totalImpr.toLocaleString() },
-    { label: 'Clicks', value: totalClicks },
-    { label: 'Purchases', value: totalPurch },
-    { label: 'CAC (Front)', value: overallCAC > 0 ? '$' + overallCAC.toFixed(2) : '—' },
-    { label: 'Ads Tested', value: currentAdResults.length },
-  ].map(k => `
-    <div class="bg-gray-50 rounded-lg p-2 text-center">
-      <span class="text-[10px] text-gray-400 block">${k.label}</span>
-      <div class="text-sm font-bold text-gray-800">${k.value}</div>
-    </div>
-  `).join('');
-
-  // Ad Results table
-  const tbody = document.getElementById('exp-d-results-body');
-  const emptyEl = document.getElementById('exp-d-results-empty');
-  if (!currentAdResults.length) {
-    tbody.innerHTML = '';
-    emptyEl.classList.remove('hidden');
-    return;
-  }
-  emptyEl.classList.add('hidden');
-
-  const statusColors = { winner: 'bg-green-100 text-green-700', loser: 'bg-red-100 text-red-700', needs_data: 'bg-blue-50 text-blue-600' };
-  const statusLabels = { winner: 'Winner', loser: 'Loser', needs_data: 'Needs Data' };
-
-  tbody.innerHTML = currentAdResults.map(r => {
-    const spend = parseFloat(r.spend) || 0;
-    const impr = parseInt(r.impressions) || 0;
-    const clicks = parseInt(r.clicks) || 0;
-    const ctr = impr > 0 ? (clicks / impr * 100) : parseFloat(r.ctr) || 0;
-    const purch = parseInt(r.purchases) || 0;
-    const cac = purch > 0 ? spend / purch : parseFloat(r.cac_front) || 0;
-    return `<tr class="border-t border-gray-100 hover:bg-gray-50">
-      <td class="px-3 py-2 font-medium text-sm">${esc(r.utm_content || r.fb_ad_id || '—')}</td>
-      <td class="px-3 py-2 text-sm">$${spend.toFixed(2)}</td>
-      <td class="px-3 py-2 text-sm">${impr.toLocaleString()}</td>
-      <td class="px-3 py-2 text-sm">${clicks}</td>
-      <td class="px-3 py-2 text-sm font-medium">${ctr.toFixed(2)}%</td>
-      <td class="px-3 py-2 text-sm font-medium">${purch}</td>
-      <td class="px-3 py-2 text-sm font-medium">${cac > 0 ? '$' + cac.toFixed(2) : '—'}</td>
-      <td class="px-3 py-2"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${statusColors[r.status] || ''}">${statusLabels[r.status] || r.status}</span></td>
-      <td class="px-3 py-2">
-        <div class="flex gap-1">
-          <button onclick="editAdResult('${r.id}')" class="text-xs text-blue-500 hover:underline">Edit</button>
-          <button onclick="deleteAdResult('${r.id}')" class="text-xs text-red-400 hover:underline">Del</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-// Test Run Modal
-function openTestRunModal(existing = null) {
-  document.getElementById('testrun-modal-title').textContent = existing ? 'Edit Test Run' : 'New Test Run';
-  document.getElementById('tr-id').value = existing ? existing.id : '';
-  document.getElementById('tr-test-id').value = existing ? existing.test_id : '';
-  document.getElementById('tr-name').value = existing ? existing.name : '';
-  document.getElementById('tr-channel').value = existing ? (existing.channel || 'Facebook') : 'Facebook';
-  document.getElementById('tr-objective').value = existing ? (existing.objective || '') : '';
-  document.getElementById('tr-audience').value = existing ? (existing.audience || '') : '';
-  document.getElementById('tr-start').value = existing ? (existing.start_date || '') : new Date().toISOString().split('T')[0];
-  document.getElementById('tr-end').value = existing ? (existing.end_date || '') : '';
-  document.getElementById('tr-notes').value = existing ? (existing.notes || '') : '';
-  document.getElementById('testrun-modal').classList.add('open');
-}
-function closeTestRunModal() { document.getElementById('testrun-modal').classList.remove('open'); }
-document.getElementById('testrun-modal').addEventListener('click', e => { if (e.target.id === 'testrun-modal') closeTestRunModal(); });
-
-function saveTestRun() {
-  const testId = document.getElementById('tr-test-id').value.trim();
-  const name = document.getElementById('tr-name').value.trim();
-  if (!testId || !name) { showToast('Test ID and Name are required'); return; }
-
-  const payload = {
-    campaign_id: selectedPerfCampaign,
-    test_id: testId,
-    name: name,
-    channel: document.getElementById('tr-channel').value.trim(),
-    objective: document.getElementById('tr-objective').value.trim(),
-    audience: document.getElementById('tr-audience').value.trim(),
-    start_date: document.getElementById('tr-start').value || null,
-    end_date: document.getElementById('tr-end').value || null,
-    notes: document.getElementById('tr-notes').value.trim(),
-  };
-  const existingId = document.getElementById('tr-id').value;
-  if (existingId) payload.id = existingId;
-
-  const btn = document.getElementById('tr-save-btn');
-  btn.disabled = true; btn.textContent = 'Saving...';
-
-  api('save-test-run', {}, 'POST', payload).then(data => {
-    btn.disabled = false; btn.textContent = 'Save Test Run';
-    if (data.test_run) {
-      closeTestRunModal();
-      showToast('Test run saved!');
-      loadTestRuns();
-      if (existingId) openTestRunDetail(existingId);
-    } else { showToast('Error: ' + (data.error || 'Unknown')); }
-  }).catch(err => { btn.disabled = false; btn.textContent = 'Save Test Run'; showToast('Error: ' + err.message); });
-}
-
-function deleteTestRun(id, name) {
-  if (!confirm('Delete test "' + name + '" and all its ad results?')) return;
-  api('delete-test-run', {}, 'POST', { id }).then(data => {
-    if (data.success) {
-      showToast('Test deleted');
-      currentTestRun = null;
-      loadTestRuns();
-    }
-  });
-}
-
-// Finish Test Modal
-function openFinishTestModal() {
-  if (!currentTestRun) return;
-  document.querySelectorAll('input[name="ft-decision"]').forEach(r => r.checked = false);
-  document.getElementById('ft-why').value = '';
-  document.getElementById('ft-end-date').value = new Date().toISOString().split('T')[0];
-  document.getElementById('finish-test-modal').classList.add('open');
-}
-function closeFinishTestModal() { document.getElementById('finish-test-modal').classList.remove('open'); }
-document.getElementById('finish-test-modal').addEventListener('click', e => { if (e.target.id === 'finish-test-modal') closeFinishTestModal(); });
-
-function finishTestRun() {
-  const decision = document.querySelector('input[name="ft-decision"]:checked');
-  const why = document.getElementById('ft-why').value.trim();
-  if (!decision) { showToast('Select a decision: Kill, Iterate, or Scale'); return; }
-  if (!why) { showToast('Please explain why'); return; }
-
-  const btn = document.getElementById('ft-save-btn');
-  btn.disabled = true; btn.textContent = 'Saving...';
-
-  api('finish-test-run', {}, 'POST', {
-    id: currentTestRun.id,
-    decision: decision.value,
-    decision_why: why,
-    end_date: document.getElementById('ft-end-date').value || null,
-  }).then(data => {
-    btn.disabled = false; btn.textContent = 'Mark as Finished';
-    if (data.test_run) {
-      closeFinishTestModal();
-      showToast('Test marked as ' + decision.value + '!');
-      openTestRunDetail(currentTestRun.id);
-      loadTestRuns();
-    } else { showToast('Error: ' + (data.error || 'Unknown')); }
-  }).catch(err => { btn.disabled = false; btn.textContent = 'Mark as Finished'; showToast('Error: ' + err.message); });
-}
-
-// Ad Result Modal
-function openAdResultModal(existing = null) {
-  document.getElementById('adresult-modal-title').textContent = existing ? 'Edit Ad Result' : 'Add Ad Result';
-  document.getElementById('ar-id').value = existing ? existing.id : '';
-  document.getElementById('ar-utm').value = existing ? (existing.utm_content || '') : '';
-  document.getElementById('ar-fbid').value = existing ? (existing.fb_ad_id || '') : '';
-  document.getElementById('ar-spend').value = existing ? existing.spend : '';
-  document.getElementById('ar-impressions').value = existing ? existing.impressions : '';
-  document.getElementById('ar-clicks').value = existing ? existing.clicks : '';
-  document.getElementById('ar-purchases').value = existing ? existing.purchases : '';
-  document.getElementById('ar-upsell').value = existing ? existing.upsell_revenue : '';
-  document.getElementById('ar-r30').value = existing ? existing.r30 : '';
-  document.getElementById('ar-status').value = existing ? existing.status : 'needs_data';
-  document.getElementById('ar-notes').value = existing ? (existing.notes || '') : '';
-  document.getElementById('adresult-modal').classList.add('open');
-}
-function closeAdResultModal() { document.getElementById('adresult-modal').classList.remove('open'); }
-document.getElementById('adresult-modal').addEventListener('click', e => { if (e.target.id === 'adresult-modal') closeAdResultModal(); });
-
-function saveAdResult() {
-  const utm = document.getElementById('ar-utm').value.trim();
-  if (!utm) { showToast('UTM Content / Label is required'); return; }
-  if (!currentTestRun) { showToast('No test run selected'); return; }
-
-  const spend = parseFloat(document.getElementById('ar-spend').value) || 0;
-  const impressions = parseInt(document.getElementById('ar-impressions').value) || 0;
-  const clicks = parseInt(document.getElementById('ar-clicks').value) || 0;
-  const purchases = parseInt(document.getElementById('ar-purchases').value) || 0;
-
-  const payload = {
-    test_run_id: currentTestRun.id,
-    utm_content: utm,
-    fb_ad_id: document.getElementById('ar-fbid').value.trim(),
-    spend, impressions, clicks, purchases,
-    ctr: impressions > 0 ? (clicks / impressions * 100) : 0,
-    cac_front: purchases > 0 ? spend / purchases : 0,
-    upsell_revenue: parseFloat(document.getElementById('ar-upsell').value) || 0,
-    r30: parseFloat(document.getElementById('ar-r30').value) || 0,
-    status: document.getElementById('ar-status').value,
-    notes: document.getElementById('ar-notes').value.trim(),
-  };
-  // Payback if we have R30
-  if (payload.r30 > 0 && payload.cac_front > 0) {
-    payload.payback_ratio = payload.r30 / (payload.cac_front + 8); // default $8 cal cost
-  }
-
-  const existingId = document.getElementById('ar-id').value;
-  if (existingId) payload.id = existingId;
-
-  const btn = document.getElementById('ar-save-btn');
-  btn.disabled = true; btn.textContent = 'Saving...';
-
-  api('save-ad-result', {}, 'POST', payload).then(data => {
-    btn.disabled = false; btn.textContent = 'Save Ad Result';
-    if (data.ad_result) {
-      closeAdResultModal();
-      showToast('Ad result saved!');
-      openTestRunDetail(currentTestRun.id);
-    } else { showToast('Error: ' + (data.error || 'Unknown')); }
-  }).catch(err => { btn.disabled = false; btn.textContent = 'Save Ad Result'; showToast('Error: ' + err.message); });
-}
-
-function editAdResult(id) {
-  const r = currentAdResults.find(a => a.id === id);
-  if (r) openAdResultModal(r);
-}
-
-function deleteAdResult(id) {
-  if (!confirm('Delete this ad result?')) return;
-  api('delete-ad-result', {}, 'POST', { id }).then(data => {
-    if (data.success) {
-      showToast('Ad result deleted');
-      openTestRunDetail(currentTestRun.id);
-    }
-  });
-}
-
+// (Experiments JS functions removed — see per-creative tracking in renderCreatives)
 // Daily Metric Modal
 function openDailyMetricModal(metric = null) {
   document.getElementById('dm-id').value = metric ? metric.id : '';
@@ -3363,6 +2889,17 @@ function openDailyMetricModal(metric = null) {
   document.getElementById('dm-upsell').value = metric ? metric.upsell_revenue : '';
   document.getElementById('dm-calcost').value = metric ? metric.calendar_cost : '';
   document.getElementById('dm-notes').value = metric ? metric.notes : '';
+
+  // Populate creative picker
+  const sel = document.getElementById('dm-creative');
+  const activeCreatives = (hubCreatives || []).filter(c => c.is_active !== false);
+  const stoppedCreatives = (hubCreatives || []).filter(c => c.is_active === false);
+  sel.innerHTML = '<option value="">— Select ad —</option>' +
+    activeCreatives.map(c => `<option value="${c.id}">${esc(c.label)}</option>`).join('') +
+    (stoppedCreatives.length ? '<option disabled>── Stopped ──</option>' + stoppedCreatives.map(c => `<option value="${c.id}">${esc(c.label)} (stopped)</option>`).join('') : '');
+  // Pre-select: editing existing metric, or default to first active creative
+  sel.value = metric && metric.creative_id ? metric.creative_id : (activeCreatives.length === 1 ? activeCreatives[0].id : '');
+
   document.getElementById('metric-modal').classList.add('open');
 }
 
@@ -3394,6 +2931,10 @@ function saveDailyMetric() {
     calendar_cost: parseFloat(document.getElementById('dm-calcost').value) || 0,
     notes: document.getElementById('dm-notes').value,
   };
+
+  // Include creative_id
+  const creativeId = document.getElementById('dm-creative').value;
+  if (creativeId) payload.creative_id = creativeId;
 
   // Include id when editing existing metric
   if (existingId) payload.id = existingId;
