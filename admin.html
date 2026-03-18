@@ -878,12 +878,12 @@
 
   <!-- ===== DAILY METRICS MODAL ===== -->
   <div id="metric-modal" class="modal-bg fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-8 pb-8 overflow-y-auto opacity-0 pointer-events-none">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4">
-      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white rounded-t-2xl z-10">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] flex flex-col">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white rounded-t-2xl z-10 shrink-0">
         <h2 class="font-bold text-gray-900 text-lg">Log Daily Metrics</h2>
         <button onclick="closeMetricModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
       </div>
-      <div class="p-6 space-y-4">
+      <div class="p-6 space-y-4 overflow-y-auto">
         <p class="text-xs text-gray-500 bg-blue-50 rounded-lg p-3">Copy these numbers from <strong>Facebook Ads Manager</strong> for each day your ad runs. This builds your performance history.</p>
         <input type="hidden" id="dm-id">
         <div class="grid grid-cols-2 gap-3">
@@ -914,6 +914,10 @@
             <input id="dm-link-clicks" type="number" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0">
           </div>
           <div>
+            <label class="text-xs text-gray-500 block mb-1">Website Views</label>
+            <input id="dm-sessions" type="number" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-orange-400" placeholder="0">
+          </div>
+          <div>
             <label class="text-xs text-gray-500 block mb-1">All Clicks</label>
             <input id="dm-clicks" type="number" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="0">
           </div>
@@ -935,10 +939,6 @@
           </div>
           <div class="col-span-2 pt-2 border-t border-gray-100">
             <span class="text-xs font-bold text-gray-600 uppercase tracking-wide">Funnel</span>
-          </div>
-          <div>
-            <label class="text-xs text-gray-500 block mb-1">Website Views</label>
-            <input id="dm-sessions" type="number" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-orange-400" placeholder="0">
           </div>
           <div>
             <label class="text-xs text-gray-500 block mb-1">Leads (sign-ups)</label>
