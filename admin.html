@@ -1035,6 +1035,44 @@
     </div>
   </div>
 
+  <!-- ===== STOP AD MODAL ===== -->
+  <div id="stop-ad-modal" class="modal-bg fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-8 pb-8 overflow-y-auto opacity-0 pointer-events-none">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <h2 class="font-bold text-gray-900 text-lg">Stop Ad</h2>
+        <button onclick="closeStopAdModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <p class="text-sm text-gray-600">Stopping: <strong id="stop-ad-name"></strong></p>
+        <div>
+          <label class="text-xs text-gray-500 block mb-2">What's the verdict? *</label>
+          <div class="flex gap-2">
+            <label class="flex-1 cursor-pointer">
+              <input type="radio" name="stop-decision" value="kill" class="peer hidden">
+              <div class="peer-checked:bg-red-500 peer-checked:text-white peer-checked:border-red-500 rounded-xl border-2 border-gray-200 p-3 text-center text-sm font-bold text-gray-600 hover:border-red-300 transition">Kill</div>
+            </label>
+            <label class="flex-1 cursor-pointer">
+              <input type="radio" name="stop-decision" value="iterate" class="peer hidden">
+              <div class="peer-checked:bg-amber-500 peer-checked:text-white peer-checked:border-amber-500 rounded-xl border-2 border-gray-200 p-3 text-center text-sm font-bold text-gray-600 hover:border-amber-300 transition">Iterate</div>
+            </label>
+            <label class="flex-1 cursor-pointer">
+              <input type="radio" name="stop-decision" value="scale" class="peer hidden">
+              <div class="peer-checked:bg-green-500 peer-checked:text-white peer-checked:border-green-500 rounded-xl border-2 border-gray-200 p-3 text-center text-sm font-bold text-gray-600 hover:border-green-300 transition">Scale</div>
+            </label>
+          </div>
+        </div>
+        <div>
+          <label class="text-xs text-gray-500 block mb-1">Why? *</label>
+          <textarea id="stop-why" rows="3" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none resize-none" placeholder="e.g. 560 impressions, 0.36% CTR, 0 purchases. Ad creative wasn't grabbing attention."></textarea>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button onclick="closeStopAdModal()" class="flex-1 py-3 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50">Cancel</button>
+          <button onclick="confirmStopCreative()" id="stop-ad-save-btn" class="flex-1 py-3 rounded-xl bg-red-500 text-white text-sm font-bold hover:bg-red-600">Stop This Ad</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Email Group Modal -->
   <div id="group-modal" class="modal-bg fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-8 pb-8 overflow-y-auto opacity-0 pointer-events-none">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 space-y-4">
@@ -2291,36 +2329,52 @@ function renderCreatives() {
           </div>
           ${met.days > 0 ? `<div class="text-[10px] text-gray-400">${met.days} days logged · ${met.impressions.toLocaleString()} impressions</div>` : '<div class="text-[10px] text-gray-400">No metrics logged yet</div>'}
           ${isStopped && cr.decision_why ? `<div class="text-[10px] text-gray-500 bg-gray-50 rounded p-1.5">${esc(cr.decision_why)}</div>` : ''}
-          <div class="flex gap-1 pt-1 border-t border-gray-100">
-            <button onclick="editCreative('${cr.id}')" class="text-xs text-blue-500 hover:underline">Edit</button>
-            ${!isStopped && isActive ? `<button onclick="stopCreative('${cr.id}')" class="text-xs text-amber-600 hover:underline">Stop Ad</button>` : ''}
-            <button onclick="deleteCreative('${cr.id}')" class="text-xs text-red-400 hover:underline">Delete</button>
+          <div class="flex gap-1.5 pt-2 border-t border-gray-100">
+            <button onclick="editCreative('${cr.id}')" class="flex-1 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-xs font-medium hover:bg-blue-100 border border-blue-200">Edit</button>
+            ${!isStopped && isActive ? `<button onclick="stopCreative('${cr.id}')" class="flex-1 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-xs font-medium hover:bg-amber-100 border border-amber-200">Stop Ad</button>` : ''}
+            <button onclick="deleteCreative('${cr.id}')" class="py-1.5 px-2 rounded-lg bg-red-50 text-red-500 text-xs font-medium hover:bg-red-100 border border-red-200">Del</button>
           </div>
         </div>
       </div>`;
   }).join('');
 }
 
+let stopCreativeId = null;
 function stopCreative(id) {
+  stopCreativeId = id;
   const cr = hubCreatives.find(c => c.id === id);
   if (!cr) return;
-  const decision = prompt('What happened with "' + cr.label + '"?\\n\\nType: kill, iterate, or scale');
-  if (!decision || !['kill', 'iterate', 'scale'].includes(decision.toLowerCase())) { showToast('Enter: kill, iterate, or scale'); return; }
-  const why = prompt('Why? (short explanation)');
-  if (!why) return;
+  document.getElementById('stop-ad-name').textContent = cr.label;
+  document.querySelectorAll('input[name="stop-decision"]').forEach(r => r.checked = false);
+  document.getElementById('stop-why').value = '';
+  document.getElementById('stop-ad-modal').classList.add('open');
+}
+function closeStopAdModal() { document.getElementById('stop-ad-modal').classList.remove('open'); }
+document.getElementById('stop-ad-modal').addEventListener('click', e => { if (e.target.id === 'stop-ad-modal') closeStopAdModal(); });
+
+function confirmStopCreative() {
+  const decision = document.querySelector('input[name="stop-decision"]:checked');
+  const why = document.getElementById('stop-why').value.trim();
+  if (!decision) { showToast('Pick a decision: Kill, Iterate, or Scale'); return; }
+  if (!why) { showToast('Write a short reason why'); return; }
+
+  const btn = document.getElementById('stop-ad-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
 
   api('save-campaign-creative', {}, 'POST', {
-    id: cr.id,
+    id: stopCreativeId,
     is_active: false,
-    decision: decision.toLowerCase(),
+    decision: decision.value,
     decision_why: why,
     stopped_at: new Date().toISOString().split('T')[0],
   }).then(data => {
+    btn.disabled = false; btn.textContent = 'Stop This Ad';
     if (data.success) {
-      showToast('Ad stopped: ' + decision);
+      closeStopAdModal();
+      showToast('Ad stopped: ' + decision.value);
       openHub(selectedPerfCampaign);
-    }
-  });
+    } else { showToast('Error: ' + (data.error || 'Unknown')); }
+  }).catch(err => { btn.disabled = false; btn.textContent = 'Stop This Ad'; showToast('Error: ' + err.message); });
 }
 
 // Notes
