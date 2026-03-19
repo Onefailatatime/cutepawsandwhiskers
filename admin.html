@@ -1096,6 +1096,48 @@
     </div>
   </div>
 
+  <!-- Ad Performance Popup -->
+  <div id="ad-perf-modal" class="modal-bg fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-4 pb-4 overflow-y-auto opacity-0 pointer-events-none">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white rounded-t-2xl z-10">
+        <div class="flex items-center gap-3">
+          <h2 class="font-bold text-gray-900 text-lg" id="ad-perf-modal-title">Ad Performance</h2>
+          <span id="ad-perf-modal-status" class="text-[10px] font-bold px-2 py-0.5 rounded-full"></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="openDailyMetricModalForAd()" class="px-3 py-1.5 rounded-lg bg-blue-500 text-white text-xs font-medium hover:bg-blue-600">+ Log Metrics</button>
+          <button onclick="closeAdPerfModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+        </div>
+      </div>
+      <div class="p-6 space-y-5">
+        <!-- Mini Koi for this ad -->
+        <div id="ad-perf-koi" class="flex items-center gap-4 p-4 rounded-xl"></div>
+        <!-- KPIs -->
+        <div id="ad-perf-kpis"></div>
+        <!-- Health -->
+        <div>
+          <h4 class="font-medium text-gray-700 text-sm mb-2">Health Check</h4>
+          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3" id="ad-perf-health"></div>
+        </div>
+        <!-- Daily table -->
+        <div>
+          <h4 class="font-medium text-gray-700 text-sm mb-2">Daily Log</h4>
+          <div class="overflow-x-auto max-h-[300px] overflow-y-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-gray-50 text-left text-gray-500 text-xs uppercase sticky top-0">
+                  <th class="px-3 py-2">Date</th><th class="px-3 py-2">Spend</th><th class="px-3 py-2">Impr.</th><th class="px-3 py-2">Clicks</th><th class="px-3 py-2">CTR</th><th class="px-3 py-2">CPC</th><th class="px-3 py-2">Views</th><th class="px-3 py-2">Purch.</th><th class="px-3 py-2">CAC</th><th class="px-3 py-2">Upsell</th><th class="px-3 py-2">Notes</th><th class="px-3 py-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="ad-perf-table-body"></tbody>
+            </table>
+          </div>
+          <div id="ad-perf-table-empty" class="hidden text-center text-gray-400 text-sm py-4">No metrics logged yet for this ad.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Email Group Modal -->
   <div id="group-modal" class="modal-bg fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-8 pb-8 overflow-y-auto opacity-0 pointer-events-none">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 space-y-4">
@@ -2230,6 +2272,10 @@ function openHub(id) {
     // Campaign info
     renderCampaignInfo();
     // (Experiments removed — per-ad tracking is now in Creatives)
+    // Re-open ad perf modal if it was open
+    if (adPerfCreativeId && document.getElementById('ad-perf-modal').classList.contains('open')) {
+      openAdPerfModal(adPerfCreativeId);
+    }
   });
 }
 
@@ -2446,6 +2492,7 @@ function renderCreatives() {
 
             <!-- Action Buttons -->
             <div class="flex gap-1.5 pt-2 border-t border-gray-100">
+              <button onclick="openAdPerfModal('${cr.id}')" class="py-1.5 px-3 rounded-lg bg-indigo-50 text-indigo-600 text-xs font-medium hover:bg-indigo-100 border border-indigo-200">📊 Performance</button>
               <button onclick="editCreative('${cr.id}')" class="py-1.5 px-3 rounded-lg bg-blue-50 text-blue-600 text-xs font-medium hover:bg-blue-100 border border-blue-200">Edit</button>
               ${!isStopped && isActive ? `<button onclick="stopCreative('${cr.id}')" class="py-1.5 px-3 rounded-lg bg-amber-50 text-amber-700 text-xs font-medium hover:bg-amber-100 border border-amber-200">Stop Ad</button>` : ''}
               <button onclick="deleteCreative('${cr.id}')" class="py-1.5 px-2 rounded-lg bg-red-50 text-red-500 text-xs font-medium hover:bg-red-100 border border-red-200">Del</button>
@@ -2492,6 +2539,235 @@ function confirmStopCreative() {
       openHub(selectedPerfCampaign);
     } else { showToast('Error: ' + (data.error || 'Unknown')); }
   }).catch(err => { btn.disabled = false; btn.textContent = 'Stop This Ad'; showToast('Error: ' + err.message); });
+}
+
+// ===== AD PERFORMANCE POPUP =====
+let adPerfCreativeId = null;
+
+function openAdPerfModal(creativeId) {
+  adPerfCreativeId = creativeId;
+  const cr = hubCreatives.find(c => c.id === creativeId);
+  if (!cr) return;
+
+  // Title + status
+  document.getElementById('ad-perf-modal-title').textContent = cr.label;
+  const statusEl = document.getElementById('ad-perf-modal-status');
+  const isStopped = cr.decision && cr.stopped_at;
+  const isActive = cr.is_active && !isStopped;
+  if (isStopped) {
+    const decLabels = { kill: 'Killed', iterate: 'Iterating', scale: 'Scaling' };
+    const decColors = { kill: 'bg-red-100 text-red-700', iterate: 'bg-amber-100 text-amber-700', scale: 'bg-green-100 text-green-700' };
+    statusEl.textContent = decLabels[cr.decision] || '';
+    statusEl.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full ' + (decColors[cr.decision] || '');
+  } else if (isActive) {
+    statusEl.textContent = 'Running';
+    statusEl.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700';
+  } else {
+    statusEl.textContent = 'Paused';
+    statusEl.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500';
+  }
+
+  // Get this ad's metrics
+  const adMetrics = (perfMetrics || []).filter(r => r.creative_id === creativeId);
+  const met = getCreativeMetrics(creativeId);
+  const koi = getCreativeKoi(creativeId);
+  const koiLevel = KOI_LEVELS[koi.key];
+  const koiSmallImg = { tadpole: 'img/koi/tadpole.svg', cloudy_pond: 'img/koi/cloudy-pond.svg', healthy_koi: 'img/koi/healthy-koi.svg', apex_koi: 'img/koi/apex-koi.svg', dead_fish: 'img/koi/dead-fish.svg' };
+  const koiBgColors = { tadpole: 'bg-blue-50', cloudy_pond: 'bg-yellow-50', healthy_koi: 'bg-green-50', apex_koi: 'bg-emerald-50', dead_fish: 'bg-red-50' };
+
+  // Koi section
+  document.getElementById('ad-perf-koi').className = 'flex items-center gap-4 p-4 rounded-xl ' + (koiBgColors[koi.key] || 'bg-gray-50');
+  document.getElementById('ad-perf-koi').innerHTML = `
+    <img src="${koiSmallImg[koi.key]}" class="w-14 h-14" alt="">
+    <div>
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-lg">${koi.status}</span>
+        <span class="text-xs font-bold px-2 py-0.5 rounded-full ${koiLevel.badgeBg}">${koi.score}</span>
+      </div>
+      <p class="text-sm text-gray-600">${koi.message}</p>
+      <p class="text-xs text-gray-500 mt-1"><strong>DO:</strong> ${koi.action}</p>
+    </div>
+  `;
+
+  // KPIs — reuse the same calculation as renderPerfKPIs but for this ad only
+  const m = adMetrics;
+  const totalSpend = m.reduce((s, r) => s + (parseFloat(r.spend) || 0), 0);
+  const totalClicks = m.reduce((s, r) => s + (parseInt(r.link_clicks) || parseInt(r.clicks) || 0), 0);
+  const totalImpressions = m.reduce((s, r) => s + (parseInt(r.impressions) || 0), 0);
+  const totalLeads = m.reduce((s, r) => s + (parseInt(r.leads) || 0), 0);
+  const totalPurchases = m.reduce((s, r) => s + (parseInt(r.purchases) || 0), 0);
+  const totalSessions = m.reduce((s, r) => s + (parseInt(r.landing_sessions) || 0), 0);
+  const totalUpsell = m.reduce((s, r) => s + (parseFloat(r.upsell_revenue) || 0), 0);
+  const avgCalCost = m.filter(r => parseFloat(r.calendar_cost) > 0).length > 0
+    ? m.reduce((s, r) => s + (parseFloat(r.calendar_cost) || 0), 0) / m.filter(r => parseFloat(r.calendar_cost) > 0).length : 8;
+  const avgCTR = m.length ? (m.reduce((s, r) => s + (parseFloat(r.ctr) || 0), 0) / m.length) : 0;
+  const avgCPC = totalClicks > 0 ? totalSpend / totalClicks : 0;
+  const avgCPM = totalImpressions > 0 ? (totalSpend / totalImpressions) * 1000 : 0;
+  const costPerLead = totalLeads > 0 ? totalSpend / totalLeads : 0;
+  const frontRevenue = totalPurchases * 30;
+  const cacFront = totalPurchases > 0 ? totalSpend / totalPurchases : 0;
+  const purchaseRate = totalSessions > 0 ? (totalPurchases / totalSessions * 100) : 0;
+  const avgUpsellPerEntry = totalPurchases > 0 ? totalUpsell / totalPurchases : 0;
+  const r30 = totalPurchases > 0 ? (frontRevenue + totalUpsell) / totalPurchases : 0;
+  const calCost = avgCalCost || 8;
+  const paybackRatio = (cacFront + calCost) > 0 && r30 > 0 ? r30 / (cacFront + calCost) : 0;
+  const ltgpCac = cacFront > 0 ? (r30 - calCost) / cacFront : 0;
+
+  const adsKpis = [
+    { label: 'Spend', value: '$' + totalSpend.toFixed(2), color: 'text-red-500' },
+    { label: 'Impressions', value: totalImpressions.toLocaleString(), color: 'text-gray-700' },
+    { label: 'Clicks', value: totalClicks.toLocaleString(), color: 'text-blue-600' },
+    { label: 'CTR', value: avgCTR.toFixed(2) + '%', color: avgCTR >= 1.0 ? 'text-green-600' : avgCTR >= 0.8 ? 'text-yellow-600' : 'text-red-500' },
+    { label: 'CPC', value: '$' + avgCPC.toFixed(2), color: avgCPC <= 2.0 ? 'text-green-600' : 'text-yellow-600' },
+    { label: 'CPM', value: '$' + avgCPM.toFixed(2), color: 'text-gray-700' },
+  ];
+  const funnelKpis = [
+    { label: 'Website Views', value: totalSessions > 0 ? totalSessions.toLocaleString() : '—', color: 'text-blue-600' },
+    { label: 'Purchases', value: totalPurchases, color: 'text-green-600' },
+    { label: 'Purchase Rate', value: totalSessions > 0 ? purchaseRate.toFixed(1) + '%' : '—', color: purchaseRate >= 3 ? 'text-green-600' : purchaseRate >= 2 ? 'text-yellow-600' : 'text-red-500' },
+    { label: 'Leads', value: totalLeads, color: 'text-purple-600' },
+    { label: 'Cost/Lead', value: costPerLead > 0 ? '$' + costPerLead.toFixed(2) : '—', color: costPerLead > 0 && costPerLead <= 25 ? 'text-green-600' : 'text-orange-500' },
+  ];
+  const moneyKpis = [
+    { label: 'CAC', value: cacFront > 0 ? '$' + cacFront.toFixed(2) : '—', color: cacFront > 0 && cacFront <= 25 ? 'text-green-600' : cacFront > 25 ? 'text-red-500' : 'text-gray-400' },
+    { label: 'Front Rev', value: '$' + frontRevenue.toFixed(0), color: 'text-green-600' },
+    { label: 'Upsell Rev', value: totalUpsell > 0 ? '$' + totalUpsell.toFixed(0) : '—', color: 'text-emerald-600' },
+    { label: 'R30/Entry', value: r30 > 0 ? '$' + r30.toFixed(2) : '—', color: 'text-indigo-600' },
+    { label: 'Payback', value: paybackRatio > 0 ? paybackRatio.toFixed(2) + 'x' : '—', color: paybackRatio >= 1 ? 'text-green-600' : paybackRatio > 0 ? 'text-red-500' : 'text-gray-400' },
+    { label: 'LTGP:CAC', value: ltgpCac > 0 ? ltgpCac.toFixed(2) + 'x' : '—', color: ltgpCac >= 3 ? 'text-green-600' : ltgpCac >= 1 ? 'text-yellow-600' : ltgpCac > 0 ? 'text-red-500' : 'text-gray-400' },
+  ];
+
+  function renderSec(title, kpis) {
+    return `<div class="mb-3">
+      <h5 class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">${title}</h5>
+      <div class="grid grid-cols-3 md:grid-cols-${Math.min(kpis.length, 6)} gap-2">
+        ${kpis.map(k => `<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-2.5">
+          <span class="text-[10px] text-gray-500 block mb-0.5">${k.label}</span>
+          <div class="text-base font-bold ${k.color}">${k.value}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }
+  document.getElementById('ad-perf-kpis').innerHTML =
+    renderSec('Ads (Top of Funnel)', adsKpis) +
+    renderSec('Funnel', funnelKpis) +
+    renderSec('Money', moneyKpis);
+
+  // Health cards
+  function status(val, green, yellow) {
+    if (val >= green) return { color: 'bg-green-100 text-green-700 border-green-200' };
+    if (val >= yellow) return { color: 'bg-yellow-100 text-yellow-700 border-yellow-200' };
+    return { color: 'bg-red-100 text-red-700 border-red-200' };
+  }
+  function statusLow(val, green, yellow) {
+    if (val <= green) return { color: 'bg-green-100 text-green-700 border-green-200' };
+    if (val <= yellow) return { color: 'bg-yellow-100 text-yellow-700 border-yellow-200' };
+    return { color: 'bg-red-100 text-red-700 border-red-200' };
+  }
+  const naColor = { color: 'bg-gray-100 text-gray-500 border-gray-200' };
+
+  if (!m.length) {
+    document.getElementById('ad-perf-health').innerHTML = '<p class="col-span-full text-sm text-gray-400">Log metrics to see health check.</p>';
+  } else {
+    const checks = [
+      { label: 'CTR', value: avgCTR.toFixed(2) + '%', target: '>= 1.0%', hint: 'Ad quality', ...status(avgCTR, 1.0, 0.8) },
+      { label: 'CPC', value: '$' + avgCPC.toFixed(2), target: '<= $2.00', hint: 'Cost per click', ...statusLow(avgCPC, 2.0, 2.5) },
+      { label: 'Purch Rate', value: totalSessions > 0 ? purchaseRate.toFixed(1) + '%' : '—', target: '>= 2-3%', hint: 'Page quality', ...(totalSessions > 0 ? status(purchaseRate, 3, 2) : naColor) },
+      { label: 'CAC', value: cacFront > 0 ? '$' + cacFront.toFixed(2) : '—', target: '<= $25', hint: 'Cost per entry', ...(cacFront > 0 ? statusLow(cacFront, 25, 30) : naColor) },
+      { label: 'Payback', value: paybackRatio > 0 ? paybackRatio.toFixed(2) + 'x' : '—', target: '>= 1.0x', hint: 'Profitable?', ...(paybackRatio > 0 ? status(paybackRatio, 1.0, 0.7) : naColor) },
+      { label: 'LTGP:CAC', value: ltgpCac > 0 ? ltgpCac.toFixed(2) + 'x' : '—', target: '>= 3.0x', hint: 'Scale?', ...(ltgpCac > 0 ? status(ltgpCac, 3.0, 1.0) : naColor) },
+      { label: 'Days', value: m.length, target: '10+ days', hint: 'Reliable data', color: m.length >= 10 ? 'bg-green-100 text-green-700 border-green-200' : 'bg-blue-50 text-blue-700 border-blue-200' },
+    ];
+    document.getElementById('ad-perf-health').innerHTML = checks.map(c => `
+      <div class="rounded-xl border ${c.color} p-2.5 text-center">
+        <div class="text-[10px] font-medium opacity-70 mb-0.5">${c.label}</div>
+        <div class="text-base font-bold">${c.value}</div>
+        <div class="text-[9px] mt-0.5 opacity-50">${c.hint}</div>
+        <div class="text-[9px] mt-0.5 opacity-60">Target: ${c.target}</div>
+      </div>
+    `).join('');
+  }
+
+  // Daily table
+  const tbody = document.getElementById('ad-perf-table-body');
+  const emptyEl = document.getElementById('ad-perf-table-empty');
+  if (!adMetrics.length) {
+    tbody.innerHTML = '';
+    emptyEl.classList.remove('hidden');
+  } else {
+    emptyEl.classList.add('hidden');
+    tbody.innerHTML = adMetrics.map(r => {
+      const spend = parseFloat(r.spend) || 0;
+      const clicks = parseInt(r.link_clicks) || parseInt(r.clicks) || 0;
+      const sessions = parseInt(r.landing_sessions) || 0;
+      const purchases = parseInt(r.purchases) || 0;
+      const upsell = parseFloat(r.upsell_revenue) || 0;
+      const ctr = parseFloat(r.ctr) || 0;
+      const cpc = parseFloat(r.cpc) || 0;
+      const purchRate = sessions > 0 ? (purchases / sessions * 100) : 0;
+      const rowCac = purchases > 0 ? spend / purchases : 0;
+      const ctrClass = ctr >= 1.0 ? 'text-green-600' : ctr >= 0.8 ? 'text-yellow-600' : 'text-red-500';
+      const cpcClass = cpc > 0 && cpc <= 2.0 ? 'text-green-600' : 'text-yellow-600';
+      const cacClass = rowCac > 0 && rowCac <= 25 ? 'text-green-600' : rowCac > 25 ? 'text-red-500' : 'text-gray-400';
+      return `<tr class="border-t border-gray-100 hover:bg-gray-50">
+        <td class="px-3 py-1.5 font-medium whitespace-nowrap text-xs">${r.metric_date}</td>
+        <td class="px-3 py-1.5 text-red-500 font-medium text-xs">$${spend.toFixed(2)}</td>
+        <td class="px-3 py-1.5 text-xs">${(parseInt(r.impressions) || 0).toLocaleString()}</td>
+        <td class="px-3 py-1.5 text-xs">${clicks}</td>
+        <td class="px-3 py-1.5 font-medium text-xs ${ctrClass}">${ctr.toFixed(2)}%</td>
+        <td class="px-3 py-1.5 font-medium text-xs ${cpcClass}">$${cpc.toFixed(2)}</td>
+        <td class="px-3 py-1.5 text-xs">${sessions > 0 ? sessions : '—'}</td>
+        <td class="px-3 py-1.5 font-medium text-xs text-green-600">${purchases}</td>
+        <td class="px-3 py-1.5 font-medium text-xs ${cacClass}">${rowCac > 0 ? '$' + rowCac.toFixed(2) : '—'}</td>
+        <td class="px-3 py-1.5 text-xs">${upsell > 0 ? '$' + upsell.toFixed(0) : '—'}</td>
+        <td class="px-3 py-1.5 text-[10px] text-gray-400 max-w-[80px] truncate" title="${esc(r.notes || '')}">${esc(r.notes || '')}</td>
+        <td class="px-3 py-1.5">
+          <div class="flex gap-1">
+            <button onclick="editDailyMetricFromAdPerf('${r.id}')" class="text-[10px] text-blue-500 hover:underline">Edit</button>
+            <button onclick="deleteDailyMetricFromAdPerf('${r.id}','${r.metric_date}')" class="text-[10px] text-red-400 hover:underline">Del</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  document.getElementById('ad-perf-modal').classList.add('open');
+}
+
+function closeAdPerfModal() { document.getElementById('ad-perf-modal').classList.remove('open'); }
+document.getElementById('ad-perf-modal').addEventListener('click', e => { if (e.target.id === 'ad-perf-modal') closeAdPerfModal(); });
+
+function openDailyMetricModalForAd() {
+  // Open the daily metric modal with this ad pre-selected
+  openDailyMetricModal(null);
+  // Wait a tick for the modal to render, then select this ad
+  setTimeout(() => {
+    const sel = document.getElementById('dm-creative');
+    if (sel && adPerfCreativeId) sel.value = adPerfCreativeId;
+  }, 50);
+}
+
+function editDailyMetricFromAdPerf(id) {
+  const metric = (perfMetrics || []).find(r => r.id === id);
+  if (metric) openDailyMetricModal(metric);
+}
+
+function deleteDailyMetricFromAdPerf(id, date) {
+  if (!confirm('Delete metrics for ' + date + '?')) return;
+  api('delete-daily-metric', {}, 'POST', { id }).then(data => {
+    if (data.success) {
+      perfMetrics = perfMetrics.filter(r => r.id !== id);
+      // Refresh the ad perf modal
+      openAdPerfModal(adPerfCreativeId);
+      // Also refresh main views
+      renderPerfKPIs();
+      renderHealthCards();
+      renderMetricsTable();
+      renderCreatives();
+      renderKoiMeter();
+      showToast('Metric deleted');
+    }
+  });
 }
 
 // Notes
