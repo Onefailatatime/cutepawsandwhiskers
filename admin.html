@@ -468,7 +468,7 @@
               <h3 class="font-bold text-gray-900">Ads Used</h3>
               <button onclick="openCreativeModal()" id="btn-add-creative" class="px-3 py-1.5 rounded-lg bg-purple-500 text-white text-xs font-medium hover:bg-purple-600">+ Add Creative</button>
             </div>
-            <div id="hub-creatives-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-3 p-4"></div>
+            <div id="hub-creatives-grid" class="space-y-4 p-4"></div>
             <div id="hub-creatives-empty" class="hidden p-6 text-center text-gray-400 text-sm">No creatives yet. Add your ad variations to track which ones perform best.</div>
           </div>
 
@@ -1000,8 +1000,24 @@
             <input id="cr-utm" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="e.g. video_a">
           </div>
           <div class="col-span-2">
-            <label class="text-xs text-gray-500 block mb-1">Image URL</label>
-            <input id="cr-image" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="https://...">
+            <label class="text-xs text-gray-500 block mb-1">Ad Image</label>
+            <div class="flex gap-2 items-start">
+              <div class="flex-1">
+                <input id="cr-image" type="text" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none mb-1" placeholder="Paste image URL or upload below">
+                <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-gray-300 cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition">
+                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                  <span class="text-xs text-gray-500">Upload image</span>
+                  <input type="file" id="cr-image-file" accept="image/*" class="hidden" onchange="handleCreativeImageUpload(this)">
+                </label>
+              </div>
+              <div id="cr-image-preview" class="hidden w-20 h-20 rounded-lg border border-gray-200 overflow-hidden flex-shrink-0">
+                <img id="cr-image-preview-img" class="w-full h-full object-cover" src="" alt="">
+              </div>
+            </div>
+          </div>
+          <div class="col-span-2">
+            <label class="text-xs text-gray-500 block mb-1">Description</label>
+            <textarea id="cr-description" rows="2" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none resize-none" placeholder="What is this ad about? Target audience, angle, etc."></textarea>
           </div>
           <div class="col-span-2">
             <label class="text-xs text-gray-500 block mb-1">Headline</label>
@@ -2291,6 +2307,52 @@ function getCreativeMetrics(creativeId) {
   return { spend, impressions, clicks, purchases, sessions, ctr, cpc, cac, days };
 }
 
+function getCreativeKoi(creativeId) {
+  const m = (perfMetrics || []).filter(r => r.creative_id === creativeId);
+  return getKoiStatus(m, hubEntries);
+}
+
+function getCreativeHealth(creativeId) {
+  const m = (perfMetrics || []).filter(r => r.creative_id === creativeId);
+  if (!m.length) return [];
+  const met = getCreativeMetrics(creativeId);
+  const totalSessions = met.sessions;
+  const totalUpsell = m.reduce((s, r) => s + (parseFloat(r.upsell_revenue) || 0), 0);
+  const avgCTR = m.reduce((s, r) => s + (parseFloat(r.ctr) || 0), 0) / m.length;
+  const purchaseRate = totalSessions > 0 ? (met.purchases / totalSessions * 100) : 0;
+  const frontRevenue = met.purchases * 30;
+  const avgCalCost = m.filter(r => parseFloat(r.calendar_cost) > 0).length > 0
+    ? m.reduce((s, r) => s + (parseFloat(r.calendar_cost) || 0), 0) / m.filter(r => parseFloat(r.calendar_cost) > 0).length : 8;
+  const r30 = met.purchases > 0 ? (frontRevenue + totalUpsell) / met.purchases : 0;
+  const payback = (met.cac + avgCalCost) > 0 && r30 > 0 ? r30 / (met.cac + avgCalCost) : 0;
+
+  function st(val, green, yellow) {
+    if (val >= green) return 'green';
+    if (val >= yellow) return 'yellow';
+    return 'red';
+  }
+  function stLow(val, green, yellow) {
+    if (val <= green) return 'green';
+    if (val <= yellow) return 'yellow';
+    return 'red';
+  }
+  const dotColors = { green: 'bg-green-400', yellow: 'bg-yellow-400', red: 'bg-red-400', na: 'bg-gray-300' };
+  const badgeColors = { green: 'bg-green-100 text-green-700', yellow: 'bg-yellow-100 text-yellow-700', red: 'bg-red-100 text-red-700', na: 'bg-gray-100 text-gray-500' };
+
+  const checks = [
+    { label: 'CTR', value: avgCTR.toFixed(1) + '%', status: st(avgCTR, 1.0, 0.8) },
+    { label: 'CPC', value: '$' + met.cpc.toFixed(2), status: met.clicks > 0 ? stLow(met.cpc, 2.0, 2.5) : 'na' },
+    { label: 'Purch Rate', value: totalSessions > 0 ? purchaseRate.toFixed(1) + '%' : '—', status: totalSessions > 0 ? st(purchaseRate, 3, 2) : 'na' },
+    { label: 'CAC', value: met.cac > 0 ? '$' + met.cac.toFixed(0) : '—', status: met.cac > 0 ? stLow(met.cac, 25, 30) : 'na' },
+    { label: 'Payback', value: payback > 0 ? payback.toFixed(2) + 'x' : '—', status: payback > 0 ? st(payback, 1.0, 0.7) : 'na' },
+  ];
+  return checks.map(c => ({
+    ...c,
+    dot: dotColors[c.status],
+    badge: badgeColors[c.status],
+  }));
+}
+
 function renderCreatives() {
   const grid = document.getElementById('hub-creatives-grid');
   const empty = document.getElementById('hub-creatives-empty');
@@ -2300,39 +2362,86 @@ function renderCreatives() {
   const entryCounts = {};
   hubEntries.forEach(e => { if (e.utm_content) entryCounts[e.utm_content] = (entryCounts[e.utm_content] || 0) + 1; });
 
-  const decColors = { kill: 'bg-red-100 text-red-700 border-red-200', iterate: 'bg-amber-100 text-amber-700 border-amber-200', scale: 'bg-green-100 text-green-700 border-green-200' };
+  const decColors = { kill: 'bg-red-100 text-red-700', iterate: 'bg-amber-100 text-amber-700', scale: 'bg-green-100 text-green-700' };
   const decLabels = { kill: 'Killed', iterate: 'Iterating', scale: 'Scaling' };
+  const koiSmallImg = { tadpole: 'img/koi/tadpole.svg', cloudy_pond: 'img/koi/cloudy-pond.svg', healthy_koi: 'img/koi/healthy-koi.svg', apex_koi: 'img/koi/apex-koi.svg', dead_fish: 'img/koi/dead-fish.svg' };
 
   grid.innerHTML = hubCreatives.map(cr => {
     const count = cr.utm_content ? (entryCounts[cr.utm_content] || 0) : 0;
-    const typeIcon = { image: '', video: '', carousel: '', text: '' }[cr.creative_type] || '';
     const met = getCreativeMetrics(cr.id);
+    const koi = getCreativeKoi(cr.id);
+    const health = getCreativeHealth(cr.id);
     const isStopped = cr.decision && cr.stopped_at;
     const isActive = cr.is_active && !isStopped;
     const borderColor = isStopped ? (cr.decision === 'kill' ? 'border-red-300' : cr.decision === 'scale' ? 'border-green-300' : 'border-amber-300') : isActive ? 'border-indigo-300' : 'border-gray-200';
+    const statusBadge = isStopped ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${decColors[cr.decision] || ''}">${decLabels[cr.decision] || ''}</span>` : isActive ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">Running</span>' : '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Paused</span>';
+    const koiLevel = KOI_LEVELS[koi.key];
 
     return `
-      <div class="border-2 ${borderColor} rounded-xl overflow-hidden ${isStopped ? 'opacity-80' : ''}">
-        ${cr.image_url ? `<img src="${esc(cr.image_url)}" class="w-full h-28 object-cover" alt="">` : `<div class="w-full h-12 bg-gray-100 flex items-center justify-center text-lg text-gray-400">${typeIcon || cr.creative_type || 'Ad'}</div>`}
-        <div class="p-3 space-y-2">
-          <div class="flex items-center justify-between">
-            <span class="font-bold text-sm text-gray-900 truncate">${esc(cr.label)}</span>
-            ${isStopped ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${decColors[cr.decision] || ''}">${decLabels[cr.decision] || ''}</span>` : isActive ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">Running</span>' : '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Paused</span>'}
+      <div class="border-2 ${borderColor} rounded-xl overflow-hidden ${isStopped ? 'opacity-75' : ''}">
+        <div class="flex flex-col sm:flex-row">
+          <!-- Left: Image -->
+          <div class="sm:w-48 flex-shrink-0">
+            ${cr.image_url
+              ? `<img src="${esc(cr.image_url)}" class="w-full h-40 sm:h-full object-cover" alt="">`
+              : `<div class="w-full h-32 sm:h-full bg-gray-100 flex items-center justify-center text-3xl text-gray-300">${{image:'🖼️',video:'🎬',carousel:'🎠',text:'📝'}[cr.creative_type] || '📢'}</div>`}
           </div>
-          ${cr.utm_content ? `<div class="text-[10px] text-gray-400">${esc(cr.utm_content)} · ${count} entries</div>` : ''}
-          <!-- Per-ad metrics -->
-          <div class="grid grid-cols-4 gap-1 bg-gray-50 rounded-lg p-2">
-            <div class="text-center"><div class="text-[9px] text-gray-400">Spend</div><div class="text-xs font-bold text-gray-700">$${met.spend.toFixed(0)}</div></div>
-            <div class="text-center"><div class="text-[9px] text-gray-400">Clicks</div><div class="text-xs font-bold text-gray-700">${met.clicks}</div></div>
-            <div class="text-center"><div class="text-[9px] text-gray-400">CTR</div><div class="text-xs font-bold text-gray-700">${met.ctr > 0 ? met.ctr.toFixed(1) + '%' : '—'}</div></div>
-            <div class="text-center"><div class="text-[9px] text-gray-400">Purch.</div><div class="text-xs font-bold text-gray-700">${met.purchases}</div></div>
-          </div>
-          ${met.days > 0 ? `<div class="text-[10px] text-gray-400">${met.days} days logged · ${met.impressions.toLocaleString()} impressions</div>` : '<div class="text-[10px] text-gray-400">No metrics logged yet</div>'}
-          ${isStopped && cr.decision_why ? `<div class="text-[10px] text-gray-500 bg-gray-50 rounded p-1.5">${esc(cr.decision_why)}</div>` : ''}
-          <div class="flex gap-1.5 pt-2 border-t border-gray-100">
-            <button onclick="editCreative('${cr.id}')" class="flex-1 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-xs font-medium hover:bg-blue-100 border border-blue-200">Edit</button>
-            ${!isStopped && isActive ? `<button onclick="stopCreative('${cr.id}')" class="flex-1 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-xs font-medium hover:bg-amber-100 border border-amber-200">Stop Ad</button>` : ''}
-            <button onclick="deleteCreative('${cr.id}')" class="py-1.5 px-2 rounded-lg bg-red-50 text-red-500 text-xs font-medium hover:bg-red-100 border border-red-200">Del</button>
+          <!-- Right: Info -->
+          <div class="flex-1 p-4 space-y-3">
+            <!-- Header: Name + Status + Mini Koi -->
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-bold text-base text-gray-900 truncate">${esc(cr.label)}</span>
+                  ${statusBadge}
+                </div>
+                ${cr.description ? `<p class="text-xs text-gray-500 mt-0.5 line-clamp-2">${esc(cr.description)}</p>` : ''}
+                ${cr.utm_content ? `<div class="text-[10px] text-gray-400 mt-0.5">${esc(cr.utm_content)} · ${count} entries</div>` : ''}
+              </div>
+              <!-- Mini Koi -->
+              <div class="flex items-center gap-1.5 flex-shrink-0 rounded-lg px-2 py-1 ${koi.key === 'dead_fish' ? 'bg-red-50' : koi.key === 'apex_koi' ? 'bg-emerald-50' : koi.key === 'healthy_koi' ? 'bg-green-50' : koi.key === 'cloudy_pond' ? 'bg-yellow-50' : 'bg-blue-50'}">
+                <img src="${koiSmallImg[koi.key]}" class="w-7 h-7" alt="">
+                <div>
+                  <div class="text-[10px] font-bold ${koi.key === 'dead_fish' ? 'text-red-700' : koi.key === 'apex_koi' ? 'text-emerald-700' : koi.key === 'healthy_koi' ? 'text-green-700' : koi.key === 'cloudy_pond' ? 'text-yellow-700' : 'text-blue-700'}">${koi.status}</div>
+                  <div class="text-[9px] ${koiLevel.badgeBg.replace('bg-','text-').split(' ')[0]} font-bold">${koi.score}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Metrics Grid -->
+            <div class="grid grid-cols-4 sm:grid-cols-8 gap-2 bg-gray-50 rounded-lg p-2.5">
+              <div class="text-center"><div class="text-[9px] text-gray-400">Spend</div><div class="text-sm font-bold text-gray-800">$${met.spend.toFixed(0)}</div></div>
+              <div class="text-center"><div class="text-[9px] text-gray-400">Impr.</div><div class="text-sm font-bold text-gray-800">${met.impressions > 0 ? met.impressions.toLocaleString() : '—'}</div></div>
+              <div class="text-center"><div class="text-[9px] text-gray-400">Clicks</div><div class="text-sm font-bold text-gray-800">${met.clicks}</div></div>
+              <div class="text-center"><div class="text-[9px] text-gray-400">CTR</div><div class="text-sm font-bold text-gray-800">${met.ctr > 0 ? met.ctr.toFixed(1) + '%' : '—'}</div></div>
+              <div class="text-center"><div class="text-[9px] text-gray-400">CPC</div><div class="text-sm font-bold text-gray-800">${met.cpc > 0 ? '$' + met.cpc.toFixed(2) : '—'}</div></div>
+              <div class="text-center"><div class="text-[9px] text-gray-400">Views</div><div class="text-sm font-bold text-gray-800">${met.sessions > 0 ? met.sessions : '—'}</div></div>
+              <div class="text-center"><div class="text-[9px] text-gray-400">Purch.</div><div class="text-sm font-bold text-green-600 ${met.purchases > 0 ? '' : ''}">${met.purchases}</div></div>
+              <div class="text-center"><div class="text-[9px] text-gray-400">CAC</div><div class="text-sm font-bold ${met.cac > 0 && met.cac <= 25 ? 'text-green-600' : met.cac > 25 ? 'text-red-500' : 'text-gray-800'}">${met.cac > 0 ? '$' + met.cac.toFixed(0) : '—'}</div></div>
+            </div>
+
+            <!-- Health Badges -->
+            ${health.length > 0 ? `
+            <div class="flex flex-wrap gap-1.5">
+              ${health.map(h => `
+                <span class="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full ${h.badge}">
+                  <span class="w-1.5 h-1.5 rounded-full ${h.dot}"></span>
+                  ${h.label}: ${h.value}
+                </span>
+              `).join('')}
+              <span class="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">
+                ${met.days} day${met.days !== 1 ? 's' : ''} logged
+              </span>
+            </div>` : `<div class="text-[10px] text-gray-400">No metrics logged yet — log daily data to see health badges</div>`}
+
+            ${isStopped && cr.decision_why ? `<div class="text-xs text-gray-500 bg-gray-50 rounded-lg p-2 border border-gray-100">${esc(cr.decision_why)}</div>` : ''}
+
+            <!-- Action Buttons -->
+            <div class="flex gap-1.5 pt-2 border-t border-gray-100">
+              <button onclick="editCreative('${cr.id}')" class="py-1.5 px-3 rounded-lg bg-blue-50 text-blue-600 text-xs font-medium hover:bg-blue-100 border border-blue-200">Edit</button>
+              ${!isStopped && isActive ? `<button onclick="stopCreative('${cr.id}')" class="py-1.5 px-3 rounded-lg bg-amber-50 text-amber-700 text-xs font-medium hover:bg-amber-100 border border-amber-200">Stop Ad</button>` : ''}
+              <button onclick="deleteCreative('${cr.id}')" class="py-1.5 px-2 rounded-lg bg-red-50 text-red-500 text-xs font-medium hover:bg-red-100 border border-red-200">Del</button>
+            </div>
           </div>
         </div>
       </div>`;
@@ -2422,6 +2531,20 @@ function deleteCampaignNote(id) {
   });
 }
 
+// Image upload handler for creative modal
+function handleCreativeImageUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { showToast('Image too large (max 5MB)'); input.value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('cr-image').value = e.target.result;
+    document.getElementById('cr-image-preview').classList.remove('hidden');
+    document.getElementById('cr-image-preview-img').src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 // Creative modal
 function openCreativeModal(cr = null) {
   document.getElementById('creative-modal-title').textContent = cr ? 'Edit Creative' : 'Add Creative';
@@ -2429,12 +2552,19 @@ function openCreativeModal(cr = null) {
   document.getElementById('cr-label').value = cr ? cr.label : '';
   document.getElementById('cr-type').value = cr ? cr.creative_type : 'image';
   document.getElementById('cr-utm').value = cr ? cr.utm_content : '';
-  document.getElementById('cr-image').value = cr ? cr.image_url : '';
+  document.getElementById('cr-image').value = cr ? cr.image_url || '' : '';
+  document.getElementById('cr-description').value = cr ? cr.description || '' : '';
   document.getElementById('cr-headline').value = cr ? cr.headline : '';
   document.getElementById('cr-body').value = cr ? cr.body_text : '';
   document.getElementById('cr-fb-ad').value = cr ? cr.fb_ad_id : '';
   document.getElementById('cr-active').value = cr ? String(cr.is_active) : 'true';
   document.getElementById('cr-notes').value = cr ? cr.notes : '';
+  // Image preview
+  const preview = document.getElementById('cr-image-preview');
+  const previewImg = document.getElementById('cr-image-preview-img');
+  if (cr && cr.image_url) { preview.classList.remove('hidden'); previewImg.src = cr.image_url; }
+  else { preview.classList.add('hidden'); previewImg.src = ''; }
+  document.getElementById('cr-image-file').value = '';
   document.getElementById('creative-modal').classList.add('open');
 }
 function closeCreativeModal() { document.getElementById('creative-modal').classList.remove('open'); }
@@ -2450,6 +2580,7 @@ function saveCreative() {
     creative_type: document.getElementById('cr-type').value,
     utm_content: document.getElementById('cr-utm').value,
     image_url: document.getElementById('cr-image').value,
+    description: document.getElementById('cr-description').value,
     headline: document.getElementById('cr-headline').value,
     body_text: document.getElementById('cr-body').value,
     fb_ad_id: document.getElementById('cr-fb-ad').value,

@@ -1236,7 +1236,7 @@ exports.handler = async function (event) {
 
       if (action === 'save-campaign-creative') {
         if (!body.campaign_id && !body.id) return badRequest('Missing campaign_id or id');
-        const allowed = ['campaign_id', 'label', 'creative_type', 'image_url', 'video_url', 'headline', 'body_text', 'cta_text', 'utm_content', 'fb_ad_id', 'is_active', 'notes', 'decision', 'decision_why', 'stopped_at'];
+        const allowed = ['campaign_id', 'label', 'creative_type', 'image_url', 'video_url', 'headline', 'body_text', 'cta_text', 'utm_content', 'fb_ad_id', 'is_active', 'notes', 'description', 'decision', 'decision_why', 'stopped_at'];
         const row = {};
         for (const key of allowed) { if (body[key] !== undefined) row[key] = body[key]; }
 
