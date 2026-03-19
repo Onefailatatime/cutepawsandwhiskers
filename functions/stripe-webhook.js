@@ -23,7 +23,7 @@ function getTransporter() {
   });
 }
 
-async function sendReceiptEmail(entry, amountPaid) {
+async function sendReceiptEmail(entry, amountPaid, promoApplied) {
   const firstName = entry.first_name || entry.full_name.split(' ')[0];
   const orderDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const orderId = entry.id.substring(0, 8).toUpperCase();
@@ -57,7 +57,7 @@ async function sendReceiptEmail(entry, amountPaid) {
             </tr>
             <tr>
               <td style="padding: 8px 0; color: #6b7280;">Payment Method</td>
-              <td style="padding: 8px 0; text-align: right;">Credit Card (via Stripe)</td>
+              <td style="padding: 8px 0; text-align: right;">${amountPaid > 0 ? 'Credit Card (via Stripe)' : 'Promo Code (100% off)'}</td>
             </tr>
             <tr style="border-top: 1px solid #e5e7eb;">
               <td style="padding: 8px 0; color: #6b7280;">Email</td>
@@ -81,8 +81,14 @@ async function sendReceiptEmail(entry, amountPaid) {
                   <div style="font-weight: 600;">Paws &amp; Whiskers 2027 Calendar Contest</div>
                   <div style="font-size: 13px; color: #6b7280;">Contest entry + calendar inclusion</div>
                 </td>
-                <td style="padding: 14px 16px; text-align: right; font-weight: 600;">$${amountPaid.toFixed(2)}</td>
+                <td style="padding: 14px 16px; text-align: right; font-weight: 600;">$36.00</td>
               </tr>
+              ${promoApplied ? `<tr style="border-top: 1px solid #e5e7eb;">
+                <td style="padding: 14px 16px;">
+                  <div style="font-weight: 600; color: #16a34a;">&#127881; Promo Code Applied</div>
+                </td>
+                <td style="padding: 14px 16px; text-align: right; font-weight: 600; color: #16a34a;">-$${(36 - amountPaid).toFixed(2)}</td>
+              </tr>` : ''}
             </tbody>
             <tfoot>
               <tr style="border-top: 2px solid #e5e7eb; background: #f0fdf4;">
@@ -324,8 +330,10 @@ exports.handler = async function (event) {
       }
 
       // Extract real amount from Stripe (amount_total is in cents)
-      const amountPaidCents = session.amount_total || 3600;
+      // Use != null so $0 (100% promo) doesn't fall back to $36
+      const amountPaidCents = session.amount_total != null ? session.amount_total : 3600;
       const amountPaid = amountPaidCents / 100;
+      const promoApplied = session.total_details?.amount_discount > 0;
       const currency = (session.currency || 'usd').toUpperCase();
       const stripeEmail = session.customer_details?.email || session.customer_email || null;
 
@@ -434,7 +442,7 @@ exports.handler = async function (event) {
 
       // Send purchase receipt email
       try {
-        await sendReceiptEmail(entry, amountPaid);
+        await sendReceiptEmail(entry, amountPaid, promoApplied);
 
         await supabase.from('crm_activity_log').insert({
           entry_id: entryId,
