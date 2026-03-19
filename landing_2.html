@@ -47,7 +47,7 @@
     'https://connect.facebook.net/en_US/fbevents.js');
     fbq('init', '1683799792624877');
     fbq('track', 'PageView');
-    fbq('track', 'ViewContent');
+    fbq('track', 'ViewContent', { content_name: 'landing_2', content_category: 'landing_page' });
   </script>
   <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1683799792624877&ev=PageView&noscript=1"/></noscript>
 </head>
@@ -65,7 +65,7 @@
             Enter Your Pet In The 2027 Calendar Contest
           </h1>
           <p class="text-base md:text-xl mb-5 md:mb-8 text-gray-700 leading-relaxed">
-            Your $30 entry (plus $6 shipping) gets your dog or cat a <strong>guaranteed spot</strong> in our printed 2027 wall calendar and your own calendar mailed to you. A few lucky pets also win our <strong class="text-orange-600">Grand Prize cover bundle</strong>.
+            Your $30 entry (plus $6 shipping) gets your dog or cat a <strong class="text-gray-900">guaranteed spot</strong> in our printed 2027 wall calendar and your own calendar mailed to you. A few lucky pets also win our <strong class="text-orange-600">Grand Prize cover bundle</strong>.
           </p>
           <button onclick="openModal()" class="inline-block bg-gradient-to-r from-orange-500 to-pink-500 text-white px-8 md:px-10 py-4 md:py-5 rounded-full text-lg font-semibold hover:from-orange-600 hover:to-pink-600 hover:scale-105 transition-all shadow-xl mb-3 w-full md:w-auto text-center cursor-pointer">
             Enter My Pet &mdash; Only $36
@@ -77,14 +77,14 @@
         <div class="order-1 md:order-2 relative">
           <div class="grid grid-cols-2 gap-3 md:gap-4">
             <div class="rounded-2xl overflow-hidden shadow-2xl rotate-2 md:rotate-3">
-              <img src="https://images.unsplash.com/photo-1609348490161-a879e4327ae9?w=540&q=80" alt="Happy golden retriever" class="w-full h-44 md:h-64 object-cover" loading="lazy">
+              <img src="images/testimonial-dog-field.jpeg" alt="Happy golden retriever" class="w-full h-44 md:h-64 object-cover" loading="lazy">
             </div>
             <div class="rounded-2xl overflow-hidden shadow-2xl -rotate-2 md:-rotate-3 mt-6 md:mt-8">
-              <img src="https://images.unsplash.com/photo-1707065359514-5aa48a8eebee?w=540&q=80" alt="Cute cat portrait" class="w-full h-44 md:h-64 object-cover" loading="lazy">
+              <img src="images/testimonial-cat.jpg" alt="Cute cat portrait" class="w-full h-44 md:h-64 object-cover" loading="lazy">
             </div>
           </div>
-          <div class="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-white px-4 py-2 rounded-full shadow-xl border-4 border-yellow-300">
-            <p class="text-xs md:text-sm font-bold text-gray-800 whitespace-nowrap">&#127942; Be The Cover Star!</p>
+          <div class="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-white px-4 py-2 rounded-full shadow-xl border-4 border-green-400">
+            <p class="text-xs md:text-sm font-bold text-gray-800 whitespace-nowrap">&#9989; Guaranteed Spot In The Calendar</p>
           </div>
         </div>
       </div>
@@ -137,9 +137,9 @@
       </div>
 
       <!-- Clarifying note -->
-      <div class="bg-white/80 backdrop-blur rounded-xl md:rounded-2xl p-4 md:p-6 text-center border border-orange-200">
-        <p class="text-sm md:text-base text-gray-700 leading-relaxed">
-          Every paid entry is in the running for the Grand Prize, but <strong>every pet who enters is guaranteed a spot in the calendar</strong> and a printed 2027 calendar.
+      <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl md:rounded-2xl p-5 md:p-8 text-center border-2 border-green-300 shadow-md">
+        <p class="text-base md:text-lg text-gray-800 leading-relaxed font-medium">
+          Every paid entry is in the running for the Grand Prize, but <strong class="text-green-700">every pet who enters is guaranteed a spot in the calendar</strong> and a printed 2027 calendar.
         </p>
       </div>
     </div>
@@ -344,7 +344,7 @@
   <script>
     /* ---------- DATA (landing_2 copy) ---------- */
     const BENEFITS = [
-      { title: 'Guaranteed Spot In The Calendar', desc: 'Every paid entry gets placement \u2014 your pet will appear somewhere in the printed 2027 calendar.', icon: 'M20 6L9 17l-5-5' },
+      { title: 'Guaranteed Spot In The Calendar (For Every Paid Entry)', desc: 'No lottery, no maybe \u2014 every paid entry gets placement. Your pet will appear in the printed 2027 calendar, guaranteed.', icon: 'M20 6L9 17l-5-5' },
       { title: 'Printed 2027 Calendar Shipped To Your Door', desc: 'A beautiful, full-color wall calendar featuring real pets, mailed directly to you.', icon: 'M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z' },
       { title: 'Chance To Be A Featured Star', desc: '13 pets (cover + 12 monthly stars) are chosen from all entries for extra-large features and the prize bundle.', icon: 'M6 9H4.5a2.5 2.5 0 010-5H6M18 9h1.5a2.5 2.5 0 000-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0012 0V2z' },
       { title: 'You Keep Your Photo Rights', desc: 'We only use your photo for this calendar \u2014 you retain full ownership.', icon: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z' },
@@ -365,7 +365,7 @@
     const FAQS = [
       { q: 'What pets can enter?', a: 'Dogs and cats in the United States. As long as your furry friend brings you joy, they\u2019re welcome.' },
       { q: 'When do calendars ship?', a: 'All calendars ship before December 2026 so you start the new year with your pet on the wall.' },
-      { q: 'Can I enter more than one pet?', a: 'Yes! Each pet needs a separate entry ($36 per pet). Each entry includes its own printed calendar.' },
+      { q: 'Can I enter more than one pet?', a: 'Yes! Each pet needs a separate entry ($36 per pet) and each entry includes its own printed calendar shipped to you.' },
       { q: 'How are winners chosen?', a: 'Our team reviews entries based on photo quality, personality, and cuteness. All paid entries are guaranteed a spot; a few are chosen for cover + month features and prizes.' },
       { q: 'Can I get a refund if I change my mind?', a: 'Refunds within 7 days if design hasn\u2019t started. After that, all sales are final.' },
     ];
@@ -519,7 +519,7 @@
             utm_source: params.get('utm_source') || '',
             utm_medium: params.get('utm_medium') || '',
             utm_campaign: params.get('utm_campaign') || '',
-            utm_content: params.get('utm_content') || '',
+            utm_content: params.get('utm_content') ? params.get('utm_content') + '_lp2' : 'lp2',
             // Facebook CAPI fields
             fbc: fbc,
             fbp: fbp,
