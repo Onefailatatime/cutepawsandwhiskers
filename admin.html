@@ -443,6 +443,13 @@
               </div>
             </summary>
             <div class="p-5 space-y-4">
+              <!-- Creative Filter -->
+              <div class="flex items-center gap-3">
+                <label class="text-xs font-bold text-gray-400 uppercase tracking-wide">Showing data for:</label>
+                <select id="perf-creative-filter" onchange="onPerfCreativeFilterChange()" class="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium outline-none focus:border-indigo-400">
+                  <option value="all">All Ads (Campaign Total)</option>
+                </select>
+              </div>
               <div id="perf-kpi-cards"></div>
               <div>
                 <h4 class="font-medium text-gray-700 text-sm mb-2">Health Check</h4>
@@ -451,8 +458,8 @@
               <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                   <thead>
-                    <tr class="bg-gray-50 text-left text-gray-500 text-xs uppercase">
-                      <th class="px-3 py-3">Date</th><th class="px-3 py-3">Spend</th><th class="px-3 py-3">Impr.</th><th class="px-3 py-3">Clicks</th><th class="px-3 py-3">CTR</th><th class="px-3 py-3">CPC</th><th class="px-3 py-3">CPM</th><th class="px-3 py-3">Views</th><th class="px-3 py-3">Leads</th><th class="px-3 py-3">Purchases</th><th class="px-3 py-3">Purch. Rate</th><th class="px-3 py-3">CAC</th><th class="px-3 py-3">Upsell $</th><th class="px-3 py-3">Notes</th><th class="px-3 py-3">Actions</th>
+                    <tr class="bg-gray-50 text-left text-gray-500 text-xs uppercase" id="perf-metrics-head">
+                      <th class="px-3 py-3">Date</th><th class="px-3 py-3 perf-ad-col">Ad</th><th class="px-3 py-3">Spend</th><th class="px-3 py-3">Impr.</th><th class="px-3 py-3">Clicks</th><th class="px-3 py-3">CTR</th><th class="px-3 py-3">CPC</th><th class="px-3 py-3">CPM</th><th class="px-3 py-3">Views</th><th class="px-3 py-3">Leads</th><th class="px-3 py-3">Purchases</th><th class="px-3 py-3">Purch. Rate</th><th class="px-3 py-3">CAC</th><th class="px-3 py-3">Upsell $</th><th class="px-3 py-3">Notes</th><th class="px-3 py-3">Actions</th>
                     </tr>
                   </thead>
                   <tbody id="perf-metrics-body"></tbody>
@@ -2210,6 +2217,7 @@ function openHub(id) {
     // Kanban
     renderHubKanban();
     // Performance
+    populatePerfCreativeFilter();
     renderPerfKPIs();
     renderHealthCards();
     renderMetricsTable();
@@ -2842,8 +2850,37 @@ function renderLoggingStreak() {
   }
 }
 
+let perfCreativeFilter = 'all';
+
+function populatePerfCreativeFilter() {
+  const sel = document.getElementById('perf-creative-filter');
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="all">All Ads (Campaign Total)</option>';
+  (hubCreatives || []).forEach(cr => {
+    const opt = document.createElement('option');
+    opt.value = cr.id;
+    opt.textContent = cr.label + (cr.is_active && !cr.decision ? ' (Running)' : cr.decision ? ' (' + cr.decision + ')' : ' (Paused)');
+    sel.appendChild(opt);
+  });
+  sel.value = prev || 'all';
+  perfCreativeFilter = sel.value;
+}
+
+function onPerfCreativeFilterChange() {
+  perfCreativeFilter = document.getElementById('perf-creative-filter').value;
+  renderPerfKPIs();
+  renderHealthCards();
+  renderMetricsTable();
+}
+
+function getFilteredMetrics() {
+  if (perfCreativeFilter === 'all') return perfMetrics || [];
+  return (perfMetrics || []).filter(r => r.creative_id === perfCreativeFilter);
+}
+
 function renderPerfKPIs() {
-  const m = perfMetrics;
+  const m = getFilteredMetrics();
   const c = perfCampaignData;
   const totalSpend = m.reduce((s, r) => s + (parseFloat(r.spend) || 0), 0);
   const totalClicks = m.reduce((s, r) => s + (parseInt(r.link_clicks) || parseInt(r.clicks) || 0), 0);
@@ -2921,7 +2958,7 @@ function renderPerfKPIs() {
 }
 
 function renderHealthCards() {
-  const m = perfMetrics;
+  const m = getFilteredMetrics();
   if (!m.length) {
     document.getElementById('perf-health-cards').innerHTML = '<p class="col-span-full text-sm text-gray-400">Log daily metrics to see your health check.</p>';
     return;
@@ -2979,15 +3016,23 @@ function renderHealthCards() {
 }
 
 function renderMetricsTable() {
-  const m = perfMetrics;
+  const m = getFilteredMetrics();
   const tbody = document.getElementById('perf-metrics-body');
   const empty = document.getElementById('perf-metrics-empty');
+  // Show/hide Ad column header
+  const adColHeader = document.querySelector('#perf-metrics-head .perf-ad-col');
+  if (adColHeader) adColHeader.style.display = perfCreativeFilter === 'all' ? '' : 'none';
   if (!m.length) {
     tbody.innerHTML = '';
     empty.classList.remove('hidden');
     return;
   }
   empty.classList.add('hidden');
+
+  // Build creative name lookup
+  const crNames = {};
+  (hubCreatives || []).forEach(cr => { crNames[cr.id] = cr.label; });
+  const showAdCol = perfCreativeFilter === 'all';
 
   tbody.innerHTML = m.map(r => {
     const spend = parseFloat(r.spend) || 0;
@@ -3005,8 +3050,10 @@ function renderMetricsTable() {
     const cpcClass = cpc <= 2.0 ? 'text-green-600' : 'text-yellow-600';
     const prClass = purchRate >= 3 ? 'text-green-600' : purchRate >= 2 ? 'text-yellow-600' : sessions > 0 ? 'text-red-500' : 'text-gray-400';
     const cacClass = cac > 0 && cac <= 25 ? 'text-green-600' : cac > 25 ? 'text-red-500' : 'text-gray-400';
+    const adName = r.creative_id ? (crNames[r.creative_id] || 'Unknown') : '—';
     return `<tr class="border-t border-gray-100 hover:bg-gray-50">
       <td class="px-3 py-2 font-medium whitespace-nowrap">${r.metric_date}</td>
+      ${showAdCol ? `<td class="px-3 py-2 text-xs text-indigo-600 font-medium whitespace-nowrap max-w-[100px] truncate" title="${esc(adName)}">${esc(adName)}</td>` : ''}
       <td class="px-3 py-2 text-red-500 font-medium">$${spend.toFixed(2)}</td>
       <td class="px-3 py-2">${(parseInt(r.impressions) || 0).toLocaleString()}</td>
       <td class="px-3 py-2">${clicks}</td>
