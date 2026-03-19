@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="facebook-domain-verification" content="rc3tini6e25mkbbpx4hx01xkwydvcy" />
+  <title>Paws & Whiskers 2027 Calendar Contest – Enter Your Pet</title>
+  <meta name="description" content="Enter your pet in the Paws & Whiskers 2027 Calendar Contest. $30 entry plus $6 shipping gets a guaranteed spot and a printed calendar shipped to you.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+        }
+      }
+    }
+  </script>
+  <style>
+    .faq-answer { max-height: 0; overflow: hidden; transition: max-height .3s ease; }
+    .faq-answer.open { max-height: 500px; }
+    .chevron { transition: transform .3s ease; }
+    .chevron.open { transform: rotate(180deg); }
+    /* Modal */
+    .modal-backdrop { opacity: 0; pointer-events: none; transition: opacity .3s ease; }
+    .modal-backdrop.open { opacity: 1; pointer-events: auto; }
+    .modal-panel { transform: translateY(20px) scale(.97); opacity: 0; transition: all .3s ease; }
+    .modal-backdrop.open .modal-panel { transform: translateY(0) scale(1); opacity: 1; }
+    .form-input { transition: border-color .2s ease, box-shadow .2s ease; }
+    .form-input:focus { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,.15); }
+    .shake { animation: shake .4s ease; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  </style>
+
+  <!-- Facebook Pixel -->
+  <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1683799792624877');
+    fbq('track', 'PageView');
+    fbq('track', 'ViewContent');
+  </script>
+  <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1683799792624877&ev=PageView&noscript=1"/></noscript>
+</head>
+
+<body class="bg-gradient-to-b from-orange-50 via-white to-orange-50 font-sans antialiased">
+
+  <!-- ============ HERO ============ -->
+  <section class="relative overflow-hidden bg-gradient-to-br from-orange-100 via-pink-50 to-purple-100 py-10 md:py-16 px-4">
+    <div class="max-w-6xl mx-auto">
+      <div class="grid md:grid-cols-2 gap-6 md:gap-8 items-center">
+        <!-- Copy -->
+        <div class="text-center md:text-left order-2 md:order-1">
+          <p class="text-xs uppercase tracking-wider text-gray-500 mb-2 md:mb-4">Hello Pat Presents</p>
+          <h1 class="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 md:mb-6 text-gray-900 leading-tight">
+            Enter Your Pet In The 2027 Calendar Contest
+          </h1>
+          <p class="text-base md:text-xl mb-5 md:mb-8 text-gray-700 leading-relaxed">
+            Your $30 entry (plus $6 shipping) gets your dog or cat a <strong>guaranteed spot</strong> in our printed 2027 wall calendar and your own calendar mailed to you. A few lucky pets also win our <strong class="text-orange-600">Grand Prize cover bundle</strong>.
+          </p>
+          <button onclick="openModal()" class="inline-block bg-gradient-to-r from-orange-500 to-pink-500 text-white px-8 md:px-10 py-4 md:py-5 rounded-full text-lg font-semibold hover:from-orange-600 hover:to-pink-600 hover:scale-105 transition-all shadow-xl mb-3 w-full md:w-auto text-center cursor-pointer">
+            Enter My Pet &mdash; Only $36
+          </button>
+          <p class="text-xs text-gray-500 italic">$30 entry + $6 shipping &bull; Secure checkout &bull; Limited first run</p>
+        </div>
+
+        <!-- Images -->
+        <div class="order-1 md:order-2 relative">
+          <div class="grid grid-cols-2 gap-3 md:gap-4">
+            <div class="rounded-2xl overflow-hidden shadow-2xl rotate-2 md:rotate-3">
+              <img src="https://images.unsplash.com/photo-1609348490161-a879e4327ae9?w=540&q=80" alt="Happy golden retriever" class="w-full h-44 md:h-64 object-cover" loading="lazy">
+            </div>
+            <div class="rounded-2xl overflow-hidden shadow-2xl -rotate-2 md:-rotate-3 mt-6 md:mt-8">
+              <img src="https://images.unsplash.com/photo-1707065359514-5aa48a8eebee?w=540&q=80" alt="Cute cat portrait" class="w-full h-44 md:h-64 object-cover" loading="lazy">
+            </div>
+          </div>
+          <div class="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-white px-4 py-2 rounded-full shadow-xl border-4 border-yellow-300">
+            <p class="text-xs md:text-sm font-bold text-gray-800 whitespace-nowrap">&#127942; Be The Cover Star!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ GRAND PRIZE ============ -->
+  <section class="py-10 md:py-20 px-4 relative overflow-hidden" style="background: linear-gradient(135deg, #fdf4ff 0%, #fff7ed 30%, #fef3c7 60%, #fce7f3 100%);">
+    <div class="hidden md:block absolute top-10 left-10 text-4xl opacity-40 animate-pulse">&#10024;</div>
+    <div class="hidden md:block absolute bottom-10 right-10 text-4xl opacity-40 animate-pulse" style="animation-delay:1.5s">&#127775;</div>
+
+    <div class="max-w-5xl mx-auto relative z-10">
+      <div class="text-center mb-6 md:mb-10">
+        <span class="text-4xl md:text-5xl mb-2 block">&#127942;</span>
+        <h2 class="text-2xl md:text-5xl font-extrabold mb-2 md:mb-4 text-gray-900">Grand Prize Winner Gets It All</h2>
+        <p class="text-base md:text-xl text-gray-600">One pet becomes the <strong class="text-orange-600">Cover Star</strong> and takes home the big bundle.</p>
+      </div>
+
+      <div class="bg-white rounded-2xl md:rounded-3xl shadow-2xl border-4 border-yellow-400 overflow-hidden mb-6 md:mb-10 relative">
+        <div class="absolute top-0 left-0 right-0 h-2" style="background: linear-gradient(to right, #f97316, #ec4899, #a855f7, #f97316);"></div>
+        <div class="grid md:grid-cols-2 gap-0">
+          <div class="p-4 md:p-8 flex items-center justify-center bg-gradient-to-br from-yellow-50 to-orange-50">
+            <img src="images/grand-prize.png" alt="Grand Prize Winner gets front cover, framed portrait, and gift box" class="w-full max-w-xs md:max-w-md rounded-xl md:rounded-2xl shadow-lg" loading="lazy">
+          </div>
+          <div class="p-5 md:p-10 flex flex-col justify-center">
+            <div class="inline-flex items-center gap-2 bg-yellow-100 text-yellow-800 px-3 py-1.5 rounded-full text-xs md:text-sm font-bold mb-4 md:mb-6 w-fit">
+              <span>&#127942;</span> GRAND PRIZE PACKAGE
+            </div>
+            <h3 class="text-xl md:text-3xl font-extrabold text-gray-900 mb-4 md:mb-6 leading-tight">Front Cover + Incredible Prize Bundle</h3>
+            <div class="space-y-3 md:space-y-4 mb-5 md:mb-8">
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-yellow-100 flex items-center justify-center flex-shrink-0 text-xl md:text-2xl">&#128197;</div>
+                <div><p class="font-bold text-gray-900 text-sm md:text-base">Front Cover Star</p><p class="text-gray-600 text-xs md:text-sm">Your pet as the face of the 2027 calendar.</p></div>
+              </div>
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-purple-100 flex items-center justify-center flex-shrink-0 text-xl md:text-2xl">&#127912;</div>
+                <div><p class="font-bold text-gray-900 text-sm md:text-base">Custom Watercolor Framed Portrait</p><p class="text-gray-600 text-xs md:text-sm">Hand-style portrait of your pet, professionally framed &amp; shipped to you.</p></div>
+              </div>
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-pink-100 flex items-center justify-center flex-shrink-0 text-xl md:text-2xl">&#127873;</div>
+                <div><p class="font-bold text-gray-900 text-sm md:text-base">Gift Box With Toys &amp; Goodies</p><p class="text-gray-600 text-xs md:text-sm">Premium toys, treats, and goodies shipped to your door.</p></div>
+              </div>
+            </div>
+            <div class="bg-gradient-to-r from-orange-500 to-pink-500 rounded-xl md:rounded-2xl p-4 md:p-5 text-center">
+              <p class="text-white text-xs md:text-sm font-medium mb-0.5">Total Prize Value</p>
+              <p class="text-white text-2xl md:text-3xl font-extrabold">$200+ Bundle</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Clarifying note -->
+      <div class="bg-white/80 backdrop-blur rounded-xl md:rounded-2xl p-4 md:p-6 text-center border border-orange-200">
+        <p class="text-sm md:text-base text-gray-700 leading-relaxed">
+          Every paid entry is in the running for the Grand Prize, but <strong>every pet who enters is guaranteed a spot in the calendar</strong> and a printed 2027 calendar.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ WHAT YOU GET FOR $36 ============ -->
+  <section class="py-8 md:py-16 px-4 bg-gradient-to-b from-white to-orange-50">
+    <div class="max-w-4xl mx-auto">
+      <div class="text-center mb-6 md:mb-10">
+        <h2 class="text-2xl md:text-4xl font-bold mb-2 text-gray-900">What You Get For $36</h2>
+        <p class="text-sm md:text-lg text-gray-600">$30 entry + $6 flat shipping</p>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-xl p-5 md:p-10 border-2 md:border-4 border-orange-200">
+        <div class="space-y-3 md:space-y-4" id="benefits"></div>
+
+        <div class="mt-6 pt-5 border-t-2 border-orange-100 text-center">
+          <button onclick="openModal()" class="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-8 py-4 rounded-full text-lg font-bold shadow-xl hover:scale-105 transition-all w-full md:w-auto cursor-pointer">
+            Enter My Pet Now &mdash; $36 Total
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 3 EASY STEPS ============ -->
+  <section class="py-8 md:py-16 px-4 bg-gradient-to-b from-orange-50 to-white">
+    <div class="max-w-5xl mx-auto">
+      <div class="text-center mb-6 md:mb-10">
+        <h2 class="text-2xl md:text-4xl font-bold mb-2 text-gray-900">3 Easy Steps</h2>
+      </div>
+      <div class="grid grid-cols-3 gap-3 md:gap-8" id="steps"></div>
+    </div>
+  </section>
+
+  <!-- ============ TESTIMONIAL STRIP ============ -->
+  <section class="py-8 md:py-16 px-4 bg-white">
+    <div class="max-w-5xl mx-auto">
+      <h2 class="text-2xl md:text-3xl font-bold mb-6 md:mb-10 text-gray-900 text-center">Pet Parents Love It</h2>
+      <div class="grid md:grid-cols-3 gap-4 md:gap-8 mb-6" id="testimonials"></div>
+      <div class="bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl md:rounded-2xl p-5 md:p-8 text-center">
+        <p class="text-base md:text-xl text-gray-800">Perfect gift for grandparents, kids, and anyone who loves your fur baby!</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FAQ ============ -->
+  <section class="py-8 md:py-16 px-4 bg-gradient-to-b from-white to-orange-50">
+    <div class="max-w-3xl mx-auto">
+      <h2 class="text-2xl md:text-3xl font-bold mb-6 text-gray-900 text-center">FAQ</h2>
+      <div class="bg-white rounded-2xl shadow-xl overflow-hidden" id="faq-list"></div>
+    </div>
+  </section>
+
+  <!-- ============ FINAL CTA ============ -->
+  <section id="entry" class="py-12 md:py-20 px-4 bg-gradient-to-br from-orange-500 via-pink-500 to-purple-500 relative overflow-hidden">
+    <div class="max-w-3xl mx-auto text-center relative z-10">
+      <h2 class="text-2xl md:text-5xl font-bold mb-4 md:mb-6 text-white leading-tight">
+        Don't Miss Your Spot
+      </h2>
+      <p class="text-base md:text-2xl mb-6 md:mb-10 text-white/90 leading-relaxed">
+        Give your pet the spotlight they deserve. Limited entries &mdash; act now!
+      </p>
+
+      <button onclick="openModal()" class="inline-block bg-white text-orange-600 px-10 md:px-12 py-5 md:py-6 rounded-full text-lg md:text-xl font-bold hover:bg-gray-100 hover:scale-105 transition-all shadow-2xl mb-4 w-full md:w-auto cursor-pointer">
+        Enter My Pet &mdash; Only $36
+      </button>
+      <p class="text-white/80 text-xs md:text-sm">$30 entry + $6 shipping &bull; Secure payment &bull; 7-day refund window (before design starts)</p>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="bg-gray-900 text-gray-400 py-6 pb-24 md:pb-6">
+    <div class="max-w-4xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs md:text-sm">
+      <p>&copy; 2027 Hello Pat. All rights reserved.</p>
+      <div class="flex gap-4 md:gap-6">
+        <a href="/terms.html" class="hover:text-white transition-colors">Terms</a>
+        <a href="/privacy.html" class="hover:text-white transition-colors">Privacy</a>
+        <a href="mailto:hello@cutepawsandwhiskers.com" class="hover:text-white transition-colors">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ============ STICKY MOBILE CTA BAR ============ -->
+  <div class="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white border-t-2 border-orange-200 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] px-4 py-3 flex items-center justify-between gap-3" id="sticky-cta">
+    <div>
+      <p class="text-sm font-bold text-gray-900">Only $36</p>
+      <p class="text-xs text-gray-500">Limited first run</p>
+    </div>
+    <button onclick="openModal()" class="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-6 py-3 rounded-full text-sm font-bold shadow-lg flex-shrink-0 cursor-pointer">
+      Enter Now
+    </button>
+  </div>
+
+  <!-- ============ ENTRY FORM MODAL (same as original) ============ -->
+  <div id="modal" class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+    <div class="modal-panel bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto relative">
+
+      <!-- Close button -->
+      <button onclick="closeModal()" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors z-10">
+        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-orange-500 to-pink-500 px-5 md:px-8 pt-5 md:pt-8 pb-4 md:pb-6 rounded-t-3xl text-center">
+        <h3 class="text-xl md:text-2xl font-bold text-white mb-1">Enter Your Pet!</h3>
+        <p class="text-white/80 text-xs md:text-sm">Fill out your info, then pay securely.</p>
+      </div>
+
+      <!-- Form -->
+      <form id="entry-form" class="px-5 md:px-8 py-4 md:py-6 space-y-3 md:space-y-4" novalidate>
+
+        <!-- Name row -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+            <input type="text" name="first_name" required placeholder="Pat" class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 outline-none text-gray-900 placeholder-gray-400">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+            <input type="text" name="last_name" required placeholder="Johnson" class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 outline-none text-gray-900 placeholder-gray-400">
+          </div>
+        </div>
+
+        <!-- Email -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+          <input type="email" name="email" required placeholder="pat@example.com" class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 outline-none text-gray-900 placeholder-gray-400">
+        </div>
+
+        <!-- Phone -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
+          <input type="tel" name="phone" required placeholder="(555) 123-4567" class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 outline-none text-gray-900 placeholder-gray-400">
+        </div>
+
+        <!-- Address -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Street Address *</label>
+          <input type="text" name="address_line1" required placeholder="123 Main St" class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 outline-none text-gray-900 placeholder-gray-400">
+        </div>
+        <div>
+          <input type="text" name="address_line2" placeholder="Apt, Suite, Unit (optional)" class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 outline-none text-gray-900 placeholder-gray-400">
+        </div>
+        <div class="grid grid-cols-5 gap-3">
+          <div class="col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">City *</label>
+            <input type="text" name="city" required placeholder="Portland" class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 outline-none text-gray-900 placeholder-gray-400">
+          </div>
+          <div class="col-span-1">
+            <label class="block text-sm font-medium text-gray-700 mb-1">State *</label>
+            <input type="text" name="state" required placeholder="OR" maxlength="2" class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 outline-none text-gray-900 placeholder-gray-400 uppercase">
+          </div>
+          <div class="col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">ZIP *</label>
+            <input type="text" name="zip" required placeholder="97201" maxlength="10" class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 outline-none text-gray-900 placeholder-gray-400">
+          </div>
+        </div>
+
+        <!-- Birthday (month + day) -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Your Birthday (for a special surprise!) *</label>
+          <div class="grid grid-cols-2 gap-3">
+            <select name="birth_month" required class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 outline-none text-gray-900 bg-white">
+              <option value="" disabled selected>Month</option>
+              <option value="01">January</option><option value="02">February</option>
+              <option value="03">March</option><option value="04">April</option>
+              <option value="05">May</option><option value="06">June</option>
+              <option value="07">July</option><option value="08">August</option>
+              <option value="09">September</option><option value="10">October</option>
+              <option value="11">November</option><option value="12">December</option>
+            </select>
+            <select name="birth_day" required class="form-input w-full px-4 py-3 rounded-xl border-2 border-gray-200 outline-none text-gray-900 bg-white">
+              <option value="" disabled selected>Day</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Error message -->
+        <div id="form-error" class="hidden bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-200"></div>
+
+        <!-- Submit -->
+        <button type="submit" id="submit-btn" class="w-full bg-gradient-to-r from-orange-500 to-pink-500 text-white px-8 py-4 rounded-full text-lg font-bold hover:from-orange-600 hover:to-pink-600 hover:scale-[1.02] transition-all shadow-xl">
+          Continue to Payment &rarr;
+        </button>
+
+        <div class="bg-orange-50 rounded-xl px-4 py-3 mt-2">
+          <p class="text-xs text-gray-700 text-center leading-relaxed">
+            <strong>What happens next?</strong> After payment, we'll send you a <strong>welcome email</strong> with instructions to upload your pet's cutest photo and details.
+          </p>
+          <p class="text-xs text-gray-700 text-center leading-relaxed mt-2">
+            Please <strong>check your inbox and confirm your email</strong> so we can reach you. Didn't get it? Check spam or email us at
+            <a href="mailto:orders@cutepawsandwhiskers.com" class="text-orange-600 font-semibold underline">orders@cutepawsandwhiskers.com</a>
+          </p>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ============ JS — all data + logic ============ -->
+  <script>
+    /* ---------- DATA (landing_2 copy) ---------- */
+    const BENEFITS = [
+      { title: 'Guaranteed Spot In The Calendar', desc: 'Every paid entry gets placement \u2014 your pet will appear somewhere in the printed 2027 calendar.', icon: 'M20 6L9 17l-5-5' },
+      { title: 'Printed 2027 Calendar Shipped To Your Door', desc: 'A beautiful, full-color wall calendar featuring real pets, mailed directly to you.', icon: 'M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z' },
+      { title: 'Chance To Be A Featured Star', desc: '13 pets (cover + 12 monthly stars) are chosen from all entries for extra-large features and the prize bundle.', icon: 'M6 9H4.5a2.5 2.5 0 010-5H6M18 9h1.5a2.5 2.5 0 000-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0012 0V2z' },
+      { title: 'You Keep Your Photo Rights', desc: 'We only use your photo for this calendar \u2014 you retain full ownership.', icon: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z' },
+    ];
+
+    const STEPS = [
+      { n: 1, title: 'Enter & Pay', desc: 'Fill out your info and pay $36 to reserve your pet\u2019s spot.', icon: 'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12' },
+      { n: 2, title: 'Upload Your Favorite Photo', desc: 'Send us the cutest shot of your dog or cat.', icon: 'M12 2.69l5.66 5.66a8 8 0 11-11.31 0z' },
+      { n: 3, title: 'Get Your 2027 Calendar', desc: 'We design, print, and ship your calendar with your pet inside.', icon: 'M1 3h15v13H1zM16 8h4l3 3v5h-7V8zM5.5 21a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM18.5 21a2.5 2.5 0 100-5 2.5 2.5 0 000 5z' },
+    ];
+
+    const TESTIMONIALS = [
+      { text: "My golden retriever Max is hanging in my kitchen and every visitor asks about it. Worth every penny!", author: 'Sarah M.', pet: 'Golden Retriever Mom', img: 'https://images.unsplash.com/photo-1609348490161-a879e4327ae9?w=160&q=80' },
+      { text: "Seeing Luna's face in the calendar made my whole year. My grandkids love it too!", author: 'Patricia L.', pet: 'Cat Mom', img: 'https://images.unsplash.com/photo-1707065359514-5aa48a8eebee?w=160&q=80' },
+      { text: "Best $36 I've spent! High quality and my pup Charlie is a conversation starter every time.", author: 'Mike T.', pet: 'Dog Dad', img: 'https://images.unsplash.com/photo-1547761997-83baeeefb5c3?w=160&q=80' },
+    ];
+
+    const FAQS = [
+      { q: 'What pets can enter?', a: 'Dogs and cats in the United States. As long as your furry friend brings you joy, they\u2019re welcome.' },
+      { q: 'When do calendars ship?', a: 'All calendars ship before December 2026 so you start the new year with your pet on the wall.' },
+      { q: 'Can I enter more than one pet?', a: 'Yes! Each pet needs a separate entry ($36 per pet). Each entry includes its own printed calendar.' },
+      { q: 'How are winners chosen?', a: 'Our team reviews entries based on photo quality, personality, and cuteness. All paid entries are guaranteed a spot; a few are chosen for cover + month features and prizes.' },
+      { q: 'Can I get a refund if I change my mind?', a: 'Refunds within 7 days if design hasn\u2019t started. After that, all sales are final.' },
+    ];
+
+    /* ---------- RENDERERS ---------- */
+    const svg = (d) => `<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="${d}"/></svg>`;
+
+    document.getElementById('benefits').innerHTML = BENEFITS.map(b => `
+      <div class="flex items-start gap-3 p-3 md:p-4 rounded-xl hover:bg-orange-50 transition-colors">
+        <div class="shrink-0 w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-orange-400 to-pink-400 rounded-full flex items-center justify-center text-white">${svg(b.icon)}</div>
+        <div>
+          <h3 class="text-sm md:text-lg font-semibold text-gray-900">${b.title}</h3>
+          <p class="text-gray-600 text-xs md:text-base">${b.desc}</p>
+        </div>
+      </div>`).join('');
+
+    document.getElementById('steps').innerHTML = STEPS.map(s => `
+      <div class="bg-white rounded-xl md:rounded-2xl p-4 md:p-8 shadow-lg">
+        <div class="w-10 h-10 md:w-16 md:h-16 bg-gradient-to-br from-orange-400 to-pink-400 rounded-full flex items-center justify-center text-white text-lg md:text-2xl font-bold mx-auto mb-3 md:mb-6 border-2 md:border-4 border-white shadow-lg">${s.n}</div>
+        <h3 class="text-sm md:text-xl font-semibold mb-1 md:mb-3 text-center text-gray-900">${s.title}</h3>
+        <p class="text-gray-600 text-center text-xs md:text-base leading-relaxed">${s.desc}</p>
+      </div>`).join('');
+
+    document.getElementById('testimonials').innerHTML = TESTIMONIALS.map(t => `
+      <div class="bg-gradient-to-br from-orange-50 to-pink-50 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-lg">
+        <p class="text-gray-700 italic mb-3 text-sm md:text-base leading-relaxed">"${t.text}"</p>
+        <div class="flex items-center gap-3">
+          <img src="${t.img}" alt="${t.pet}" class="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border-2 border-white shadow-md" loading="lazy">
+          <div>
+            <p class="text-xs md:text-sm font-semibold text-gray-900">${t.author}</p>
+            <p class="text-xs text-gray-500">${t.pet}</p>
+          </div>
+        </div>
+      </div>`).join('');
+
+    /* ---------- FAQ ---------- */
+    let openFAQ = 0;
+    const faqEl = document.getElementById('faq-list');
+    faqEl.innerHTML = FAQS.map((f, i) => `
+      <div class="${i < FAQS.length - 1 ? 'border-b border-gray-200' : ''}">
+        <button onclick="toggleFAQ(${i})" class="w-full py-6 px-6 flex items-center justify-between text-left hover:bg-orange-50 transition-colors">
+          <span class="text-lg font-semibold text-gray-900 pr-4">${f.q}</span>
+          <svg class="w-6 h-6 text-orange-500 shrink-0 chevron${i === 0 ? ' open' : ''}" id="chev-${i}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="faq-answer px-6 pb-6 text-gray-700 leading-relaxed${i === 0 ? ' open' : ''}" id="ans-${i}">${f.a}</div>
+      </div>`).join('');
+
+    function toggleFAQ(i) {
+      FAQS.forEach((_, j) => {
+        document.getElementById('ans-' + j).classList.toggle('open', j === i && openFAQ !== i);
+        document.getElementById('chev-' + j).classList.toggle('open', j === i && openFAQ !== i);
+      });
+      openFAQ = openFAQ === i ? -1 : i;
+    }
+
+    /* ---------- MODAL ---------- */
+    const modal = document.getElementById('modal');
+    const form = document.getElementById('entry-form');
+    const errEl = document.getElementById('form-error');
+    const submitBtn = document.getElementById('submit-btn');
+
+    // Populate day dropdown (1-31)
+    const daySelect = form.birth_day;
+    for (let d = 1; d <= 31; d++) {
+      const opt = document.createElement('option');
+      opt.value = String(d).padStart(2, '0');
+      opt.textContent = d;
+      daySelect.appendChild(opt);
+    }
+
+    const stickyCta = document.getElementById('sticky-cta');
+    function openModal() { modal.classList.add('open'); document.body.style.overflow = 'hidden'; if(stickyCta) stickyCta.style.display = 'none'; }
+    function closeModal() { modal.classList.remove('open'); document.body.style.overflow = ''; if(stickyCta) stickyCta.style.display = ''; }
+
+    // Close on backdrop click
+    modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+    // Close on Escape
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
+
+    /* ---------- FACEBOOK COOKIE HELPERS ---------- */
+    function getCookie(name) {
+      const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return match ? decodeURIComponent(match[2]) : null;
+    }
+    function getFbc() {
+      const params = new URLSearchParams(window.location.search);
+      const fbclid = params.get('fbclid');
+      if (fbclid) return 'fb.1.' + Date.now() + '.' + fbclid;
+      return getCookie('_fbc') || null;
+    }
+    function getFbp() {
+      return getCookie('_fbp') || null;
+    }
+
+    /* ---------- FORM SUBMIT ---------- */
+    const PAYMENT_LINK = 'https://buy.stripe.com/eVq28lg4A6Tcdy01y1bZe04';
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      errEl.classList.add('hidden');
+
+      const fd = new FormData(form);
+      const data = Object.fromEntries(fd.entries());
+
+      // Validate required fields
+      const required = ['first_name','last_name','email','phone','address_line1','city','state','zip','birth_month','birth_day'];
+      const missing = required.filter(f => !data[f]?.trim());
+      if (missing.length) {
+        errEl.textContent = 'Please fill in all required fields.';
+        errEl.classList.remove('hidden');
+        form.classList.add('shake');
+        setTimeout(() => form.classList.remove('shake'), 400);
+        return;
+      }
+
+      // Email validation
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+        errEl.textContent = 'Please enter a valid email address.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+
+      // Show loading
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="inline-flex items-center gap-2"><svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Saving your info...</span>';
+
+      // Grab UTM params from URL
+      const params = new URLSearchParams(window.location.search);
+
+      // Grab Facebook cookie IDs for Conversions API matching
+      const fbc = getFbc();
+      const fbp = getFbp();
+
+      try {
+        const res = await fetch('/api/submit-entry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            full_name: (data.first_name.trim() + ' ' + data.last_name.trim()),
+            email: data.email.trim(),
+            phone: data.phone.trim(),
+            address_line1: data.address_line1.trim(),
+            address_line2: data.address_line2?.trim() || '',
+            city: data.city.trim(),
+            state: data.state.trim().toUpperCase(),
+            zip: data.zip.trim(),
+            pet_name: 'Pending',
+            pet_type: 'dog',
+            special_date: data.birth_month + '-' + data.birth_day,
+            special_date_label: 'Owner birthday',
+            utm_source: params.get('utm_source') || '',
+            utm_medium: params.get('utm_medium') || '',
+            utm_campaign: params.get('utm_campaign') || '',
+            utm_content: params.get('utm_content') || '',
+            // Facebook CAPI fields
+            fbc: fbc,
+            fbp: fbp,
+            event_source_url: window.location.href,
+          }),
+        });
+
+        const result = await res.json();
+
+        if (!res.ok || !result.success) {
+          throw new Error(result.error || 'Something went wrong');
+        }
+
+        // Fire client-side Facebook Lead event (deduped with server via event_id)
+        if (typeof fbq === 'function' && result.fb_event_id) {
+          fbq('track', 'Lead', {
+            content_name: 'Paws & Whiskers 2027 Calendar Contest Entry',
+            content_category: 'contest_entry',
+          }, { eventID: result.fb_event_id });
+        }
+
+        // Success — redirect to payment with email prefilled
+        const payUrl = new URL(PAYMENT_LINK);
+        payUrl.searchParams.set('prefilled_email', data.email.trim());
+        payUrl.searchParams.set('client_reference_id', result.entry_id);
+        window.location.href = payUrl.toString();
+
+      } catch (err) {
+        errEl.textContent = err.message || 'Something went wrong. Please try again.';
+        errEl.classList.remove('hidden');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Continue to Payment &rarr;';
+      }
+    });
+  </script>
+
+</body>
+</html>
